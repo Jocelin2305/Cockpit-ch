@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "./db";
+import { hasAccess } from "./billing";
 
 const COOKIE = "cp_session";
 const SESSION_DAYS = 30;
@@ -71,14 +72,17 @@ export async function requireUser() {
   return session;
 }
 
-export async function requireMember() {
+// Accès à l'espace de l'entreprise. Sans abonnement valide (essai terminé, impayé, résilié), renvoie vers /abonnement,
+// sauf pour les pages qui servent justement à payer (allowInactive) et pour le super admin.
+export async function requireMember(opts: { allowInactive?: boolean } = {}) {
   const session = await requireUser();
   if (!session.membership) redirect(session.user.isSuperAdmin ? "/super-admin" : "/connexion?erreur=sans-entreprise");
+  if (!opts.allowInactive && !session.user.isSuperAdmin && !hasAccess(session.membership.organization)) redirect("/abonnement");
   return { ...session, membership: session.membership };
 }
 
-export async function requireAdmin() {
-  const session = await requireMember();
+export async function requireAdmin(opts: { allowInactive?: boolean } = {}) {
+  const session = await requireMember(opts);
   if (session.membership.role !== ROLES.ADMIN) redirect("/app");
   return session;
 }

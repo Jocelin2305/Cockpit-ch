@@ -12,6 +12,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { firstError, signupSchema, type FormState } from "@/lib/validation";
+import { TRIAL_DAYS } from "@/lib/plans";
 
 export async function signup(_: FormState, form: FormData): Promise<FormState> {
   const values = {
@@ -33,7 +34,9 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
       passwordHash: await hashPassword(password),
       isSuperAdmin: isSuperAdminEmail(email),
       lastLoginAt: new Date(),
-      memberships: { create: { role: ROLES.ADMIN, organization: { create: { name: company } } } },
+      memberships: {
+        create: { role: ROLES.ADMIN, organization: { create: { name: company, trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000) } } },
+      },
     },
     include: { memberships: true },
   });

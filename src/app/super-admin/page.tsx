@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireSuperAdmin, ROLES } from "@/lib/auth";
+import { accessState } from "@/lib/billing";
+import { planById } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "Super admin" };
 
@@ -38,6 +40,14 @@ export default async function SuperAdminPage() {
   const [organizations, userCount, newUsers, activeUsers, recentUsers, aiByOrg] = await loadOverview();
   const ai = new Map(aiByOrg.map((r) => [r.organizationId, { i: r._sum.inputTokens ?? 0, o: r._sum.outputTokens ?? 0 }]));
   const aiTotal = [...ai.values()].reduce((s, v) => s + estimate(v.i, v.o), 0);
+  const states = new Map(organizations.map((o) => [o.id, accessState(o)]));
+  const paying = organizations.filter((o) => ["active", "past_due"].includes(states.get(o.id)!.kind));
+  const mrr = paying.reduce((s, o) => s + (planById(o.plan)?.price ?? 0), 0);
+  const trials = organizations.filter((o) => states.get(o.id)!.kind === "trial").length;
+  const statusLabel = (id: string) => {
+    const st = states.get(id)!;
+    return st.kind === "trial" ? `Essai · ${st.daysLeft} j` : st.kind === "active" ? `${st.planName}${st.cancelAtPeriodEnd ? " (résilié)" : ""}` : st.kind === "past_due" ? `${st.planName} · impayé` : st.reason === "trial_over" ? "Essai terminé" : st.reason === "unpaid" ? "Suspendu" : "Résilié";
+  };
 
   return (
     <div className="view">
@@ -55,6 +65,12 @@ export default async function SuperAdminPage() {
         <div className="kpi"><span className="v">{newUsers}</span><span className="k">nouveaux (7 jours)</span></div>
         <div className="kpi"><span className="v">{activeUsers}</span><span className="k">actifs (7 jours)</span></div>
       </div>
+      <div className="kpis">
+        <div className="kpi win"><span className="v">{mrr} €</span><span className="k">revenu mensuel récurrent (HT)</span></div>
+        <div className="kpi"><span className="v">{paying.length}</span><span className="k">entreprises payantes</span></div>
+        <div className="kpi"><span className="v">{trials}</span><span className="k">en essai gratuit</span></div>
+        <div className="kpi"><span className="v">{organizations.length - paying.length - trials}</span><span className="k">essai terminé ou résilié</span></div>
+      </div>
       <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarif public Claude Opus 5.5, hors réductions du cache).</p>
 
       <section className="panel flush">
@@ -62,7 +78,7 @@ export default async function SuperAdminPage() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Formule</th><th>IA (30 jours)</th><th>Créée le</th><th aria-label="Actions" /></tr>
+              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Abonnement</th><th>IA (30 jours)</th><th>Créée le</th><th aria-label="Actions" /></tr>
             </thead>
             <tbody>
               {organizations.length === 0 && (
@@ -73,7 +89,7 @@ export default async function SuperAdminPage() {
                   <td><b>{o.name}</b></td>
                   <td>{o.memberships[0]?.user.email ?? <span className="muted">aucun</span>}</td>
                   <td className="num">{o._count.memberships}</td>
-                  <td><span className="chip">{o.plan}</span></td>
+                  <td><span className={`chip ${["active", "past_due"].includes(states.get(o.id)!.kind) ? "ok" : states.get(o.id)!.kind === "blocked" ? "late" : ""}`}>{statusLabel(o.id)}</span></td>
                   <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.i + u.o)} jetons · ≈ ${estimate(u.i, u.o).toFixed(2)} $` : <span className="muted">—</span>; })()}</td>
                   <td className="muted">{fmt(o.createdAt)}</td>
                   <td><Link className="btn sm" href={`/super-admin/entreprises/${o.id}`}>Détail</Link></td>

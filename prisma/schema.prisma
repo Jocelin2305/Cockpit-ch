@@ -30,8 +30,16 @@ model User {
 model Organization {
   id          String       @id @default(cuid())
   name        String
-  // Préparé pour la facturation (sprint 3) : essai, actif, impayé, résilié.
+  // Offre choisie (identifiant de src/lib/plans.ts) ; « essai » tant qu'aucun abonnement n'est souscrit.
   plan        String       @default("essai")
+  // Fin de l'essai gratuit, fixée à l'inscription.
+  trialEndsAt DateTime?
+  // Abonnement Stripe, tenu à jour par le webhook.
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?
+  subscriptionStatus   String?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
   createdAt   DateTime     @default(now())
   memberships Membership[]
   invitations Invitation[]

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { OrgForm } from "./org-form";
 
@@ -20,7 +21,7 @@ export default async function SettingsPage() {
       </section>
       <section className="panel">
         <h2>Abonnement</h2>
-        <p className="muted">Formule actuelle : <span className="chip">{membership.organization.plan}</span>. La gestion de l&apos;abonnement et des factures arrivera au sprint 3.</p>
+        <p className="muted">Offre, paiement et factures : <Link href="/abonnement">gérer l&apos;abonnement</Link>.</p>
       </section>
     </div>
   );

@@ -4,6 +4,7 @@ import { NavLinks, type NavItem } from "@/components/shell";
 import { db } from "@/lib/db";
 import { requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
+import { accessState } from "@/lib/billing";
 import { isDue, todayISO } from "@/lib/prospecting";
 import { logout } from "../(auth)/actions";
 
@@ -22,6 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     db.prospect.count({ where: { organizationId: orgId, callBack: { not: null, lte: today }, status: { notIn: ["Gagné", "Perdu"] }, phone: { not: "" } } }),
   ]);
   const due = followUps.filter((p) => isDue(p, today)).length;
+  const billing = accessState(membership.organization);
 
   const tools: NavItem[] = [
     { href: "/app", label: "Espace de travail" },
@@ -33,7 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const settings: NavItem[] = [
     { href: "/app/equipe", label: "Équipe" },
     { href: "/app/profil", label: "Profil" },
-    ...(isAdmin ? [{ href: "/app/parametres", label: "Paramètres" }] : []),
+    ...(isAdmin ? [{ href: "/app/parametres", label: "Paramètres" }, { href: "/abonnement", label: "Abonnement" }] : []),
     ...(user.isSuperAdmin ? [{ href: "/super-admin", label: "Super admin" }] : []),
   ];
   const library: NavItem[] = searches.map((s) => ({ href: `/app/recherches/${s.id}`, label: s.name, count: s._count.prospects }));
@@ -65,7 +67,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main">
+        {billing.kind === "trial" && billing.daysLeft <= 5 && (
+          <p className="alert banner">Essai gratuit : plus que {billing.daysLeft} jour{billing.daysLeft > 1 ? "s" : ""}. <Link href="/abonnement">Choisir une offre</Link></p>
+        )}
+        {billing.kind === "past_due" && (
+          <p className="alert error banner">Le dernier paiement a échoué. <Link href="/abonnement">Mettre à jour le moyen de paiement</Link></p>
+        )}
+        {children}
+      </main>
     </div>
   );
 }
