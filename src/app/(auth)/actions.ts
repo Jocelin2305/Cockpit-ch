@@ -44,17 +44,28 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
   redirect("/app");
 }
 
+// Protection contre les essais de mots de passe en série.
+const MAX_FAILS = 5;
+const LOCK_MINUTES = 15;
+
 export async function login(_: FormState, form: FormData): Promise<FormState> {
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
   const next = safeNext(String(form.get("next") ?? ""));
 
+  const since = new Date(Date.now() - LOCK_MINUTES * 60_000);
+  if ((await db.loginAttempt.count({ where: { email, at: { gte: since } } })) >= MAX_FAILS)
+    return { error: `Trop de tentatives. Réessayez dans ${LOCK_MINUTES} minutes.`, values: { email } };
+
   const user = await db.user.findUnique({
     where: { email },
     include: { memberships: { orderBy: { createdAt: "asc" } } },
   });
-  if (!user || !(await verifyPassword(password, user.passwordHash)))
+  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+    await db.loginAttempt.create({ data: { email } });
     return { error: "Email ou mot de passe incorrect.", values: { email } };
+  }
+  await db.loginAttempt.deleteMany({ where: { OR: [{ email }, { at: { lt: since } }] } });
 
   // Le fondateur est toujours super admin ; les autres gardent le droit que le fondateur leur a accordé.
   const isSuperAdmin = user.isSuperAdmin || isSuperAdminEmail(email);

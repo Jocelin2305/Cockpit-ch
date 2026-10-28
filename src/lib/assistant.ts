@@ -63,7 +63,7 @@ export function assistantTools(ctx: AssistantCtx, onAction: (label: string) => v
             organizationId: org,
             ...(i.rechercheId ? { searchId: i.rechercheId } : {}),
             ...(i.statut ? { status: i.statut } : {}),
-            ...(i.texte ? { OR: [{ company: { contains: i.texte } }, { contactName: { contains: i.texte } }, { city: { contains: i.texte } }] } : {}),
+            ...(i.texte ? { OR: [{ company: { contains: i.texte, mode: "insensitive" } }, { contactName: { contains: i.texte, mode: "insensitive" } }, { city: { contains: i.texte, mode: "insensitive" } }] } : {}),
           },
           take: 500,
         });

@@ -84,7 +84,7 @@ export async function findProspects(q: string) {
   const rows = await db.prospect.findMany({
     where: {
       organizationId: membership.organizationId,
-      ...(term ? { OR: [{ company: { contains: term } }, { contactName: { contains: term } }, { phone: { contains: term } }] } : {}),
+      ...(term ? { OR: [{ company: { contains: term, mode: "insensitive" } }, { contactName: { contains: term, mode: "insensitive" } }, { phone: { contains: term } }] } : {}),
     },
     orderBy: { updatedAt: "desc" },
     take: 8,

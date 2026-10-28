@@ -1,13 +1,15 @@
 // Modèle de données du socle : comptes, entreprises clientes, rôles, invitations.
-// En local : SQLite. En production : PostgreSQL (Supabase), en changeant `provider` et DATABASE_URL.
+// Base PostgreSQL (Supabase), en local comme en production.
+// DATABASE_URL : connexion via le pooler (application) ; DIRECT_URL : connexion directe (migrations).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -283,4 +285,13 @@ model PhoneEvent {
 
   @@unique([organizationId, externalId])
   @@index([organizationId, handled])
+}
+
+// Échecs de connexion récents : au-delà de 5 en 15 minutes, l'email est bloqué un moment (attaques par force brute).
+model LoginAttempt {
+  id    String   @id @default(cuid())
+  email String
+  at    DateTime @default(now())
+
+  @@index([email, at])
 }

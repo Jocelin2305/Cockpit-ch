@@ -22,7 +22,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         ...(f.priorite ? { priority: f.priorite } : {}),
         ...(f.recherche === "aucune" ? { searchId: null } : f.recherche ? { searchId: f.recherche } : {}),
         ...(f.q
-          ? { OR: ["company", "contactName", "city", "sector", "contactRole"].map((k) => ({ [k]: { contains: f.q } })) }
+          ? { OR: ["company", "contactName", "city", "sector", "contactRole"].map((k) => ({ [k]: { contains: f.q, mode: "insensitive" as const } })) }
           : {}),
       },
       include: { search: { select: { name: true } } },
