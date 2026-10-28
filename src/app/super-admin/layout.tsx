@@ -18,7 +18,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
         <div className="rail-foot">
           <div>
             <b>{user.name}</b>
-            <span className="muted small">Accès à toutes les entreprises</span>
+            <span className="muted small">{user.isFounder ? "Fondateur" : "Super admin"} · toutes les entreprises</span>
           </div>
           <form action={logout}>
             <button className="btn sm ghost" type="submit">Se déconnecter</button>

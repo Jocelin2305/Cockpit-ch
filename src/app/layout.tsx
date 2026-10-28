@@ -7,7 +7,7 @@ const body = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], 
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: { default: "Cockpit Prospection", template: "%s · Cockpit Prospection" },
+  title: { default: "Cockpit'ch", template: "%s · Cockpit'ch" },
   description: "Prospection B2B : recherches, séquences email et LinkedIn, appels et suivi, avec un assistant IA.",
 };
 

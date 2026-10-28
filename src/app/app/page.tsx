@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireMember } from "@/lib/auth";
 import { aiEnabled } from "@/lib/ai";
@@ -8,7 +9,9 @@ import { AssistantChat } from "./assistant-chat";
 export const metadata: Metadata = { title: "Espace de travail" };
 
 export default async function WorkspacePage() {
-  const { user, membership } = await requireMember();
+  const { user, membership, onboarding } = await requireMember();
+  // Première visite du jour (ou après une connexion) : le point du jour d'abord.
+  if (!onboarding && user.briefingDay !== todayISO()) redirect("/app/point-du-jour");
   const orgId = membership.organizationId;
   const [prospects, searchCount] = await Promise.all([
     db.prospect.findMany({ where: { organizationId: orgId }, select: { status: true, relances: true, nextFollowUp: true, email: true, searchId: true, angle: true } }),

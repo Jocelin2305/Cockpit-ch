@@ -15,10 +15,15 @@ model User {
   email        String       @unique
   name         String
   passwordHash String
-  // Accès à l'ensemble des comptes clients ; piloté par SUPER_ADMIN_EMAILS.
+  // Accès à l'ensemble des comptes clients. Toujours vrai pour le fondateur (SUPER_ADMIN_EMAILS),
+  // qui est le seul à pouvoir l'accorder ou le retirer aux autres.
   isSuperAdmin Boolean      @default(false)
   // Signature des emails, remplace {signature} dans les séquences.
   signature    String       @default("")
+  // Guide d'adoption (infobulles) activé, réglé dans le Centre d'aide.
+  guideOn      Boolean      @default(true)
+  // Dernier jour (AAAA-MM-JJ) où le point du jour a été affiché.
+  briefingDay  String?
   createdAt    DateTime     @default(now())
   lastLoginAt  DateTime?
   memberships  Membership[]

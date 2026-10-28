@@ -57,13 +57,24 @@ export const getSession = cache(async () => {
   if (!token) return null;
   const session = await db.session.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } });
   if (!session || session.expiresAt < new Date()) return null;
-  const membership = session.organizationId
+  let membership = session.organizationId
     ? await db.membership.findUnique({
         where: { userId_organizationId: { userId: session.userId, organizationId: session.organizationId } },
         include: { organization: true },
       })
     : null;
-  return { sessionId: session.id, user: session.user, membership };
+  // Le super admin peut ouvrir l'espace d'un client pour le paramétrer : il y agit comme administrateur.
+  let onboarding = false;
+  if (!membership && session.organizationId && session.user.isSuperAdmin) {
+    const organization = await db.organization.findUnique({ where: { id: session.organizationId } });
+    if (organization) {
+      membership = { id: "super-admin", role: ROLES.ADMIN, createdAt: session.createdAt, userId: session.userId, organizationId: organization.id, organization };
+      onboarding = true;
+    }
+  }
+  // Fondateur (SUPER_ADMIN_EMAILS) : toujours super admin, seul à pouvoir accorder ce droit.
+  const user = { ...session.user, isFounder: isSuperAdminEmail(session.user.email) };
+  return { sessionId: session.id, user, membership, onboarding };
 });
 
 export async function requireUser() {

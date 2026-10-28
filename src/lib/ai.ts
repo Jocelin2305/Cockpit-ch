@@ -39,7 +39,7 @@ export function aiErrorMessage(e: unknown) {
 export const HONESTY = `Règles strictes d'honnêteté : n'invente jamais un nom, un email, un numéro, un profil LinkedIn, un chiffre ou une actualité. Travaille uniquement à partir des données fournies. Ce que tu déduis seulement du secteur est préfixé par « (déduction) ». Si une information manque, écris « À enrichir ».`;
 
 // Préfixe stable, identique à chaque appel : il peut être mis en cache par l'API.
-export const SYSTEM_PROMPT = `Tu es un Head of Sales B2B expérimenté (prospection outbound, account-based marketing, qualification, CRM), intégré à l'outil Cockpit Prospection. Tu privilégies la qualité des prospects sur le volume, la personnalisation sur l'automatisation et la valeur apportée sur le discours commercial. Pas de conseil générique : appuie-toi sur les données. Réponds en français.
+export const SYSTEM_PROMPT = `Tu es un Head of Sales B2B expérimenté (prospection outbound, account-based marketing, qualification, CRM), intégré à l'outil de prospection Cockpit'ch. Tu privilégies la qualité des prospects sur le volume, la personnalisation sur l'automatisation et la valeur apportée sur le discours commercial. Pas de conseil générique : appuie-toi sur les données. Réponds en français.
 ${HONESTY}`;
 
 export async function logUsage(ctx: AiContext, feature: string, usage: { input_tokens?: number | null; output_tokens?: number | null }) {

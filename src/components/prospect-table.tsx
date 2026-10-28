@@ -2,6 +2,8 @@ import Link from "next/link";
 import { completeness, dueState, fmtDay, has, isEmail, PRIO, qualScore, todayISO, type ProspectLike } from "@/lib/prospecting";
 import { StatusSelect } from "./status-select";
 import { GenerateAnglesButton } from "./ai-buttons";
+import { PhoneLink } from "./call-dock";
+import { NoteCell } from "./note-cell";
 
 export type Row = ProspectLike & { id: string; company: string; searchId: string | null; searchName?: string | null };
 
@@ -26,7 +28,9 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
               <th>Angle commercial</th>
               {showSearch && <th>Recherche</th>}
               <th>Décideur</th>
+              <th>Téléphone</th>
               <th>Coordonnées</th>
+              <th>Notes</th>
               <th>Statut</th>
               <th>Prochaine relance</th>
               <th>Fiche</th>
@@ -35,7 +39,7 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={showSearch ? 10 : 9} className="muted">{empty}</td></tr>
+              <tr><td colSpan={showSearch ? 12 : 11} className="muted">{empty}</td></tr>
             )}
             {rows.map((p) => {
               const due = dueState(p, today);
@@ -52,6 +56,11 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
                     <td>{p.searchId ? <Link className="nowrap" href={`/app/recherches/${p.searchId}`}>{p.searchName}</Link> : <span className="muted">—</span>}</td>
                   )}
                   <td><div className="co"><b>{has(p.contactName) ? p.contactName : <span className="enrich">À enrichir</span>}</b><span>{p.contactRole}</span></div></td>
+                  <td className="nowrap">
+                    {has(p.phone)
+                      ? <PhoneLink p={{ id: p.id, company: p.company, contactName: p.contactName ?? "", phone: p.phone ?? "", status: p.status ?? "", angle: p.angle ?? "", qualification: p.qualification ?? "" }} />
+                      : <span className="enrich">À enrichir</span>}
+                  </td>
                   <td>
                     <div className="coords">
                       <span className={has(p.phone) ? "on" : ""} title="Numéro direct">T</span>
@@ -60,6 +69,7 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
                       <span className={has(p.qualification) ? "on" : ""} title="Phrase de qualification">Q</span>
                     </div>
                   </td>
+                  <td className="notes"><NoteCell id={p.id} notes={p.notes ?? ""} /></td>
                   <td><StatusSelect id={p.id} status={p.status ?? "À contacter"} label={p.company} /></td>
                   <td>
                     {due === "late" ? <span className="chip late">En retard · {fmtDay(p.nextFollowUp)}</span>

@@ -117,3 +117,19 @@ export async function saveCallReport(prospectId: string, input: ReportInput | (C
   revalidatePath("/app", "layout");
   return { ok: "Compte rendu enregistré, fiche mise à jour." };
 }
+
+// Recherche rapide d'un prospect, pour la saisie manuelle d'un appel.
+export async function findProspects(q: string) {
+  const { membership } = await requireMember();
+  const term = q.trim().slice(0, 80);
+  const rows = await db.prospect.findMany({
+    where: {
+      organizationId: membership.organizationId,
+      ...(term ? { OR: [{ company: { contains: term } }, { contactName: { contains: term } }, { phone: { contains: term } }] } : {}),
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 8,
+    select: { id: true, company: true, contactName: true, phone: true, status: true, angle: true, qualification: true },
+  });
+  return rows;
+}

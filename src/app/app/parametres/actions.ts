@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireMember } from "@/lib/auth";
 import { firstError, nameField, type FormState } from "@/lib/validation";
 
 export async function renameOrganization(_: FormState, form: FormData): Promise<FormState> {
@@ -13,4 +13,12 @@ export async function renameOrganization(_: FormState, form: FormData): Promise<
   await db.organization.update({ where: { id: membership.organizationId }, data: { name: parsed.data } });
   revalidatePath("/app", "layout");
   return { ok: "Nom de l'entreprise enregistré.", values: { name: parsed.data } };
+}
+
+export async function saveSignature(_: FormState, form: FormData): Promise<FormState> {
+  const { user } = await requireMember();
+  const signature = String(form.get("signature") ?? "").trim().slice(0, 1000);
+  await db.user.update({ where: { id: user.id }, data: { signature } });
+  revalidatePath("/app", "layout");
+  return { ok: "Signature enregistrée.", values: { signature } };
 }

@@ -1,9 +1,9 @@
 @echo off
-rem Double-cliquez sur ce fichier pour lancer Cockpit Prospection sur ce PC.
+rem Double-cliquez sur ce fichier pour lancer Cockpit'ch sur ce PC.
 rem Gardez cette fenetre ouverte pendant que vous utilisez l'application ; fermez-la pour l'arreter.
 cd /d "%~dp0"
-title Cockpit Prospection
-echo Demarrage de Cockpit Prospection...
+title Cockpit'ch
+echo Demarrage de Cockpit'ch...
 echo L'application va s'ouvrir dans votre navigateur : http://localhost:3000
 echo Pour l'arreter : fermez cette fenetre.
 echo.

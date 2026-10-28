@@ -43,7 +43,7 @@ export function TemplateEditor({
         </div>
         <p className="note">
           Variables remplacées pour chaque prospect : <span className="mono">{"{prenom} {nom} {fonction} {entreprise} {ville} {secteur} {phrase} {signature}"}</span>.
-          {" "}{"{phrase}"} reprend la phrase de qualification de la fiche, {"{signature}"} celle de votre profil. Une variable vide devient [À compléter].
+          {" "}{"{phrase}"} reprend la phrase de qualification de la fiche, {"{signature}"} celle de vos Paramètres. Une variable vide devient [À compléter].
         </p>
       </section>
 

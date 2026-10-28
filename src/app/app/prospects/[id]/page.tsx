@@ -14,6 +14,7 @@ import { QualifCard } from "./qualif-card";
 import { SequenceEditor } from "./sequence-editor";
 import { CopyBlock } from "./copy-block";
 import { GenerateAnglesButton } from "@/components/ai-buttons";
+import { PhoneLink } from "@/components/call-dock";
 
 export const metadata: Metadata = { title: "Fiche prospect" };
 
@@ -67,6 +68,7 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
             {[has(p.contactName) ? p.contactName : null, p.contactRole, p.city].filter(Boolean).join(" · ") || "Interlocuteur à enrichir"}
           </p>
           <div className="row tight">
+            {has(p.phone) && <PhoneLink className="btn sm primary" p={{ id: p.id, company: p.company, contactName: p.contactName, phone: p.phone, status: p.status, angle: p.angle, qualification: p.qualification }} />}
             <span className={`prio ${p.priority}`}>{PRIO[p.priority]}</span>
             <span className="chip">Fiche {c} %</span>
             {q !== null && <span className="chip ok">Qualification {q} %</span>}

@@ -1,28 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requireMember, ROLES } from "@/lib/auth";
 import { OrgForm } from "./org-form";
+import { SignatureForm } from "./signature-form";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
 export default async function SettingsPage() {
-  const { membership } = await requireAdmin();
+  const { user, membership } = await requireMember();
+  const isAdmin = membership.role === ROLES.ADMIN;
   return (
-    <div className="view">
+    <div className="view narrow">
       <header className="view-head">
         <div>
-          <h1>Paramètres de l&apos;entreprise</h1>
-          <p className="muted">Réservé aux administrateurs.</p>
+          <h1>Paramètres</h1>
+          <p className="muted">{user.name} · {user.email}</p>
         </div>
       </header>
-      <section className="panel">
-        <h2>Entreprise</h2>
-        <OrgForm name={membership.organization.name} />
+      <section className="panel" data-tip="Votre signature s'ajoute automatiquement à la fin de chaque email de vos séquences.">
+        <h2>Signature des emails</h2>
+        <p className="muted small">Elle remplace {"{signature}"} dans toutes vos séquences.</p>
+        <SignatureForm signature={user.signature} />
       </section>
-      <section className="panel">
-        <h2>Abonnement</h2>
-        <p className="muted">Offre, paiement et factures : <Link href="/abonnement">gérer l&apos;abonnement</Link>.</p>
-      </section>
+      {isAdmin && (
+        <>
+          <section className="panel">
+            <h2>Entreprise</h2>
+            <OrgForm name={membership.organization.name} />
+          </section>
+          <section className="panel">
+            <h2>Abonnement</h2>
+            <p className="muted">Offre, paiement et factures : <Link href="/abonnement">gérer l&apos;abonnement</Link>.</p>
+          </section>
+        </>
+      )}
     </div>
   );
 }

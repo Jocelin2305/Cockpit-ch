@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { requireSuperAdmin, ROLES } from "@/lib/auth";
+import { isSuperAdminEmail, requireSuperAdmin, ROLES } from "@/lib/auth";
 import { accessState } from "@/lib/billing";
 import { planById } from "@/lib/plans";
+import { enterOrganization, setSuperAdmin } from "./actions";
+import { ClientForm } from "./client-form";
 
 export const metadata: Metadata = { title: "Super admin" };
 
@@ -36,7 +38,7 @@ const estimate = (input: number, output: number) => (input * 4 + output * 20) / 
 const fmtTokens = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} M` : n >= 1000 ? `${Math.round(n / 1000)} k` : String(n));
 
 export default async function SuperAdminPage() {
-  await requireSuperAdmin();
+  const { user: me } = await requireSuperAdmin();
   const [organizations, userCount, newUsers, activeUsers, recentUsers, aiByOrg] = await loadOverview();
   const ai = new Map(aiByOrg.map((r) => [r.organizationId, { i: r._sum.inputTokens ?? 0, o: r._sum.outputTokens ?? 0 }]));
   const aiTotal = [...ai.values()].reduce((s, v) => s + estimate(v.i, v.o), 0);
@@ -73,6 +75,12 @@ export default async function SuperAdminPage() {
       </div>
       <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarif public Claude Opus 5.5, hors réductions du cache).</p>
 
+      <section className="panel">
+        <h2>Onboarder un nouveau client</h2>
+        <p className="muted small">Créez son compte (essai gratuit), paramétrez ses recherches, séquences et prospects, puis envoyez le lien à son administrateur : tout sera prêt à sa première connexion.</p>
+        <ClientForm />
+      </section>
+
       <section className="panel flush">
         <div className="panel-head pad"><h2>Entreprises clientes</h2></div>
         <div className="table-wrap">
@@ -92,7 +100,7 @@ export default async function SuperAdminPage() {
                   <td><span className={`chip ${["active", "past_due"].includes(states.get(o.id)!.kind) ? "ok" : states.get(o.id)!.kind === "blocked" ? "late" : ""}`}>{statusLabel(o.id)}</span></td>
                   <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.i + u.o)} jetons · ≈ ${estimate(u.i, u.o).toFixed(2)} $` : <span className="muted">—</span>; })()}</td>
                   <td className="muted">{fmt(o.createdAt)}</td>
-                  <td><Link className="btn sm" href={`/super-admin/entreprises/${o.id}`}>Détail</Link></td>
+                  <td><div className="inline"><form action={enterOrganization}><input type="hidden" name="id" value={o.id} /><button className="btn sm primary" type="submit">Paramétrer</button></form><Link className="btn sm" href={`/super-admin/entreprises/${o.id}`}>Détail</Link></div></td>
                 </tr>
               ))}
             </tbody>
@@ -104,7 +112,7 @@ export default async function SuperAdminPage() {
         <div className="panel-head pad"><h2>Derniers inscrits</h2></div>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Nom</th><th>Email</th><th>Entreprise</th><th>Inscrit le</th><th>Dernière connexion</th></tr></thead>
+            <thead><tr><th>Nom</th><th>Email</th><th>Entreprise</th><th>Inscrit le</th><th>Dernière connexion</th>{me.isFounder && <th>Super admin</th>}</tr></thead>
             <tbody>
               {recentUsers.map((u) => (
                 <tr key={u.id}>
@@ -113,6 +121,11 @@ export default async function SuperAdminPage() {
                   <td>{u.memberships.map((m) => m.organization.name).join(", ") || <span className="muted">aucune</span>}</td>
                   <td className="muted">{fmt(u.createdAt)}</td>
                   <td className="muted">{fmt(u.lastLoginAt)}</td>
+                  {me.isFounder && (
+                    <td>{isSuperAdminEmail(u.email) ? <span className="muted small">fondateur</span> : (
+                      <form action={setSuperAdmin}><input type="hidden" name="id" value={u.id} /><input type="hidden" name="on" value={u.isSuperAdmin ? "0" : "1"} /><button className="btn sm" type="submit">{u.isSuperAdmin ? "Retirer" : "Accorder"}</button></form>
+                    )}</td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -56,8 +56,10 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   if (!user || !(await verifyPassword(password, user.passwordHash)))
     return { error: "Email ou mot de passe incorrect.", values: { email } };
 
-  const isSuperAdmin = isSuperAdminEmail(email);
-  await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), isSuperAdmin } });
+  // Le fondateur est toujours super admin ; les autres gardent le droit que le fondateur leur a accordé.
+  const isSuperAdmin = user.isSuperAdmin || isSuperAdminEmail(email);
+  // briefingDay remis à zéro : le point du jour s'affiche à chaque connexion.
+  await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), isSuperAdmin, briefingDay: null } });
   await createSession(user.id, user.memberships[0]?.organizationId ?? null);
   redirect(next || (user.memberships.length ? "/app" : isSuperAdmin ? "/super-admin" : "/connexion?erreur=sans-entreprise"));
 }

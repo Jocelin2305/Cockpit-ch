@@ -295,3 +295,42 @@ h2.big { font-size: 1.5rem; }
   .kpi:nth-child(2) { border-right: 0; }
   .kpi:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
 }
+
+/* ---------- Sprint 4 ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.brand-ch { color: var(--accent); }
+.inline.wrap { flex-wrap: wrap; }
+
+/* Menu : sections surlignées, Compte en menu déroulant */
+.navsec.hl > .label { display: block; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 5px 10px; }
+.navsec.dd > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.navsec.dd > summary::-webkit-details-marker { display: none; }
+.navsec.dd > summary::after { content: "▾"; font-size: 0.9rem; transition: transform 0.15s; }
+.navsec.dd:not([open]) > summary::after { transform: rotate(-90deg); }
+.navsec.dd[open] > summary { margin-bottom: 4px; }
+
+/* Numéros cliquables et notes */
+a.tel { font-family: var(--f-mono); font-size: 0.85rem; white-space: nowrap; text-decoration: none; border-bottom: 1px dashed currentColor; }
+a.tel:hover { color: var(--ink); }
+td.notes { min-width: 200px; }
+.note-cell { font-size: 0.82rem; padding: 5px 8px; resize: vertical; min-height: 34px; background: transparent; border-color: transparent; }
+.note-cell:hover { border-color: var(--line); }
+.note-cell:focus { background: var(--surface); border-color: var(--accent); }
+.note-cell.saving { opacity: 0.6; }
+
+/* Bouton d'appel flottant et panneau d'appel */
+.fab { position: fixed; right: calc(22px + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); width: 54px; height: 54px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 10px 26px -10px rgba(8, 24, 28, 0.55); z-index: 40; }
+.fab:hover { filter: brightness(1.08); }
+.dock { position: fixed; right: calc(22px + env(safe-area-inset-right, 0px)); bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width: min(400px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 24px 50px -20px rgba(8, 24, 28, 0.5); z-index: 40; }
+.li.pick { all: unset; box-sizing: border-box; cursor: pointer; display: flex; padding: 9px 8px; border-radius: 8px; border-top: 1px solid var(--line); }
+.li.pick:hover, .li.pick:focus-visible { background: var(--sunk); }
+
+/* Centre d'aide et guide d'adoption */
+.faq summary { cursor: pointer; }
+.faq { flex-direction: column; align-items: stretch; }
+.faq p { margin-top: 6px; }
+.guide-on [data-tip] { position: relative; }
+.guide-on [data-tip]::after { content: ""; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 2px var(--surface); pointer-events: none; }
+.guide-tip { position: fixed; z-index: 60; transform: translate(-50%, -100%); max-width: 280px; background: var(--ink); color: var(--bg); font-size: 0.8rem; line-height: 1.4; padding: 8px 11px; border-radius: 8px; pointer-events: none; box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.5); }
+.guide-tip.below { transform: translate(-50%, 0); }
+@media (max-width: 860px) { .navsec.hl:not(.dd) > .label { display: none; } .navsec.dd > summary.label { display: flex; } }

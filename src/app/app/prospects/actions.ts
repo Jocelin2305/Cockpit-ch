@@ -115,3 +115,11 @@ export async function importProspects(searchId: string | null, rows: Record<stri
   refresh();
   return { count: data.length, skipped: rows.length - data.length };
 }
+
+// Note libre saisie directement dans le tableau de suivi.
+export async function saveNote(id: string, notes: string) {
+  const { membership } = await requireMember();
+  await db.prospect.updateMany({ where: { id, organizationId: membership.organizationId }, data: { notes: notes.slice(0, 4000) } });
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
