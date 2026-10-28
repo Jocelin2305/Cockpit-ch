@@ -12,6 +12,9 @@ import { isDue, todayISO } from "@/lib/prospecting";
 import { logout } from "../(auth)/actions";
 import { leaveOrganization } from "../super-admin/actions";
 
+// Heures restantes avant la suppression de l'espace de démo.
+const demoHoursLeft = (end: Date | null) => Math.max(1, Math.ceil(((end?.getTime() ?? 0) - Date.now()) / 3600_000));
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, membership, onboarding } = await requireMember();
   const orgId = membership.organizationId;
@@ -76,7 +79,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <button className="btn sm" type="submit">Quitter cet espace</button>
           </form>
         )}
-        {billing.kind === "trial" && billing.daysLeft <= 5 && (
+        {membership.organization.isDemo && (
+          <p className="alert banner demo-banner">
+            <span><b>Démo</b> : données fictives, à vous de cliquer partout. Cet espace s&apos;efface dans {demoHoursLeft(membership.organization.demoExpiresAt)} h.</span>
+            <Link className="btn sm primary" href="/inscription">Créer mon espace · 14 jours gratuits</Link>
+          </p>
+        )}
+        {!membership.organization.isDemo && billing.kind === "trial" && billing.daysLeft <= 5 && (
           <p className="alert banner">Essai gratuit : plus que {billing.daysLeft} jour{billing.daysLeft > 1 ? "s" : ""}. <Link href="/abonnement">Choisir une offre</Link></p>
         )}
         {billing.kind === "past_due" && (

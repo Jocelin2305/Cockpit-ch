@@ -6,25 +6,31 @@ import { accessState } from "@/lib/billing";
 import { planById } from "@/lib/plans";
 import { enterOrganization, setSuperAdmin } from "./actions";
 import { ClientForm } from "./client-form";
+import { cleanupDemos, DEMO_DOMAIN } from "@/lib/demo";
 
 export const metadata: Metadata = { title: "Super admin" };
 
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 const fmt = (d: Date | null) => (d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "jamais");
 
 async function loadOverview() {
   const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+  // Les visiteurs de la démo ne comptent pas comme utilisateurs.
+  const real = { NOT: { email: { endsWith: `@${DEMO_DOMAIN}` } } };
   return Promise.all([
     db.organization.findMany({
+      where: { isDemo: false },
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { memberships: true } },
         memberships: { where: { role: ROLES.ADMIN }, include: { user: true }, orderBy: { createdAt: "asc" }, take: 1 },
       },
     }),
-    db.user.count(),
-    db.user.count({ where: { createdAt: { gte: weekAgo } } }),
-    db.user.count({ where: { lastLoginAt: { gte: weekAgo } } }),
-    db.user.findMany({ orderBy: { createdAt: "desc" }, take: 10, include: { memberships: { include: { organization: true } } } }),
+    db.user.count({ where: real }),
+    db.user.count({ where: { ...real, createdAt: { gte: weekAgo } } }),
+    db.user.count({ where: { ...real, lastLoginAt: { gte: weekAgo } } }),
+    db.user.findMany({ where: real, orderBy: { createdAt: "desc" }, take: 10, include: { memberships: { include: { organization: true } } } }),
+    db.demoVisit.findMany({ where: { createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } }, select: { createdAt: true, convertedAt: true, source: true } }),
     db.aiUsage.groupBy({
       by: ["organizationId"],
       where: { createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } },
@@ -39,7 +45,11 @@ const fmtTokens = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)
 
 export default async function SuperAdminPage() {
   const { user: me } = await requireSuperAdmin();
-  const [organizations, userCount, newUsers, activeUsers, recentUsers, aiByOrg] = await loadOverview();
+  await cleanupDemos().catch(() => 0);
+  const [organizations, userCount, newUsers, activeUsers, recentUsers, demos, aiByOrg] = await loadOverview();
+  const demosWeek = demos.filter((d) => d.createdAt > daysAgo(7)).length;
+  const converted = demos.filter((d) => d.convertedAt).length;
+  const sources = Object.entries(demos.reduce<Record<string, number>>((acc, d) => ({ ...acc, [d.source || "lien direct"]: (acc[d.source || "lien direct"] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1]);
   const ai = new Map(aiByOrg.map((r) => [r.organizationId, { i: r._sum.inputTokens ?? 0, o: r._sum.outputTokens ?? 0 }]));
   const aiTotal = [...ai.values()].reduce((s, v) => s + estimate(v.i, v.o), 0);
   const states = new Map(organizations.map((o) => [o.id, accessState(o)]));
@@ -73,6 +83,13 @@ export default async function SuperAdminPage() {
         <div className="kpi"><span className="v">{trials}</span><span className="k">en essai gratuit</span></div>
         <div className="kpi"><span className="v">{organizations.length - paying.length - trials}</span><span className="k">essai terminé ou résilié</span></div>
       </div>
+      <div className="kpis">
+        <div className="kpi"><span className="v">{demosWeek}</span><span className="k">démos ouvertes (7 jours)</span></div>
+        <div className="kpi"><span className="v">{demos.length}</span><span className="k">démos ouvertes (30 jours)</span></div>
+        <div className="kpi win"><span className="v">{converted}</span><span className="k">démos converties en espace (30 jours)</span></div>
+        <div className="kpi"><span className="v">{demos.length ? Math.round((converted / demos.length) * 100) : 0} %</span><span className="k">taux de conversion</span></div>
+      </div>
+      {sources.length > 0 && <p className="muted small">Provenance des démos (30 jours) : {sources.map(([s, n]) => `${s} (${n})`).join(" · ")}.</p>}
       <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarif public Claude Opus 5.5, hors réductions du cache).</p>
 
       <section className="panel">

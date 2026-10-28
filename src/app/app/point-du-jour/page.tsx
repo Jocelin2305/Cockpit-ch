@@ -93,9 +93,9 @@ export default async function BriefingPage() {
       <section className="panel">
         <h2>3. Réponses reçues, messagerie vocale, appels manqués</h2>
         {syncError && <p className="alert error">{syncError}</p>}
-        {account ? (
+        {account || membership.organization.isDemo ? (
           <div className="list">
-            {replies.length === 0 && <p className="muted">Aucune réponse de prospect ces 3 derniers jours dans {account.email}.</p>}
+            {replies.length === 0 && <p className="muted">Aucune réponse de prospect ces 3 derniers jours {account ? ` dans ${account.email}` : ""}.</p>}
             {replies.map((m) => (
               <Link key={m.id} href={`/app/prospects/${m.prospectId}`} className="li">
                 <div><b>{m.prospect.company} · {m.subject}</b><span className="muted small block">{m.snippet}</span></div>

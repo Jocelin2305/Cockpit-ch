@@ -5,8 +5,9 @@ import { authUrl, isProvider, mailEnabled } from "@/lib/mail";
 
 // Démarre la connexion OAuth de la boîte mail de l'utilisateur.
 export async function GET(_: Request, { params }: { params: Promise<{ provider: string }> }) {
-  await requireMember();
+  const { membership } = await requireMember();
   const { provider } = await params;
+  if (membership.organization.isDemo) redirect("/app/parametres?mail=demo");
   if (!isProvider(provider) || !mailEnabled(provider)) redirect("/app/parametres?mail=indisponible");
   const state = newToken();
   (await cookies()).set("cp_mail_state", `${provider}:${state}`, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 600 });

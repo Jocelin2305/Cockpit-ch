@@ -6,6 +6,7 @@ import {
   appUrl,
   createSession,
   destroySession,
+  getSession,
   hashPassword,
   hashToken,
   isSuperAdminEmail,
@@ -31,6 +32,8 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
 
   if (await db.user.findUnique({ where: { email } }))
     return { error: "Un compte existe déjà avec cet email. Connectez-vous.", values };
+  // Visiteur venu de la démo : la conversion est comptée dans le super admin.
+  const demoOrgId = (await getSession())?.membership?.organization.isDemo ? (await getSession())?.membership?.organizationId : null;
 
   const user = await db.user.create({
     data: {
@@ -46,6 +49,7 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
     },
     include: { memberships: true },
   });
+  if (demoOrgId) await db.demoVisit.updateMany({ where: { organizationId: demoOrgId }, data: { convertedAt: new Date() } });
   await createSession(user.id, user.memberships[0].organizationId);
   redirect("/app");
 }

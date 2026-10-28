@@ -8,7 +8,7 @@ import { isPhoneProvider } from "@/lib/telephony";
 export async function connectPhone(form: FormData) {
   const { membership } = await requireAdmin();
   const provider = String(form.get("provider"));
-  if (!isPhoneProvider(provider)) return;
+  if (!isPhoneProvider(provider) || membership.organization.isDemo) return;
   await db.organization.update({ where: { id: membership.organizationId }, data: { phoneProvider: provider, phoneWebhookToken: newToken() } });
   revalidatePath("/app/parametres");
 }

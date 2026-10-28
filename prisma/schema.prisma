@@ -50,6 +50,9 @@ model Organization {
   subscriptionStatus   String?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
+  // Espace de démonstration ouvert par un prospect via /demo : supprimé après demoExpiresAt.
+  isDemo               Boolean   @default(false)
+  demoExpiresAt        DateTime?
   // Téléphonie connectée (aircall, ringover, generique) et jeton secret de son webhook.
   phoneProvider        String?
   phoneWebhookToken    String?   @unique
@@ -308,4 +311,15 @@ model PasswordReset {
   createdAt DateTime  @default(now())
 
   @@index([userId, createdAt])
+}
+
+// Démos ouvertes via /demo : conservées après la suppression de l'espace, pour le suivi des conversions.
+model DemoVisit {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  source         String   @default("")
+  convertedAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
 }

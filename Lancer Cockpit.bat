@@ -8,7 +8,8 @@ echo L'application va s'ouvrir dans votre navigateur : http://localhost:3000
 echo Pour l'arreter : fermez cette fenetre.
 echo.
 rem Base de données locale de test (tant que Supabase n'est pas branché).
-call npx.cmd prisma dev -n cockpitch --detach >nul 2>&1
+start "Base locale Cockpit" /min cmd /c npx.cmd prisma dev -n cockpitch
+timeout /t 10 /nobreak >nul
 start "" cmd /c "timeout /t 8 /nobreak >nul & start http://localhost:3000"
 call npm.cmd run dev
 pause
