@@ -1,0 +1,77 @@
+// Modèle de données du socle : comptes, entreprises clientes, rôles, invitations.
+// En local : SQLite. En production : PostgreSQL (Supabase), en changeant `provider` et DATABASE_URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  // Accès à l'ensemble des comptes clients ; piloté par SUPER_ADMIN_EMAILS.
+  isSuperAdmin Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  lastLoginAt  DateTime?
+  memberships  Membership[]
+  sessions     Session[]
+}
+
+// Une entreprise cliente : ses données sont isolées de celles des autres.
+model Organization {
+  id          String       @id @default(cuid())
+  name        String
+  // Préparé pour la facturation (sprint 3) : essai, actif, impayé, résilié.
+  plan        String       @default("essai")
+  createdAt   DateTime     @default(now())
+  memberships Membership[]
+  invitations Invitation[]
+}
+
+// Rôle d'un utilisateur dans une entreprise : ADMIN ou MEMBER (commercial).
+model Membership {
+  id             String       @id @default(cuid())
+  role           String
+  createdAt      DateTime     @default(now())
+  userId         String
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// Seule l'empreinte du jeton est stockée : une fuite de la base ne permet pas d'ouvrir une session.
+model Session {
+  id             String   @id @default(cuid())
+  tokenHash      String   @unique
+  organizationId String?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Invitation {
+  id             String       @id @default(cuid())
+  email          String
+  role           String
+  tokenHash      String       @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  invitedById    String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}

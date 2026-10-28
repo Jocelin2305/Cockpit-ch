@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cockpit Prospection
 
-## Getting Started
+Application SaaS de prospection B2B : recherches, séquences email et LinkedIn, appels et suivi, avec un assistant IA.
+Le prototype fonctionnel qui sert de cahier des charges est dans `docs/prototype-cockpit.html`, et le plan de lancement dans `docs/LANCEMENT.md`.
 
-First, run the development server:
+## Lancer l'application en local
 
-```bash
+```
+npm install
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Puis ouvrir http://localhost:3000. Copier `.env.example` en `.env` lors d'une première installation.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Ce qui est en place (sprint 1 : le socle)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Inscription : chaque inscription crée une entreprise cliente dont l'inscrit est administrateur.
+- Connexion par email et mot de passe, sessions sécurisées (cookie httpOnly, jeton stocké sous forme d'empreinte).
+- Rôles par entreprise : **Administrateur** (équipe, paramètres) et **Commercial**.
+- Invitations par lien (valable 7 jours), changement de rôle, retrait d'un membre ; une entreprise garde toujours au moins un administrateur.
+- Espace **super admin** (`/super-admin`) : toutes les entreprises et tous les utilisateurs. L'accès est réservé aux emails listés dans `SUPER_ADMIN_EMAILS`.
+- Isolation : chaque requête est filtrée sur l'entreprise de la session.
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+- Next.js 16 (App Router, actions serveur), TypeScript.
+- Prisma : SQLite en local, PostgreSQL (Supabase) en production.
+- `src/lib/auth.ts` : sessions, rôles et contrôles d'accès (`requireMember`, `requireAdmin`, `requireSuperAdmin`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Suite
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Sprint 2 : le Cockpit (espace de travail IA, recherches, prospects, séquences, appels).
+- Sprint 3 : facturation Stripe.
+- Avant la mise en ligne : passage sur Supabase (PostgreSQL), emails d'invitation et de mot de passe oublié, limitation des tentatives de connexion.

@@ -1,0 +1,16 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
+import { firstError, nameField, type FormState } from "@/lib/validation";
+
+export async function renameOrganization(_: FormState, form: FormData): Promise<FormState> {
+  const { membership } = await requireAdmin();
+  const values = { name: String(form.get("name") ?? "") };
+  const parsed = nameField.safeParse(values.name);
+  if (!parsed.success) return { error: firstError(parsed.error), values };
+  await db.organization.update({ where: { id: membership.organizationId }, data: { name: parsed.data } });
+  revalidatePath("/app", "layout");
+  return { ok: "Nom de l'entreprise enregistré.", values: { name: parsed.data } };
+}
