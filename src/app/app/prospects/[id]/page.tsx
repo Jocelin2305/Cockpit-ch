@@ -15,6 +15,7 @@ import { SequenceEditor } from "./sequence-editor";
 import { CopyBlock } from "./copy-block";
 import { GenerateAnglesButton } from "@/components/ai-buttons";
 import { PhoneLink } from "@/components/call-dock";
+import { SendEmailButton } from "@/components/mail-buttons";
 
 export const metadata: Metadata = { title: "Fiche prospect" };
 
@@ -22,12 +23,13 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
   const { user, membership } = await requireMember();
   const orgId = membership.organizationId;
   const { id } = await params;
-  const [p, searches] = await Promise.all([
+  const [p, searches, account] = await Promise.all([
     db.prospect.findFirst({
       where: { id, organizationId: orgId },
-      include: { search: { include: { template: true } }, calls: { orderBy: { createdAt: "desc" } } },
+      include: { search: { include: { template: true } }, calls: { orderBy: { createdAt: "desc" } }, mails: { orderBy: { at: "desc" }, take: 20 } },
     }),
     db.search.findMany({ where: { organizationId: orgId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    db.mailAccount.findUnique({ where: { userId: user.id }, select: { email: true } }),
   ]);
   if (!p) notFound();
 
@@ -103,11 +105,16 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
             <>
               {nextStep?.subj && <CopyBlock label="Objet" text={next.subject} />}
               <CopyBlock label="Message" text={next.body} multiline />
-              <form action={markStepDone}>
-                <input type="hidden" name="id" value={p.id} />
-                <SubmitButton pending="Mise à jour…">{status === "À contacter" ? "Email J0 envoyé" : "Relance envoyée"}</SubmitButton>
-              </form>
-              <p className="hint">L&apos;envoi automatique depuis Gmail ou Outlook arrive au sprint 4. En attendant, copiez le texte puis marquez l&apos;étape comme faite : la relance suivante se programme seule.</p>
+              <div className="row">
+                {account && (status === "À contacter" || ["Contacté", "Relancé"].includes(status)) && (
+                  <SendEmailButton prospectId={p.id} label={`Envoyer depuis ${account.email}`} />
+                )}
+                <form action={markStepDone}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <SubmitButton className={account ? "btn" : "btn primary"} pending="Mise à jour…">{status === "À contacter" ? "Marquer l'email J0 comme envoyé" : "Marquer la relance comme envoyée"}</SubmitButton>
+                </form>
+              </div>
+              {!account && <p className="hint">Connectez votre boîte Gmail ou Outlook dans Paramètres pour envoyer en un clic. Sinon, copiez le texte puis marquez l&apos;étape comme faite : la relance suivante se programme seule.</p>}
             </>
           ) : (
             <p className="muted">Séquence email terminée ou prospect hors séquence ({status}).</p>
@@ -128,6 +135,24 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
         <h2>Fiche</h2>
         <ProspectForm initial={initial} id={p.id} searches={searches} emailVerified={p.emailVerified} />
       </section>
+
+      {p.mails.length > 0 && (
+        <section className="panel">
+          <h2>Emails</h2>
+          <div className="list">
+            {p.mails.map((m) => (
+              <div key={m.id} className="li">
+                <div>
+                  <b>{m.direction === "in" ? "Réponse reçue" : "Envoyé"} · {m.at.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" })}</b>
+                  <p className="small">{m.subject}</p>
+                  {m.snippet && <p className="muted small">{m.snippet}</p>}
+                </div>
+                {m.direction === "in" && <span className="chip ok">réponse</span>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {p.calls.length > 0 && (
         <section className="panel">

@@ -3,10 +3,12 @@ import Link from "next/link";
 import { requireMember, ROLES } from "@/lib/auth";
 import { OrgForm } from "./org-form";
 import { SignatureForm } from "./signature-form";
+import { MailPanel } from "./mail-panel";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ mail?: string }> }) {
+  const { mail } = await searchParams;
   const { user, membership } = await requireMember();
   const isAdmin = membership.role === ROLES.ADMIN;
   return (
@@ -22,6 +24,7 @@ export default async function SettingsPage() {
         <p className="muted small">Elle remplace {"{signature}"} dans toutes vos séquences.</p>
         <SignatureForm signature={user.signature} />
       </section>
+      <MailPanel userId={user.id} status={mail} />
       {isAdmin && (
         <>
           <section className="panel">

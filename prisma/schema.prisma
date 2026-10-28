@@ -29,6 +29,7 @@ model User {
   memberships  Membership[]
   sessions     Session[]
   prospects    Prospect[]
+  mailAccount  MailAccount?
 }
 
 // Une entreprise cliente : ses données sont isolées de celles des autres.
@@ -168,6 +169,10 @@ model Prospect {
   search         Search?      @relation(fields: [searchId], references: [id], onDelete: SetNull)
   owner          User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   calls          Call[]
+  // Fil Gmail de la séquence et Message-ID du dernier email envoyé : les relances répondent dans le même fil.
+  mailThreadId   String?
+  mailMessageId  String?
+  mails          MailMessage[]
 
   @@index([organizationId, status])
   @@index([organizationId, searchId])
@@ -220,4 +225,38 @@ model Invitation {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+}
+
+// ---------- Messagerie (Gmail / Outlook) ----------
+
+// Boîte mail connectée d'un utilisateur. Les jetons sont chiffrés (TOKEN_ENCRYPTION_KEY).
+model MailAccount {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  provider     String    // "google" ou "microsoft"
+  email        String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Emails échangés avec un prospect : envoyés depuis l'outil ou réponses reçues.
+model MailMessage {
+  id             String   @id @default(cuid())
+  organizationId String
+  prospectId     String
+  userId         String
+  direction      String   // "out" ou "in"
+  providerId     String
+  subject        String   @default("")
+  snippet        String   @default("")
+  at             DateTime
+  prospect       Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerId])
+  @@index([organizationId, at])
+  @@index([prospectId])
 }

@@ -4,8 +4,13 @@ import { db } from "@/lib/db";
 import { requireMember } from "@/lib/auth";
 import { addDays, callBackDue, callQueue, fmtDay, has, isDue, isEmail, todayISO } from "@/lib/prospecting";
 import { PhoneLink } from "@/components/call-dock";
+import { SendDueButton } from "@/components/mail-buttons";
+import { MailError } from "@/lib/mail";
+import { syncReplies } from "@/lib/mail-flow";
 
 export const metadata: Metadata = { title: "Point du jour" };
+
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 
 // Point complet du quotidien du commercial, affiché à chaque connexion et chaque matin.
 export default async function BriefingPage() {
@@ -13,10 +18,15 @@ export default async function BriefingPage() {
   const orgId = membership.organizationId;
   const today = todayISO();
   const yesterday = addDays(today, -1);
-  const [prospects, callsYesterday] = await Promise.all([
+  // Tour de la boîte mail avant tout : les prospects qui ont répondu sortent des relances.
+  const account = await db.mailAccount.findUnique({ where: { userId: user.id } });
+  let syncError = "";
+  if (account) await syncReplies(account, orgId).catch((e) => { syncError = e instanceof MailError ? e.message : "Lecture de la boîte mail impossible pour le moment."; });
+  const [prospects, callsYesterday, , replies] = await Promise.all([
     db.prospect.findMany({ where: { organizationId: orgId, status: { notIn: ["Gagné", "Perdu"] } } }),
     db.call.findMany({ where: { organizationId: orgId, userId: user.id, day: yesterday }, select: { issue: true } }),
     db.user.update({ where: { id: user.id }, data: { briefingDay: today } }),
+    db.mailMessage.findMany({ where: { organizationId: orgId, direction: "in", at: { gte: daysAgo(3) } }, include: { prospect: { select: { company: true } } }, orderBy: { at: "desc" }, take: 10 }),
   ]);
   const callBacks = prospects.filter((p) => callBackDue(p, today));
   const toCall = callQueue(prospects, today).slice(0, 8);
@@ -69,15 +79,32 @@ export default async function BriefingPage() {
             ))}
             {ready.length > 0 && <Link className="li" href="/app/prospects?statut=%C3%80%20contacter"><b>{ready.length} premier{ready.length > 1 ? "s" : ""} email{ready.length > 1 ? "s" : ""} J0 à envoyer →</b></Link>}
           </div>
+          {account && (due.length > 0 || ready.length > 0) && (
+            <div className="row">
+              {due.length > 0 && <SendDueButton includeFirst={false} primary label={`Envoyer les ${due.length} relance${due.length > 1 ? "s" : ""}`} />}
+              {ready.length > 0 && <SendDueButton includeFirst label={`Envoyer relances + ${ready.length} email${ready.length > 1 ? "s" : ""} J0`} />}
+            </div>
+          )}
         </section>
       </div>
 
       <section className="panel">
-        <h2>3. Boîte mail, messagerie vocale, appels manqués</h2>
-        <p className="muted">
-          Dès que votre messagerie (Gmail ou Outlook) et votre téléphonie seront connectées, ce point récupérera chaque matin vos nouveaux emails de prospects,
-          vos messages vocaux et vos appels manqués{has(user.signature) ? "" : " ; pensez aussi à renseigner votre signature dans Paramètres"}.
-        </p>
+        <h2>3. Réponses reçues, messagerie vocale, appels manqués</h2>
+        {syncError && <p className="alert error">{syncError}</p>}
+        {account ? (
+          <div className="list">
+            {replies.length === 0 && <p className="muted">Aucune réponse de prospect ces 3 derniers jours dans {account.email}.</p>}
+            {replies.map((m) => (
+              <Link key={m.id} href={`/app/prospects/${m.prospectId}`} className="li">
+                <div><b>{m.prospect.company} · {m.subject}</b><span className="muted small block">{m.snippet}</span></div>
+                <span className="chip ok">{m.at.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" })}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">Connectez votre boîte Gmail ou Outlook dans <Link href="/app/parametres">Paramètres</Link> : chaque matin, ce point lira les réponses de vos prospects et vous enverrez vos relances en un clic.</p>
+        )}
+        <p className="hint">Messagerie vocale et appels manqués : arrivent avec la connexion de votre téléphonie.{has(user.signature) ? "" : " Pensez aussi à renseigner votre signature dans Paramètres."}</p>
       </section>
     </div>
   );
