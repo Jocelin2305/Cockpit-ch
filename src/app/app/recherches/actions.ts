@@ -33,13 +33,13 @@ export async function createSearch(input: SearchInput, templateChoice: string): 
     let steps = STANDARD_TEMPLATE.steps;
     if (templateChoice === "ai") {
       try {
-        steps = await generateTemplateSteps({ organizationId: orgId, userId: user.id }, { ...parsed.data, name: parsed.data.name }, STANDARD_TEMPLATE.delays);
+        steps = await generateTemplateSteps({ organizationId: orgId, userId: user.id }, { ...parsed.data, name: parsed.data.name }, STANDARD_TEMPLATE.delays, STANDARD_TEMPLATE.liDelays);
       } catch (e) {
         warning = `${aiErrorMessage(e)} Le modèle standard a été copié à la place.`;
       }
     }
     const t = await db.sequenceTemplate.create({
-      data: { organizationId: orgId, name: `Séquence — ${parsed.data.name}`, delays: STANDARD_TEMPLATE.delays, steps },
+      data: { organizationId: orgId, name: `Séquence — ${parsed.data.name}`, delays: STANDARD_TEMPLATE.delays, liDelays: STANDARD_TEMPLATE.liDelays, steps },
     });
     templateId = t.id;
   }

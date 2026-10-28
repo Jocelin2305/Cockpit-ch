@@ -123,3 +123,10 @@ export async function saveNote(id: string, notes: string) {
   revalidatePath("/app", "layout");
   return { ok: true };
 }
+
+export async function setPriority(id: string, priority: string) {
+  const { membership } = await requireMember();
+  if (!["A", "B", "C"].includes(priority)) return;
+  await db.prospect.updateMany({ where: { id, organizationId: membership.organizationId }, data: { priority } });
+  revalidatePath("/app", "layout");
+}

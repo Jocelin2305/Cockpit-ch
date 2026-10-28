@@ -6,7 +6,7 @@ import { requireMember, ROLES } from "@/lib/auth";
 import { ConfirmButton, SubmitButton } from "@/components/forms";
 import { StatusSelect } from "@/components/status-select";
 import {
-  canRelance, completeness, dueState, fmtDay, has, PRIO, qualScore, SEQ_STEPS, stepDay, stepText, tplDelays, type Qualif,
+  canRelance, completeness, dueState, fmtDay, has, qualScore, seqSteps, stepDay, stepText, tplDelays, tplLiDelays, type Qualif,
 } from "@/lib/prospecting";
 import { ProspectForm } from "../prospect-form";
 import { deleteProspect, markStepDone } from "../actions";
@@ -16,6 +16,7 @@ import { CopyBlock } from "./copy-block";
 import { GenerateAnglesButton } from "@/components/ai-buttons";
 import { PhoneLink } from "@/components/call-dock";
 import { SendEmailButton } from "@/components/mail-buttons";
+import { PrioritySelect } from "@/components/prospect-cells";
 
 export const metadata: Metadata = { title: "Fiche prospect" };
 
@@ -35,24 +36,26 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
 
   const template = p.search?.template ?? null;
   const delays = tplDelays(template?.delays);
+  const liDelays = tplLiDelays(template?.liDelays);
+  const steps = seqSteps(delays, liDelays);
   const signature = user.signature || user.name;
   const status = p.status ?? "À contacter";
   const due = dueState(p);
 
   // Prochaine étape email : J0 si jamais contacté, sinon la relance suivante.
-  const nextKey = status === "À contacter" ? "email" : canRelance(p) ? `relance${(p.relances ?? 0) + 1}` : null;
-  const nextStep = SEQ_STEPS.find((s) => s.k === nextKey);
+  const nextKey = status === "À contacter" ? "email" : canRelance(p, delays.length) ? `relance${(p.relances ?? 0) + 1}` : null;
+  const nextStep = steps.find((s) => s.k === nextKey);
   const next = nextStep ? stepText(nextStep.k, nextStep.subj, p, template?.steps, signature) : null;
 
   // Textes de toutes les étapes, pour l'éditeur de séquence personnalisée.
   const own = (p.sequence ?? {}) as Record<string, string>;
   const resolved = Object.fromEntries(
-    SEQ_STEPS.flatMap((s) => {
+    steps.flatMap((s) => {
       const t = stepText(s.k, s.subj, { ...p, sequence: {} }, template?.steps, signature);
       return [[s.k, own[s.k] ?? t.body], ...(s.subj ? [[s.subj, own[s.subj] ?? t.subject]] : [])];
     }),
   ) as Record<string, string>;
-  const days = Object.fromEntries(SEQ_STEPS.map((s) => [s.k, stepDay(s, delays)]));
+  const days = Object.fromEntries(steps.map((s) => [s.k, stepDay(s, delays, liDelays)]));
 
   const initial = { ...p, searchId: p.searchId ?? "" } as unknown as Record<string, string>;
   const c = completeness(p);
@@ -71,7 +74,7 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
           </p>
           <div className="row tight">
             {has(p.phone) && <PhoneLink className="btn sm primary" p={{ id: p.id, company: p.company, contactName: p.contactName, phone: p.phone, status: p.status, angle: p.angle, qualification: p.qualification }} />}
-            <span className={`prio ${p.priority}`}>{PRIO[p.priority]}</span>
+            <PrioritySelect id={p.id} priority={p.priority} />
             <span className="chip">Fiche {c} %</span>
             {q !== null && <span className="chip ok">Qualification {q} %</span>}
             {p.nextFollowUp && <span className={`chip ${due === "late" ? "late" : due === "today" ? "today" : ""}`}>Relance le {fmtDay(p.nextFollowUp)}</span>}
@@ -90,7 +93,8 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
 
       <section className="angle-box">
         <span className="label">Angle commercial</span>
-        {has(p.angle) ? <p>{p.angle}</p> : <div><GenerateAnglesButton prospectId={p.id} label="Rédiger l'angle commercial" className="btn primary" /></div>}
+        {has(p.angle) && has(p.angleDetail) ? <><p><b>{p.angle}</b></p><p className="small">{p.angleDetail}</p></> :
+         has(p.angle) ? <p>{p.angle}</p> : <div><GenerateAnglesButton prospectId={p.id} label="Rédiger l'angle commercial" className="btn primary" /></div>}
         {has(p.qualification) && <p className="muted small">Pourquoi maintenant : {p.qualification}</p>}
       </section>
 
@@ -128,7 +132,7 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
           <h2>Séquence de ce prospect</h2>
           <span className="muted small">{template ? `Modèle : ${template.name}` : "Aucun modèle"}</span>
         </div>
-        <SequenceEditor id={p.id} texts={resolved} days={days} />
+        <SequenceEditor id={p.id} steps={steps} texts={resolved} days={days} />
       </section>
 
       <section className="panel">

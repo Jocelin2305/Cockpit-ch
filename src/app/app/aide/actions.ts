@@ -20,5 +20,5 @@ export async function setTourStep(step: number | null) {
 export async function restartTour() {
   const { user } = await requireMember();
   await db.user.update({ where: { id: user.id }, data: { tourStep: 0, guideOn: true } });
-  redirect("/app/point-du-jour");
+  redirect("/app");
 }

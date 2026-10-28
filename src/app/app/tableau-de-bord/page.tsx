@@ -33,7 +33,7 @@ export default async function DashboardPage() {
 
   const toCall = callQueue(prospects, today);
   const steps = [
-    { v: toCall.length, t: "Appels à passer", d: "File triée : rappels prévus, prospects qui ont répondu, puis relancés par email.", href: "/app/point-du-jour", b: "Voir les appels" },
+    { v: toCall.length, t: "Appels à passer", d: "File triée : rappels prévus, prospects qui ont répondu, puis relancés par email.", href: "/app", b: "Voir les appels" },
     { v: due.length, t: "Relances dues", d: "Ouvrez chaque fiche : le texte de la relance est prêt à copier.", href: "/app/prospects?dues=1", b: "Voir les relances" },
     { v: ready.length, t: "Emails J0 prêts", d: "Prospects « À contacter » avec email et séquence.", href: "/app/prospects?statut=%C3%80%20contacter", b: "Voir la liste" },
     { v: noAngle.length, t: "Angles à rédiger", d: "L'angle commercial de chaque prospect, pour savoir quoi dire avant de contacter.", href: "", b: "Générer" },
@@ -118,7 +118,7 @@ export default async function DashboardPage() {
             {due.length === 0 && <p className="muted">Aucune relance due aujourd&apos;hui. Elles se programment seules quand un prospect passe en « Contacté ».</p>}
             {due.slice(0, 8).map((p) => (
               <Link key={p.id} href={`/app/prospects/${p.id}`} className="li">
-                <div><b>{p.company}</b><span className="muted small block">{p.contactRole} · relance {(p.relances ?? 0) + 1}/5</span></div>
+                <div><b>{p.company}</b><span className="muted small block">{p.contactRole} · relance {(p.relances ?? 0) + 1}</span></div>
                 <span className={`chip ${dueState(p, today) === "late" ? "late" : "today"}`}>{dueState(p, today) === "late" ? `En retard · ${fmtDay(p.nextFollowUp)}` : "Aujourd'hui"}</span>
               </Link>
             ))}

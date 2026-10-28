@@ -129,7 +129,8 @@ model SequenceTemplate {
   id             String       @id @default(cuid())
   organizationId String
   name           String
-  delays         Json         // 5 délais de relance, en jours après l'email J0
+  delays         Json         // délais des relances email (0 à 8), en jours après l'email J0
+  liDelays       Json?        // délais des relances LinkedIn (0 à 5), en jours après l'invitation
   steps          Json         // textes par étape (email, relance1Objet, linkedinInvitation…)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -164,6 +165,8 @@ model Prospect {
   problematiques String       @default("")
   signals        String       @default("")
   angle          String       @default("")
+  // Argumentaire complet derrière l'angle (résumé) : repris dans les séquences via {argumentaire}.
+  angleDetail    String       @default("")
   notes          String       @default("")
   priority       String       @default("B")
   status         String       @default("À contacter")

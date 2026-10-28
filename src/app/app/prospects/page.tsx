@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { requireMember } from "@/lib/auth";
+import { requireMember, ROLES } from "@/lib/auth";
 import { isDue, PRIO, STATUSES, todayISO } from "@/lib/prospecting";
 import { ProspectTable, sortRows } from "@/components/prospect-table";
 import { GenerateAnglesButton } from "@/components/ai-buttons";
@@ -28,7 +28,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
       include: { search: { select: { name: true } } },
       take: 1000,
     }),
-    db.search.findMany({ where: { organizationId: orgId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    db.search.findMany({ where: { organizationId: orgId }, select: { id: true, name: true, _count: { select: { prospects: true } } }, orderBy: { createdAt: "asc" } }),
   ]);
   const today = todayISO();
   const rows = sortRows(
@@ -51,6 +51,20 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
           <Link className="btn primary" href="/app/prospects/nouveau">+ Ajouter</Link>
         </div>
       </header>
+
+      <section className="library" aria-label="Bibliothèque de recherches" data-tip="Vos recherches : chaque bibliothèque regroupe une cible, ses prospects et sa séquence. Cliquez pour l'ouvrir.">
+        <span className="label">Bibliothèque de recherches</span>
+        <div className="library-list">
+          <Link className={`lib-card${!f.recherche ? " on" : ""}`} href="/app/prospects"><b>Tous les prospects</b><span className="muted small">{searches.reduce((n, s) => n + s._count.prospects, 0)}</span></Link>
+          {searches.map((s) => (
+            <span key={s.id} className={`lib-card${f.recherche === s.id ? " on" : ""}`}>
+              <Link href={`/app/prospects?recherche=${s.id}`}><b>{s.name}</b></Link>
+              <span className="muted small">{s._count.prospects} prospects · <Link href={`/app/recherches/${s.id}`}>ouvrir</Link></span>
+            </span>
+          ))}
+          {membership.role === ROLES.ADMIN && <Link className="lib-card add" href="/app/recherches/nouvelle"><b>+ Créer une recherche</b><span className="muted small">questionnaire en 2 minutes</span></Link>}
+        </div>
+      </section>
 
       <form className="toolbar" method="get">
         <input className="input" name="q" type="search" defaultValue={f.q} placeholder="Entreprise, contact, ville…" aria-label="Rechercher" />

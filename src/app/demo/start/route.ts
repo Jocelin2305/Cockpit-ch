@@ -8,5 +8,5 @@ export async function GET(request: Request) {
   const demo = await createDemo(params.get("source") ?? "", params.get("guide") === "1");
   if (!demo) redirect("/inscription?demo=plein");
   await createSession(demo.user.id, demo.org.id);
-  redirect("/app/point-du-jour");
+  redirect("/app");
 }

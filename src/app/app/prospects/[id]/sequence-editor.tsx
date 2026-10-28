@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { SEQ_STEPS } from "@/lib/prospecting";
+import type { SeqStep } from "@/lib/prospecting";
 import { saveSequence } from "../actions";
 import { CopyBlock } from "./copy-block";
 
-export function SequenceEditor({ id, texts, days }: { id: string; texts: Record<string, string>; days: Record<string, string> }) {
+export function SequenceEditor({ id, steps, texts, days }: { id: string; steps: SeqStep[]; texts: Record<string, string>; days: Record<string, string> }) {
   const [t, setT] = useState(texts);
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -19,8 +19,8 @@ export function SequenceEditor({ id, texts, days }: { id: string; texts: Record<
         {(["Email", "LinkedIn"] as const).map((ch) => (
           <div key={ch} className="track">
             <h3>{ch === "Email" ? "Emails" : "LinkedIn"}</h3>
-            <p className="hint">{ch === "Email" ? "J0 puis 5 relances, programmées automatiquement." : "En parallèle, à copier-coller : LinkedIn interdit l'envoi automatisé."}</p>
-            {SEQ_STEPS.filter((s) => s.ch === ch).map((s) => (
+            <p className="hint">{ch === "Email" ? `J0 puis ${steps.filter((s) => /^relance/.test(s.k)).length} relance(s), programmées automatiquement.` : "En parallèle, à copier-coller : LinkedIn interdit l'envoi automatisé."}</p>
+            {steps.filter((s) => s.ch === ch).map((s) => (
               <details key={s.k} className="step-card">
                 <summary><span className="day">{days[s.k]}</span> {s.t}</summary>
                 {s.subj && (

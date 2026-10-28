@@ -67,7 +67,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* Marque */
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
-.brand-mark svg { width: 20px; height: 20px; }
+.brand-mark { font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; line-height: 1; padding-left: 2px; }
 .brand b { font-family: var(--f-display); font-size: 1.05rem; display: block; line-height: 1.1; }
 .brand-sub { font-size: 0.75rem; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
 
@@ -350,3 +350,31 @@ td.notes { min-width: 200px; }
 .tour-target { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(8, 24, 28, 0.35); z-index: 45; }
 .tour-target:not(.fab) { position: relative; }
 @media (min-width: 861px) { .tour { left: calc(50% + 118px); } }
+
+/* Cellules du tableau de suivi */
+.coords button { all: unset; cursor: pointer; font-family: var(--f-mono); font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; background: var(--sunk); color: var(--muted); }
+.coords button.on { background: var(--good-soft); color: var(--good); }
+.coords button[aria-expanded="true"] { outline: 2px solid var(--accent); }
+.coords button:focus-visible { outline: 2px solid var(--accent); }
+.coords-wrap { position: relative; }
+.coord-pop { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; min-width: 200px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 12px 28px -14px rgba(8, 24, 28, 0.45); overflow-wrap: anywhere; }
+.prio-select { font-weight: 600; }
+.prio-select.A { color: var(--bad); } .prio-select.B { color: var(--signal); }
+.angle-cell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.link-btn { all: unset; cursor: pointer; font-size: 0.78rem; color: var(--accent); }
+.link-btn:hover { text-decoration: underline; } .link-btn:focus-visible { outline: 2px solid var(--accent); }
+.ang-detail { font-size: 0.82rem; line-height: 1.45; background: var(--sunk); border-radius: 6px; padding: 6px 8px; white-space: pre-wrap; }
+
+/* Bibliothèque de recherches (page Prospects) */
+.library { display: flex; flex-direction: column; gap: 8px; }
+.library-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.lib-card { flex: none; min-width: 190px; max-width: 260px; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: inherit; }
+.lib-card a { color: inherit; text-decoration: none; } .lib-card .small a { color: var(--accent); }
+.lib-card b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.lib-card.on { border-color: var(--accent); background: var(--accent-soft); }
+.lib-card.add { border-style: dashed; color: var(--accent); }
+
+/* Point du jour dans le chat de l'agent */
+.msg.briefing-msg { max-width: 100%; width: 100%; }
+.briefing { display: flex; flex-direction: column; gap: 14px; }
+.briefing .panel { padding: 14px; }

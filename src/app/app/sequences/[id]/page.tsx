@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireMember, ROLES } from "@/lib/auth";
-import { tplDelays } from "@/lib/prospecting";
+import { tplDelays, tplLiDelays } from "@/lib/prospecting";
 import { ConfirmButton } from "@/components/forms";
 import { TemplateEditor } from "./template-editor";
 import { deleteTemplate } from "../actions";
@@ -36,7 +36,7 @@ export default async function TemplatePage({ params }: { params: Promise<{ id: s
           </form>
         )}
       </header>
-      <TemplateEditor id={t.id} name={t.name} delays={tplDelays(t.delays)} steps={(t.steps ?? {}) as Record<string, string>} readOnly={!isAdmin} />
+      <TemplateEditor id={t.id} name={t.name} delays={tplDelays(t.delays)} liDelays={tplLiDelays(t.liDelays)} steps={(t.steps ?? {}) as Record<string, string>} readOnly={!isAdmin} />
     </div>
   );
 }

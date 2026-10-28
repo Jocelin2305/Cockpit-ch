@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { completeness, dueState, fmtDay, has, isEmail, PRIO, qualScore, todayISO, type ProspectLike } from "@/lib/prospecting";
+import { completeness, dueState, fmtDay, has, isEmail, qualScore, todayISO, type ProspectLike } from "@/lib/prospecting";
 import { StatusSelect } from "./status-select";
 import { GenerateAnglesButton } from "./ai-buttons";
-import { PhoneLink } from "./call-dock";
+import { AngleCell, CoordChips, PrioritySelect } from "./prospect-cells";
 import { NoteCell } from "./note-cell";
 
 export type Row = ProspectLike & { id: string; company: string; searchId: string | null; searchName?: string | null };
@@ -28,7 +28,6 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
               <th>Angle commercial</th>
               {showSearch && <th>Recherche</th>}
               <th>Décideur</th>
-              <th>Téléphone</th>
               <th>Coordonnées</th>
               <th>Notes</th>
               <th>Statut</th>
@@ -39,7 +38,7 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={showSearch ? 12 : 11} className="muted">{empty}</td></tr>
+              <tr><td colSpan={showSearch ? 11 : 10} className="muted">{empty}</td></tr>
             )}
             {rows.map((p) => {
               const due = dueState(p, today);
@@ -47,27 +46,21 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
               const q = qualScore(p.qualif);
               return (
                 <tr key={p.id} className={due === "late" ? "overdue" : due === "today" ? "due" : ""}>
-                  <td><span className={`prio ${p.priority ?? "C"}`}>{PRIO[p.priority ?? "C"]}</span></td>
+                  <td><PrioritySelect id={p.id} priority={p.priority ?? "C"} /></td>
                   <td>
                     <Link href={`/app/prospects/${p.id}`} className="co"><b>{p.company}</b><span>{p.sector}</span></Link>
                   </td>
-                  <td className="angle">{has(p.angle) ? <span className="ang">{p.angle}</span> : <GenerateAnglesButton prospectId={p.id} label="Générer l'angle" className="btn sm" />}</td>
+                  <td className="angle">{has(p.angle) ? <AngleCell angle={p.angle!} detail={p.angleDetail ?? ""} /> : <GenerateAnglesButton prospectId={p.id} label="Générer l'angle" className="btn sm" />}</td>
                   {showSearch && (
                     <td>{p.searchId ? <Link className="nowrap" href={`/app/recherches/${p.searchId}`}>{p.searchName}</Link> : <span className="muted">—</span>}</td>
                   )}
                   <td><div className="co"><b>{has(p.contactName) ? p.contactName : <span className="enrich">À enrichir</span>}</b><span>{p.contactRole}</span></div></td>
-                  <td className="nowrap">
-                    {has(p.phone)
-                      ? <PhoneLink p={{ id: p.id, company: p.company, contactName: p.contactName ?? "", phone: p.phone ?? "", status: p.status ?? "", angle: p.angle ?? "", qualification: p.qualification ?? "" }} />
-                      : <span className="enrich">À enrichir</span>}
-                  </td>
                   <td>
-                    <div className="coords">
-                      <span className={has(p.phone) ? "on" : ""} title="Numéro direct">T</span>
-                      <span className={isEmail(p.email) ? "on" : ""} title="Email direct">E</span>
-                      <span className={has(p.linkedin) ? "on" : ""} title="LinkedIn">L</span>
-                      <span className={has(p.qualification) ? "on" : ""} title="Phrase de qualification">Q</span>
-                    </div>
+                    <CoordChips
+                      p={{ id: p.id, company: p.company, contactName: p.contactName ?? "", phone: p.phone ?? "", status: p.status ?? "", angle: p.angle ?? "", qualification: p.qualification ?? "" }}
+                      email={isEmail(p.email) ? p.email!.trim() : ""}
+                      linkedin={has(p.linkedin) ? p.linkedin!.trim() : ""}
+                    />
                   </td>
                   <td className="notes"><NoteCell id={p.id} notes={p.notes ?? ""} /></td>
                   <td><StatusSelect id={p.id} status={p.status ?? "À contacter"} label={p.company} /></td>

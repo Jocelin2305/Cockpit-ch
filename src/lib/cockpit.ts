@@ -10,7 +10,7 @@ export async function ensureStandardTemplate(organizationId: string) {
     await db.sequenceTemplate.upsert({
       where: { id: `std_${organizationId}` },
       update: {},
-      create: { id: `std_${organizationId}`, organizationId, name: STANDARD_TEMPLATE.name, delays: STANDARD_TEMPLATE.delays, steps: STANDARD_TEMPLATE.steps },
+      create: { id: `std_${organizationId}`, organizationId, name: STANDARD_TEMPLATE.name, delays: STANDARD_TEMPLATE.delays, liDelays: STANDARD_TEMPLATE.liDelays, steps: STANDARD_TEMPLATE.steps },
     });
   } catch {
     // Création simultanée par un autre chargement : la séquence existe déjà.

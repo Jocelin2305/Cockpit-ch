@@ -9,7 +9,7 @@ const SUPPORT = "jocelin.querteux.lms@gmail.com";
 
 const HOWTO = [
   { q: "Démarrer une prospection", a: "« + Créer une recherche » : le questionnaire prépare la cible et la séquence emails + LinkedIn. Importez ou ajoutez ensuite vos prospects." },
-  { q: "Savoir quoi faire chaque matin", a: "Le Point du jour s'ouvre à la connexion : appels à passer, relances dues, emails J0 prêts. Suivez-le de haut en bas." },
+  { q: "Savoir quoi faire chaque matin", a: "En ouvrant l'Espace de travail, votre agent IA vous fait le point du jour : appels à passer, relances dues, emails J0 prêts, réponses reçues. Suivez-le de haut en bas, puis posez-lui vos questions." },
   { q: "Appeler un prospect", a: "Cliquez sur son numéro : l'appel se lance et un panneau s'ouvre pour noter ce qui se dit. À la fin, enregistrez : statut, rappel et qualification se mettent à jour." },
   { q: "Saisir un appel passé ailleurs", a: "Bouton téléphone en bas à droite de l'écran : cherchez le prospect, tapez vos notes, enregistrez." },
   { q: "Envoyer une relance", a: "Ouvrez la fiche : le texte de la relance est prêt à copier. Marquez l'étape comme faite, la suivante se programme seule." },

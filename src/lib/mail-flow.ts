@@ -3,14 +3,14 @@ import type { MailAccount, Prospect, SequenceTemplate } from "@prisma/client";
 import { db } from "./db";
 import { delaysFor } from "./cockpit";
 import { fetchReplies, MailError, sendMail } from "./mail";
-import { canRelance, isEmail, SEQ_STEPS, statusPatch, stepText, todayISO } from "./prospecting";
+import { canRelance, isEmail, SEQ_STEPS, statusPatch, stepText, todayISO, tplDelays } from "./prospecting";
 
 type WithTemplate = Prospect & { search: { template: SequenceTemplate | null } | null };
 
 // Prochaine étape email du prospect : J0 s'il n'a jamais été contacté, sinon la relance suivante.
 export function nextEmail(p: WithTemplate, signature: string) {
   const status = p.status ?? "À contacter";
-  const key = status === "À contacter" ? "email" : ["Contacté", "Relancé"].includes(status) && canRelance(p) ? `relance${(p.relances ?? 0) + 1}` : null;
+  const key = status === "À contacter" ? "email" : ["Contacté", "Relancé"].includes(status) && canRelance(p, tplDelays(p.search?.template?.delays).length) ? `relance${(p.relances ?? 0) + 1}` : null;
   const step = SEQ_STEPS.find((s) => s.k === key);
   if (!step || !p.search?.template) return null;
   const t = stepText(step.k, step.subj, p, p.search.template.steps, signature);

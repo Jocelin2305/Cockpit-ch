@@ -5,7 +5,7 @@ import { requireAdmin, requireMember } from "@/lib/auth";
 import { aiErrorMessage } from "@/lib/ai";
 import { analyzeSearch, generateAnglesFor, generateTemplateSteps } from "@/lib/ai-features";
 import { db } from "@/lib/db";
-import { tplDelays } from "@/lib/prospecting";
+import { tplDelays, tplLiDelays } from "@/lib/prospecting";
 
 export async function generateAngles(scope: { prospectId?: string; searchId?: string }) {
   const { user, membership } = await requireMember();
@@ -18,13 +18,13 @@ export async function generateAngles(scope: { prospectId?: string; searchId?: st
   }
 }
 
-export async function draftTemplate(templateId: string, delays: number[]) {
+export async function draftTemplate(templateId: string, delays: number[], liDelays: number[]) {
   const { user, membership } = await requireAdmin();
   const orgId = membership.organizationId;
   const template = await db.sequenceTemplate.findFirst({ where: { id: templateId, organizationId: orgId }, include: { searches: { take: 1 } } });
   if (!template) return { error: "Séquence introuvable." };
   try {
-    const steps = await generateTemplateSteps({ organizationId: orgId, userId: user.id }, template.searches[0] ?? null, tplDelays(delays));
+    const steps = await generateTemplateSteps({ organizationId: orgId, userId: user.id }, template.searches[0] ?? null, tplDelays(delays), tplLiDelays(liDelays));
     return { steps };
   } catch (e) {
     return { error: aiErrorMessage(e) };

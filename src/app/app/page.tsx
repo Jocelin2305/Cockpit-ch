@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireMember } from "@/lib/auth";
 import { aiEnabled } from "@/lib/ai";
 import { has, isDue, isEmail, todayISO } from "@/lib/prospecting";
 import { AssistantChat } from "./assistant-chat";
+import { Briefing } from "./briefing";
 
 export const metadata: Metadata = { title: "Espace de travail" };
 
 export default async function WorkspacePage() {
-  const { user, membership, onboarding } = await requireMember();
-  // Première visite du jour (ou après une connexion) : le point du jour d'abord.
-  if (!onboarding && user.briefingDay !== todayISO()) redirect("/app/point-du-jour");
+  const { user, membership } = await requireMember();
   const orgId = membership.organizationId;
   const [prospects, searchCount] = await Promise.all([
     db.prospect.findMany({ where: { organizationId: orgId }, select: { status: true, relances: true, nextFollowUp: true, email: true, searchId: true, angle: true } }),
@@ -36,14 +34,11 @@ export default async function WorkspacePage() {
     <div className="view ws">
       <header className="view-head">
         <div>
-          <span className="label">{membership.organization.name}</span>
-          <h1>Bonjour {user.name.split(" ")[0]}</h1>
-          <p className="muted">
-            {due} relance{due > 1 ? "s" : ""} due{due > 1 ? "s" : ""} · {ready} email{ready > 1 ? "s" : ""} J0 prêt{ready > 1 ? "s" : ""} · {searchCount} recherche{searchCount > 1 ? "s" : ""} · {prospects.length} prospects
-          </p>
+          <span className="label">{membership.organization.name} · {searchCount} recherche{searchCount > 1 ? "s" : ""} · {prospects.length} prospects</span>
+          <h1>Espace de travail</h1>
         </div>
       </header>
-      <AssistantChat suggestions={suggestions} aiReady={aiEnabled()} />
+      <AssistantChat suggestions={suggestions} aiReady={aiEnabled()} intro={<Briefing user={user} membership={membership} />} />
     </div>
   );
 }

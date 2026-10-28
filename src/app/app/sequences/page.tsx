@@ -35,7 +35,7 @@ export default async function SequencesPage() {
         {templates.map((t) => (
           <Link key={t.id} href={`/app/sequences/${t.id}`} className="card">
             <b>{t.name}</b>
-            <span className="muted small">5 relances : J+{tplDelays(t.delays).join(", ")}</span>
+            <span className="muted small">{tplDelays(t.delays).length} relances email : J+{tplDelays(t.delays).join(", J+")}</span>
             <span className="small">{t.searches.length ? `Utilisée par : ${t.searches.map((s) => s.name).join(", ")}` : "Utilisée par aucune recherche"}</span>
           </Link>
         ))}

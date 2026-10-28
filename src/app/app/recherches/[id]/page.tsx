@@ -31,7 +31,7 @@ export default async function SearchPage({ params, searchParams }: { params: Pro
           <p className="muted">{crit.join(" · ") || "Critères non renseignés"}</p>
           <p className="muted small">
             Séquence : {search.template ? <Link href={`/app/sequences/${search.template.id}`}>{search.template.name}</Link> : <span className="enrich">aucune</span>}
-            {search.template && ` (5 relances : J+${tplDelays(search.template.delays).join(", ")})`}
+            {search.template && ` (${tplDelays(search.template.delays).length} relances : J+${tplDelays(search.template.delays).join(", J+")})`}
           </p>
         </div>
         <div className="row">

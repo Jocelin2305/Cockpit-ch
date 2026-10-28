@@ -23,5 +23,5 @@ export async function disconnectPhone() {
 export async function markPhoneEventHandled(form: FormData) {
   const { membership } = await requireMember();
   await db.phoneEvent.updateMany({ where: { id: String(form.get("id")), organizationId: membership.organizationId }, data: { handled: true } });
-  revalidatePath("/app/point-du-jour");
+  revalidatePath("/app");
 }

@@ -16,7 +16,7 @@ export const FRAMEWORKS: Record<string, string[]> = {
 export type FieldDef = { key: ProspectTextKey; label: string; group: "ind" | "util" | "coord" | "opt" | "pil"; area?: boolean };
 export type ProspectTextKey =
   | "company" | "sector" | "city" | "size" | "contactName" | "contactRole" | "phone" | "email" | "linkedin" | "website"
-  | "clientele" | "standing" | "offreExistante" | "actualite" | "qualification" | "canal" | "problematiques" | "signals" | "angle" | "notes";
+  | "clientele" | "standing" | "offreExistante" | "actualite" | "qualification" | "canal" | "problematiques" | "signals" | "angle" | "angleDetail" | "notes";
 
 export const FIELDS: FieldDef[] = [
   { key: "company", label: "Nom de l'entreprise", group: "ind" },
@@ -37,7 +37,8 @@ export const FIELDS: FieldDef[] = [
   { key: "canal", label: "Canal préféré", group: "opt" },
   { key: "problematiques", label: "Problématiques glanées", group: "opt", area: true },
   { key: "signals", label: "Signaux d'achat", group: "pil", area: true },
-  { key: "angle", label: "Angle commercial", group: "pil", area: true },
+  { key: "angle", label: "Angle commercial (résumé affiché dans le tableau)", group: "pil", area: true },
+  { key: "angleDetail", label: "Argumentaire complet (repris dans les séquences : {argumentaire})", group: "pil", area: true },
   { key: "notes", label: "Notes", group: "pil", area: true },
 ];
 
@@ -93,38 +94,53 @@ export function qualScore(q: unknown) {
 
 // ---------- Séquences ----------
 export const DEFAULT_DELAYS = [3, 7, 12, 20, 30];
+export const DEFAULT_LI_DELAYS = [7];
+// Nombre de relances réglable par séquence.
+export const MAX_RELANCES = 8;
+export const MAX_LI_RELANCES = 5;
 
-export function tplDelays(delays: unknown): number[] {
-  const a = Array.isArray(delays) ? delays.map(Number).filter((n) => Number.isFinite(n) && n > 0) : [];
-  return a.length === 5 ? a : DEFAULT_DELAYS;
+// Délais en jours après le J0, croissants ; à défaut, la séquence standard.
+function cleanDelays(v: unknown, max: number) {
+  if (!Array.isArray(v)) return null;
+  const a = v.map(Number);
+  return a.length <= max && a.every((n, i) => Number.isInteger(n) && n >= 1 && n <= 180 && (i === 0 || n > a[i - 1])) ? a : null;
 }
+export const tplDelays = (v: unknown): number[] => cleanDelays(v, MAX_RELANCES) ?? DEFAULT_DELAYS;
+export const tplLiDelays = (v: unknown): number[] => cleanDelays(v, MAX_LI_RELANCES) ?? DEFAULT_LI_DELAYS;
 
 export type SeqStep = { k: string; day: string; t: string; subj?: string; ch: "Email" | "LinkedIn" };
-export const SEQ_STEPS: SeqStep[] = [
-  { k: "email", day: "J0", t: "Email à froid", subj: "emailObjet", ch: "Email" },
-  { k: "relance1", day: "J+3", t: "Relance 1", subj: "relance1Objet", ch: "Email" },
-  { k: "relance2", day: "J+7", t: "Relance 2", subj: "relance2Objet", ch: "Email" },
-  { k: "relance3", day: "J+12", t: "Relance 3", subj: "relance3Objet", ch: "Email" },
-  { k: "relance4", day: "J+20", t: "Relance 4", subj: "relance4Objet", ch: "Email" },
-  { k: "relance5", day: "J+30", t: "Relance 5 (dernière)", subj: "relance5Objet", ch: "Email" },
-  { k: "linkedinInvitation", day: "J0", t: "Invitation (≤ 300 caractères)", ch: "LinkedIn" },
-  { k: "linkedinMessage", day: "J+2", t: "Message après acceptation", ch: "LinkedIn" },
-  { k: "linkedinRelance", day: "J+7", t: "Relance LinkedIn", ch: "LinkedIn" },
-];
+// Étapes d'une séquence : J0, N relances email, et LinkedIn en parallèle (invitation, message, M relances).
+const liKey = (i: number) => (i === 1 ? "linkedinRelance" : `linkedinRelance${i}`);
+export function seqSteps(delays: number[] = DEFAULT_DELAYS, liDelays: number[] = DEFAULT_LI_DELAYS): SeqStep[] {
+  return [
+    { k: "email", day: "J0", t: "Email à froid", subj: "emailObjet", ch: "Email" },
+    ...delays.map((d, i): SeqStep => ({ k: `relance${i + 1}`, day: `J+${d}`, t: `Relance ${i + 1}${i === delays.length - 1 ? " (dernière)" : ""}`, subj: `relance${i + 1}Objet`, ch: "Email" })),
+    { k: "linkedinInvitation", day: "J0", t: "Invitation (≤ 300 caractères)", ch: "LinkedIn" },
+    { k: "linkedinMessage", day: "J+2", t: "Message après acceptation", ch: "LinkedIn" },
+    ...liDelays.map((d, i): SeqStep => ({ k: liKey(i + 1), day: `J+${d}`, t: `Relance LinkedIn ${i + 1}`, ch: "LinkedIn" })),
+  ];
+}
+const upTo = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
+// Toutes les étapes possibles, pour retrouver une étape par sa clé.
+export const SEQ_STEPS = seqSteps(upTo(MAX_RELANCES), upTo(MAX_LI_RELANCES));
 export const TPL_KEYS = SEQ_STEPS.flatMap((s) => (s.subj ? [s.subj, s.k] : [s.k]));
 
-export function stepDay(step: SeqStep, delays: number[]) {
-  const m = /^relance(\d)$/.exec(step.k);
-  return m ? `J+${delays[Number(m[1]) - 1]}` : step.day;
+export function stepDay(step: SeqStep, delays: number[], liDelays: number[] = DEFAULT_LI_DELAYS) {
+  const m = /^relance(\d+)$/.exec(step.k);
+  if (m) return `J+${delays[Number(m[1]) - 1] ?? "?"}`;
+  const l = /^linkedinRelance(\d*)$/.exec(step.k);
+  if (l) return `J+${liDelays[Number(l[1] || 1) - 1] ?? "?"}`;
+  return step.day;
 }
 
 export const STANDARD_TEMPLATE = {
   name: "Séquence standard (à personnaliser)",
   delays: DEFAULT_DELAYS,
+  liDelays: DEFAULT_LI_DELAYS,
   steps: {
     emailObjet: "{entreprise} : une idée pour votre équipe",
     email:
-      "Bonjour {prenom},\n\n{phrase}\n\n[Votre proposition de valeur en une phrase, avec un résultat concret.]\n\nSeriez-vous ouvert(e) à un échange de 15 minutes la semaine prochaine pour voir si cela s'applique à {entreprise} ?\n\nBelle journée,\n{signature}\n\nSi je ne m'adresse pas à la bonne personne ou si vous préférez ne plus être contacté(e), dites-le-moi simplement.",
+      "Bonjour {prenom},\n\n{argumentaire}\n\nSeriez-vous ouvert(e) à un échange de 15 minutes la semaine prochaine pour voir si cela s'applique à {entreprise} ?\n\nBelle journée,\n{signature}\n\nSi je ne m'adresse pas à la bonne personne ou si vous préférez ne plus être contacté(e), dites-le-moi simplement.",
     relance1Objet: "Re : {entreprise}",
     relance1:
       "Bonjour {prenom},\n\nJe me permets de revenir vers vous avec un élément concret : [cas client, chiffre ou ressource utile pour le secteur {secteur}].\n\nEst-ce un sujet pour {entreprise} en ce moment ?\n\n{signature}\n\nSi ce n'est pas le bon moment ou la bonne personne, dites-le-moi simplement.",
@@ -157,6 +173,8 @@ export function fillVars(txt: string | undefined, p: ProspectLike, signature: st
     ville: p.city ?? "",
     secteur: p.sector ?? "",
     phrase: has(p.qualification) ? p.qualification! : "",
+    angle: has(p.angle) ? p.angle! : "",
+    argumentaire: has(p.angleDetail) ? p.angleDetail! : has(p.angle) ? p.angle! : "",
     signature,
   };
   return String(txt ?? "").replace(/\{(\w+)\}/g, (m, k: string) => (k in map ? (has(map[k]) ? map[k] : "[À compléter]") : m));
@@ -173,7 +191,7 @@ export function stepText(key: string, subjKey: string | undefined, p: ProspectLi
   return { subject, body };
 }
 
-export const canRelance = (p: ProspectLike) => ["Contacté", "Relancé"].includes(p.status ?? "") && (p.relances ?? 0) < 5;
+export const canRelance = (p: ProspectLike, max = MAX_RELANCES) => ["Contacté", "Relancé"].includes(p.status ?? "") && (p.relances ?? 0) < max;
 
 export function dueState(p: ProspectLike, today = todayISO()) {
   if (!p.nextFollowUp || !["Contacté", "Relancé"].includes(p.status ?? "")) return null;
@@ -190,14 +208,14 @@ export function statusPatch(p: ProspectLike, status: string, delays: number[], t
     patch.firstContact = p.firstContact ?? today;
     patch.lastContact = today;
     patch.relances = 0;
-    patch.nextFollowUp = addDays(patch.firstContact, delays[0]);
+    patch.nextFollowUp = delays.length ? addDays(patch.firstContact, delays[0]) : null;
   } else if (status === "Relancé") {
     const first = p.firstContact ?? today;
     const k = (p.relances ?? 0) + 1;
     patch.relances = k;
     patch.firstContact = first;
     patch.lastContact = today;
-    if (k < 5) {
+    if (k < delays.length) {
       const planned = addDays(first, delays[k]);
       patch.nextFollowUp = planned > today ? planned : addDays(today, Math.max(1, delays[k] - delays[k - 1]));
     } else patch.nextFollowUp = null;
@@ -252,7 +270,7 @@ export function callQueue<T extends ProspectLike>(list: T[], today = todayISO())
 // ---------- Import / export CSV ----------
 export const CSV_COLS: (ProspectTextKey | "priority" | "status" | "nextFollowUp")[] = [
   "company", "sector", "city", "size", "contactName", "contactRole", "phone", "email", "linkedin", "website",
-  "qualification", "priority", "status", "nextFollowUp", "signals", "angle", "canal", "actualite", "notes",
+  "qualification", "priority", "status", "nextFollowUp", "signals", "angle", "angleDetail", "canal", "actualite", "notes",
 ];
 export const CSV_HEAD: Record<string, string> = {
   company: "Entreprise", sector: "Secteur", city: "Ville", size: "Taille", contactName: "Interlocuteur", contactRole: "Fonction",

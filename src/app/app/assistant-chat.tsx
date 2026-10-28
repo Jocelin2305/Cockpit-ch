@@ -6,7 +6,7 @@ import { Markdown } from "@/components/markdown";
 
 type Turn = { role: "user" | "assistant"; content: string; actions?: string[]; error?: boolean };
 
-export function AssistantChat({ suggestions, aiReady }: { suggestions: string[]; aiReady: boolean }) {
+export function AssistantChat({ suggestions, aiReady, intro }: { suggestions: string[]; aiReady: boolean; intro?: React.ReactNode }) {
   const router = useRouter();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
@@ -77,10 +77,16 @@ export function AssistantChat({ suggestions, aiReady }: { suggestions: string[];
   return (
     <div className="chat">
       <div className="chat-log" aria-live="polite">
+        {intro && (
+          <>
+            <div className="msg user">Fais-moi le point du jour</div>
+            <div className="msg ai briefing-msg" data-tour="briefing">{intro}</div>
+          </>
+        )}
         {turns.length === 0 && (
           <>
             <div className="msg ai">
-              <p><b>Bonjour !</b> Dites-moi ce que vous voulez faire : relancer, préparer un email, ajouter des prospects, rédiger les angles, analyser une recherche… Je m&apos;en occupe directement dans l&apos;outil.</p>
+              <p>{intro ? "Et maintenant ? Dites-moi" : <><b>Bonjour !</b> Dites-moi</>} ce que vous voulez faire : relancer, préparer un email, ajouter des prospects, rédiger les angles, analyser une recherche… Je m&apos;en occupe directement dans l&apos;outil.</p>
               {!aiReady && <p className="alert">L&apos;IA n&apos;est pas encore configurée : ajoutez votre clé ANTHROPIC_API_KEY dans le fichier .env, puis relancez l&apos;application.</p>}
             </div>
             <div className="sugg">

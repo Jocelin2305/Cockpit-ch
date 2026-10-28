@@ -2,12 +2,12 @@ import { z } from "zod";
 import { db } from "./db";
 import { generateJSON, generateText, type AiContext } from "./ai";
 import { prospectBrief, searchBrief } from "./ai-prompts";
-import { has, isDue, stats, TPL_KEYS, tplDelays, todayISO } from "./prospecting";
+import { has, isDue, seqSteps, stats, tplDelays, todayISO } from "./prospecting";
 
 const BATCH = 20;
 const MAX_ANGLES = 100;
 
-const AnglesSchema = z.object({ angles: z.array(z.object({ id: z.string(), angle: z.string() })) });
+const AnglesSchema = z.object({ angles: z.array(z.object({ id: z.string(), angle: z.string(), argumentaire: z.string() })) });
 
 // Rédige l'angle commercial des prospects qui n'en ont pas encore (par lots de 20, 100 au maximum).
 export async function generateAnglesFor(ctx: AiContext, where: { prospectId?: string; searchId?: string }) {
@@ -31,7 +31,10 @@ export async function generateAnglesFor(ctx: AiContext, where: { prospectId?: st
       ctx,
       "angles",
       AnglesSchema,
-      `Pour chaque prospect ci-dessous, rédige son angle commercial : 1 à 2 phrases concrètes qui relient ce qu'on sait du prospect à l'offre du vendeur (douleur probable et accroche à utiliser au premier contact).
+      `Pour chaque prospect ci-dessous, rédige son angle commercial en deux parties. Elles seront reprises telles quelles dans les emails et messages LinkedIn : soigne le style (français impeccable, ton professionnel et naturel, phrases courtes, aucun jargon creux ni superlatif).
+
+1. « angle » : le résumé affiché dans le tableau de suivi, une seule phrase de 20 mots maximum : l'enjeu du prospect + ce que l'offre lui apporte.
+2. « argumentaire » : le paragraphe complet à insérer au cœur du premier email (60 à 90 mots, 3 ou 4 phrases), écrit au vouvoiement et adressé au prospect : (a) un constat précis et vérifiable sur son entreprise ou son secteur, (b) l'enjeu ou la difficulté probable qui en découle, (c) le bénéfice concret de l'offre, chiffré si les données le permettent, (d) une transition naturelle vers une demande d'échange. Pas de formule d'appel ni de signature : uniquement ce paragraphe.
 
 Offre et ciblage du vendeur, par recherche :
 ${briefs || "Aucune recherche renseignée : reste prudent et préfixe par « (déduction) »."}
@@ -39,15 +42,15 @@ ${briefs || "Aucune recherche renseignée : reste prudent et préfixe par « (d�
 Prospects :
 ${batch.map((p) => `- id ${p.id} | recherche ${p.searchId ?? "aucune"} | ${prospectBrief(p)}`).join("\n")}
 
-Renvoie un angle par prospect, avec son id exact.`,
-      "low",
+Renvoie un angle et un argumentaire par prospect, avec son id exact. Si une information manque, appuie-toi sur le secteur en préfixant la phrase concernée par « (déduction) » plutôt que d'inventer.`,
+      "medium",
     );
     const ids = new Set(batch.map((p) => p.id));
     for (const a of result.angles) {
       if (!ids.has(a.id) || !a.angle.trim()) continue;
       const res = await db.prospect.updateMany({
         where: { id: a.id, organizationId: ctx.organizationId, angle: "" },
-        data: { angle: a.angle.trim().slice(0, 2000) },
+        data: { angle: a.angle.trim().slice(0, 400), angleDetail: a.argumentaire.trim().slice(0, 3000) },
       });
       count += res.count;
     }
@@ -55,18 +58,18 @@ Renvoie un angle par prospect, avec son id exact.`,
   return { count, remaining: Math.max(0, prospects.length - count) };
 }
 
-const StepsSchema = z.object(Object.fromEntries(TPL_KEYS.map((k) => [k, z.string()])) as Record<string, z.ZodString>);
-
-// Rédige un modèle de séquence (5 relances email + LinkedIn en parallèle) à partir des critères d'une recherche.
-export async function generateTemplateSteps(ctx: AiContext, search: Parameters<typeof searchBrief>[0], delays: number[]) {
+// Rédige un modèle de séquence (relances email + LinkedIn en parallèle) à partir des critères d'une recherche.
+export async function generateTemplateSteps(ctx: AiContext, search: Parameters<typeof searchBrief>[0], delays: number[], liDelays: number[]) {
+  const keys = seqSteps(delays, liDelays).flatMap((s) => (s.subj ? [s.subj, s.k] : [s.k]));
+  const StepsSchema = z.object(Object.fromEntries(keys.map((k) => [k, z.string()])) as Record<string, z.ZodString>);
   const steps = await generateJSON(
     ctx,
     "sequence",
     StepsSchema,
     `Rédige un MODÈLE de séquence de prospection réutilisable pour toute une liste de prospects.
-Utilise uniquement ces variables entre accolades : {prenom} {fonction} {entreprise} {ville} {secteur} {phrase} {signature}. {phrase} est la phrase de qualification propre à chaque prospect (fait vérifiable + bénéfice) : place-la là où la personnalisation compte. N'invente aucun fait sur une entreprise.
-Emails : 110 mots maximum, une seule demande claire, une ligne de désinscription simple à la fin de chaque email. Cinq relances aux jours J+${delays.join(", J+")} : chacune apporte un élément nouveau (question, ressource utile, cas client, chiffre) sans répéter les précédentes ; la 5e est une clôture courtoise.
-LinkedIn en parallèle, sans script d'appel : invitation de 300 caractères maximum sans argumentaire, message court après acceptation, relance LinkedIn brève. Les messages LinkedIn complètent les emails sans les répéter.
+Utilise uniquement ces variables entre accolades : {prenom} {fonction} {entreprise} {ville} {secteur} {phrase} {angle} {argumentaire} {signature}. {argumentaire} est le paragraphe personnalisé propre à chaque prospect (constat, enjeu, bénéfice) : place-le au cœur de l'email J0. {phrase} est sa phrase de qualification (fait vérifiable) et {angle} le résumé de l'angle : réutilise-les dans les relances, sans répéter mot pour mot. N'invente aucun fait sur une entreprise.
+Emails : 110 mots maximum, une seule demande claire, une ligne de désinscription simple à la fin de chaque email. ${delays.length} relance(s) aux jours J+${delays.join(", J+")} : chacune apporte un élément nouveau (question, ressource utile, cas client, chiffre) sans répéter les précédentes ; la dernière est une clôture courtoise.
+LinkedIn en parallèle, sans script d'appel : invitation de 300 caractères maximum sans argumentaire, message court après acceptation, puis ${liDelays.length} relance(s) LinkedIn brève(s) aux jours J+${liDelays.join(", J+") || "–"}. Les messages LinkedIn complètent les emails sans les répéter.
 Respecte le ton et la langue indiqués.
 
 Offre et ciblage :
