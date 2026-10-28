@@ -12,18 +12,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const orgId = membership.organizationId;
   const isAdmin = membership.role === ROLES.ADMIN;
   await ensureStandardTemplate(orgId);
-  const [searches, followUps] = await Promise.all([
+  const today = todayISO();
+  const [searches, followUps, callBacks] = await Promise.all([
     db.search.findMany({ where: { organizationId: orgId }, select: { id: true, name: true, _count: { select: { prospects: true } } }, orderBy: { createdAt: "asc" } }),
     db.prospect.findMany({
       where: { organizationId: orgId, status: { in: ["Contacté", "Relancé"] }, nextFollowUp: { not: null } },
       select: { status: true, relances: true, nextFollowUp: true },
     }),
+    db.prospect.count({ where: { organizationId: orgId, callBack: { not: null, lte: today }, status: { notIn: ["Gagné", "Perdu"] }, phone: { not: "" } } }),
   ]);
-  const today = todayISO();
   const due = followUps.filter((p) => isDue(p, today)).length;
 
   const tools: NavItem[] = [
     { href: "/app", label: "Espace de travail" },
+    { href: "/app/appels", label: "Appels", count: callBacks || undefined, alert: callBacks > 0 },
     { href: "/app/tableau-de-bord", label: "Tableau de bord", count: due || undefined, alert: due > 0 },
     { href: "/app/prospects", label: "Prospects" },
     { href: "/app/sequences", label: "Séquences" },

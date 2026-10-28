@@ -54,6 +54,7 @@ export type ProspectLike = Partial<Record<ProspectTextKey, string | null>> & {
   lastContact?: string | null;
   nextFollowUp?: string | null;
   callBack?: string | null;
+  lastCallAt?: string | null;
   qualif?: unknown;
   sequence?: unknown;
 };
@@ -226,6 +227,26 @@ export function stats(list: ProspectLike[], today = todayISO()) {
     rRdv: pct(rdv, contacted),
     rConv: pct(won, rdv),
   };
+}
+
+// ---------- Appels ----------
+export const isCallable = (p: ProspectLike) => has(p.phone) && !["Gagné", "Perdu"].includes(p.status ?? "");
+export const callBackDue = (p: ProspectLike, today = todayISO()) => !!p.callBack && p.callBack <= today;
+
+// Ordre de la file : rappels prévus, prospects qui ont répondu, puis déjà relancés par email, puis nouveaux.
+// Un prospect déjà appelé aujourd'hui (sans rappel prévu) passe en fin de file.
+export function callRank(p: ProspectLike, today = todayISO()) {
+  let r = callBackDue(p, today) ? 0
+    : p.status === "A répondu" ? 1
+    : ["Contacté", "Relancé"].includes(p.status ?? "") ? 2
+    : p.status === "RDV planifié" ? 6
+    : 3;
+  if (p.lastCallAt === today && !callBackDue(p, today)) r += 10;
+  return r + ({ A: 0, B: 0.3, C: 0.6 }[p.priority ?? "C"] ?? 0.6);
+}
+
+export function callQueue<T extends ProspectLike>(list: T[], today = todayISO()) {
+  return list.filter(isCallable).sort((a, b) => callRank(a, today) - callRank(b, today));
 }
 
 // ---------- Import / export CSV ----------

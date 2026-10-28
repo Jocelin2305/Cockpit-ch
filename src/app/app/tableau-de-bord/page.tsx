@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireMember, ROLES } from "@/lib/auth";
-import { dueState, fmtDay, has, isDue, isEmail, stats, todayISO } from "@/lib/prospecting";
+import { callQueue, dueState, fmtDay, has, isDue, isEmail, stats, todayISO } from "@/lib/prospecting";
 import { Kpis } from "@/components/kpis";
 import { GenerateAnglesButton } from "@/components/ai-buttons";
 
@@ -27,7 +27,9 @@ export default async function DashboardPage() {
   const noEmail = prospects.filter((p) => p.status === "À contacter" && !isEmail(p.email));
   const top = prospects.filter((p) => p.priority === "A" && p.status === "À contacter").slice(0, 6);
 
+  const toCall = callQueue(prospects, today);
   const steps = [
+    { v: toCall.length, t: "Appels à passer", d: "File triée : rappels prévus, prospects qui ont répondu, puis relancés par email.", href: "/app/appels", b: "Ouvrir la file" },
     { v: due.length, t: "Relances dues", d: "Ouvrez chaque fiche : le texte de la relance est prêt à copier.", href: "/app/prospects?dues=1", b: "Voir les relances" },
     { v: ready.length, t: "Emails J0 prêts", d: "Prospects « À contacter » avec email et séquence.", href: "/app/prospects?statut=%C3%80%20contacter", b: "Voir la liste" },
     { v: noAngle.length, t: "Angles à rédiger", d: "L'angle commercial de chaque prospect, pour savoir quoi dire avant de contacter.", href: "", b: "Générer" },

@@ -76,6 +76,44 @@ ${searchBrief(search)}`,
   return steps as Record<string, string>;
 }
 
+export const CallReportSchema = z.object({
+  resume: z.string(),
+  interet: z.enum(["fort", "moyen", "faible", "aucun"]),
+  objections: z.array(z.string()),
+  prochaineEtape: z.string(),
+  statut: z.enum(["À contacter", "Contacté", "A répondu", "RDV planifié", "Gagné", "Perdu"]),
+  rappelLe: z.string().nullable(),
+  qualification: z.array(z.object({ critere: z.string(), niveau: z.number().int() })),
+  infos: z.object({ contactName: z.string().nullable(), contactRole: z.string().nullable(), email: z.string().nullable(), notes: z.string().nullable() }),
+});
+export type CallReport = z.infer<typeof CallReportSchema>;
+
+// Transforme une transcription ou des notes d'appel en compte rendu structuré.
+export async function analyzeCallNotes(ctx: AiContext, prospect: Parameters<typeof prospectBrief>[0] & { status?: string | null }, notes: string, framework: string[]) {
+  return generateJSON(
+    ctx,
+    "appel",
+    CallReportSchema,
+    `Voici la transcription ou les notes d'un appel de prospection. N'utilise que ce qui est dit dans le texte, n'invente rien. Date du jour : ${todayISO()}.
+
+Fiche du prospect : ${prospectBrief(prospect)}
+Statut avant l'appel : ${prospect.status ?? "À contacter"}
+
+Transcription / notes :
+"""
+${notes.slice(0, 15000)}
+"""
+
+Consignes :
+- resume : 3 phrases maximum.
+- statut : le plus juste après cet appel.
+- rappelLe : date AAAA-MM-JJ si un rappel est convenu ou utile, sinon null.
+- qualification : pour chacun de ces critères (${framework.join(", ")}), niveau 0 inconnu, 1 partiel, 2 validé, d'après l'appel.
+- infos : seulement ce qui est dit explicitement, sinon null.`,
+    "low",
+  );
+}
+
 // Analyse des résultats ou ciblage d'une recherche, en Markdown.
 export async function analyzeSearch(ctx: AiContext, searchId: string, kind: "analyse" | "ciblage") {
   const search = await db.search.findFirst({ where: { id: searchId, organizationId: ctx.organizationId }, include: { prospects: true, template: true } });

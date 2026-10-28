@@ -133,7 +133,11 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
           <div className="list">
             {p.calls.map((call) => (
               <div key={call.id} className="li">
-                <div><b>{fmtDay(call.day)} · {call.issue}</b><p className="muted small">{call.resume}</p></div>
+                <div>
+                  <b>{fmtDay(call.day)}{call.durationMs ? ` · ${Math.max(1, Math.round(call.durationMs / 60000))} min` : ""} · {call.issue}{call.interet ? ` · intérêt ${call.interet}` : ""}</b>
+                  {call.resume && <p className="muted small">{call.resume}</p>}
+                  {call.next && <p className="small">Prochaine étape : {call.next}</p>}
+                </div>
               </div>
             ))}
           </div>
