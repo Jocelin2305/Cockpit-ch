@@ -329,7 +329,7 @@ td.notes { min-width: 200px; }
 .faq summary { cursor: pointer; }
 .faq { flex-direction: column; align-items: stretch; }
 .faq p { margin-top: 6px; }
-.guide-on [data-tip] { position: relative; }
+.guide-on [data-tip]:not(.fab) { position: relative; }
 .guide-on [data-tip]::after { content: ""; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 2px var(--surface); pointer-events: none; }
 .guide-tip { position: fixed; z-index: 60; transform: translate(-50%, -100%); max-width: 280px; background: var(--ink); color: var(--bg); font-size: 0.8rem; line-height: 1.4; padding: 8px 11px; border-radius: 8px; pointer-events: none; box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.5); }
 .guide-tip.below { transform: translate(-50%, 0); }
