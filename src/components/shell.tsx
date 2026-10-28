@@ -3,18 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export type NavItem = { href: string; label: string; soon?: boolean };
+export type NavItem = { href: string; label: string; count?: number; alert?: boolean };
 
 export function NavLinks({ items }: { items: NavItem[] }) {
   const path = usePathname();
   return (
-    <nav className="nav" aria-label="Navigation principale">
+    <nav className="nav">
       {items.map((item) => {
-        const active = item.href === "/app" ? path === "/app" : path.startsWith(item.href);
+        const active = item.href === "/app" ? path === "/app" : path === item.href || path.startsWith(`${item.href}/`);
         return (
           <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}>
-            <span>{item.label}</span>
-            {item.soon && <span className="count">bientôt</span>}
+            <span className="nm">{item.label}</span>
+            {item.count !== undefined && <span className={`count${item.alert ? " alert" : ""}`}>{item.count}</span>}
           </Link>
         );
       })}

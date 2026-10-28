@@ -16,6 +16,8 @@ export default async function OrganizationDetail({ params }: { params: Promise<{
     include: {
       memberships: { include: { user: true }, orderBy: { createdAt: "asc" } },
       invitations: { where: { acceptedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" } },
+      searches: { include: { _count: { select: { prospects: true } } }, orderBy: { createdAt: "desc" } },
+      _count: { select: { prospects: true, templates: true } },
     },
   });
   if (!org) notFound();
@@ -68,7 +70,12 @@ export default async function OrganizationDetail({ params }: { params: Promise<{
 
       <section className="panel">
         <h2>Données commerciales</h2>
-        <p className="muted">Les recherches, prospects, séquences et appels de cette entreprise apparaîtront ici avec le sprint 2.</p>
+        <p className="muted">{org.searches.length} recherche(s) · {org._count.prospects} prospect(s) · {org._count.templates} séquence(s)</p>
+        <div className="list">
+          {org.searches.map((s) => (
+            <div key={s.id} className="li"><b>{s.name}</b><span className="muted small">{s._count.prospects} prospects · créée le {fmt(s.createdAt)}</span></div>
+          ))}
+        </div>
       </section>
     </div>
   );

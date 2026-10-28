@@ -1,52 +1,47 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
+import { requireMember, ROLES } from "@/lib/auth";
+import { isDue, isEmail, todayISO } from "@/lib/prospecting";
 
 export const metadata: Metadata = { title: "Espace de travail" };
 
 export default async function WorkspacePage() {
   const { user, membership } = await requireMember();
   const orgId = membership.organizationId;
-  const [members, pending] = await Promise.all([
+  const [prospects, searchCount, members] = await Promise.all([
+    db.prospect.findMany({ where: { organizationId: orgId }, select: { status: true, relances: true, nextFollowUp: true, email: true, searchId: true } }),
+    db.search.count({ where: { organizationId: orgId } }),
     db.membership.count({ where: { organizationId: orgId } }),
-    db.invitation.count({ where: { organizationId: orgId, acceptedAt: null, expiresAt: { gt: new Date() } } }),
   ]);
+  const today = todayISO();
+  const due = prospects.filter((p) => isDue(p, today)).length;
+  const ready = prospects.filter((p) => p.status === "À contacter" && p.searchId && isEmail(p.email)).length;
   const isAdmin = membership.role === ROLES.ADMIN;
 
   return (
-    <div className="view">
+    <div className="view narrow">
       <header className="view-head">
         <div>
           <span className="label">{membership.organization.name}</span>
           <h1>Bonjour {user.name.split(" ")[0]}</h1>
-          <p className="muted">Vous êtes {ROLE_LABEL[membership.role].toLowerCase()} de cet espace.</p>
+          <p className="muted">
+            {due} relance{due > 1 ? "s" : ""} due{due > 1 ? "s" : ""} · {ready} email{ready > 1 ? "s" : ""} J0 prêt{ready > 1 ? "s" : ""} · {searchCount} recherche{searchCount > 1 ? "s" : ""} · {prospects.length} prospects
+          </p>
         </div>
       </header>
 
-      <div className="kpis">
-        <div className="kpi"><span className="v">{members}</span><span className="k">membre{members > 1 ? "s" : ""}</span></div>
-        <div className="kpi"><span className="v">{pending}</span><span className="k">invitation{pending > 1 ? "s" : ""} en attente</span></div>
-        <div className="kpi"><span className="v">0</span><span className="k">prospects</span></div>
-        <div className="kpi"><span className="v">0</span><span className="k">recherches</span></div>
-      </div>
-
-      {isAdmin && members === 1 && (
-        <section className="cta">
-          <div>
-            <h2>Invitez vos commerciaux</h2>
-            <p className="muted">Chacun aura son accès, avec le rôle que vous choisissez.</p>
-          </div>
-          <Link className="btn primary" href="/app/equipe">Inviter l&apos;équipe</Link>
-        </section>
-      )}
-
       <section className="panel">
-        <h2>Le Cockpit arrive ici</h2>
+        <h2>L&apos;assistant arrive ici</h2>
         <p className="muted">
-          L&apos;espace de travail avec l&apos;assistant IA, les recherches, les prospects, les séquences et les appels sont au programme du
-          sprint 2. Le socle de comptes, d&apos;équipes et de rôles est en place.
+          Bientôt, vous écrirez ici vos demandes en une phrase (« relance tout ce qui est dû », « ajoute la société Durand à Lyon ») et
+          l&apos;assistant agira directement dans l&apos;outil. C&apos;est la prochaine étape du sprint 2.
         </p>
+        <div className="row">
+          <Link className="btn primary" href="/app/tableau-de-bord">Ouvrir le Plan du jour</Link>
+          {isAdmin && <Link className="btn" href="/app/recherches/nouvelle">+ Nouvelle recherche</Link>}
+          {isAdmin && members === 1 && <Link className="btn" href="/app/equipe">Inviter l&apos;équipe</Link>}
+        </div>
       </section>
     </div>
   );

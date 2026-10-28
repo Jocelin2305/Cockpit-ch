@@ -17,10 +17,13 @@ model User {
   passwordHash String
   // Accès à l'ensemble des comptes clients ; piloté par SUPER_ADMIN_EMAILS.
   isSuperAdmin Boolean      @default(false)
+  // Signature des emails, remplace {signature} dans les séquences.
+  signature    String       @default("")
   createdAt    DateTime     @default(now())
   lastLoginAt  DateTime?
   memberships  Membership[]
   sessions     Session[]
+  prospects    Prospect[]
 }
 
 // Une entreprise cliente : ses données sont isolées de celles des autres.
@@ -32,6 +35,9 @@ model Organization {
   createdAt   DateTime     @default(now())
   memberships Membership[]
   invitations Invitation[]
+  searches    Search[]
+  templates   SequenceTemplate[]
+  prospects   Prospect[]
 }
 
 // Rôle d'un utilisateur dans une entreprise : ADMIN ou MEMBER (commercial).
@@ -59,6 +65,119 @@ model Session {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ---------- Cockpit ----------
+// Les dates de suivi (premier contact, relances, rappels) sont des jours « AAAA-MM-JJ » au fuseau de l'entreprise.
+
+// Une recherche = une bibliothèque de prospects, ses critères et sa séquence.
+model Search {
+  id             String            @id @default(cuid())
+  organizationId String
+  name           String
+  geo            String            @default("")
+  secteur        String            @default("")
+  ca             String            @default("")
+  salaries       String            @default("")
+  motifs         String            @default("")
+  activite       String            @default("")
+  prix           String            @default("")
+  diff           String            @default("")
+  fonctions      String            @default("")
+  volume         String            @default("")
+  ton            String            @default("")
+  notes          String            @default("")
+  templateId     String?
+  createdById    String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template       SequenceTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  prospects      Prospect[]
+
+  @@index([organizationId])
+}
+
+// Modèle de séquence : emails (J0 + 5 relances) et LinkedIn en parallèle.
+model SequenceTemplate {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  delays         Json         // 5 délais de relance, en jours après l'email J0
+  steps          Json         // textes par étape (email, relance1Objet, linkedinInvitation…)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  searches       Search[]
+
+  @@index([organizationId])
+}
+
+model Prospect {
+  id             String       @id @default(cuid())
+  organizationId String
+  searchId       String?
+  ownerId        String?
+  company        String
+  sector         String       @default("")
+  city           String       @default("")
+  size           String       @default("")
+  contactName    String       @default("")
+  contactRole    String       @default("")
+  phone          String       @default("")
+  email          String       @default("")
+  emailVerified  Boolean      @default(false)
+  linkedin       String       @default("")
+  website        String       @default("")
+  clientele      String       @default("")
+  standing       String       @default("")
+  offreExistante String       @default("")
+  actualite      String       @default("")
+  qualification  String       @default("")
+  canal          String       @default("")
+  problematiques String       @default("")
+  signals        String       @default("")
+  angle          String       @default("")
+  notes          String       @default("")
+  priority       String       @default("B")
+  status         String       @default("À contacter")
+  relances       Int          @default(0)
+  firstContact   String?
+  lastContact    String?
+  nextFollowUp   String?
+  callBack       String?
+  lastCallAt     String?
+  qualif         Json?
+  sequence       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  search         Search?      @relation(fields: [searchId], references: [id], onDelete: SetNull)
+  owner          User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  calls          Call[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, searchId])
+}
+
+model Call {
+  id             String   @id @default(cuid())
+  organizationId String
+  prospectId     String
+  userId         String?
+  day            String
+  issue          String
+  resume         String   @default("")
+  interet        String   @default("")
+  objections     Json?
+  next           String   @default("")
+  durationMs     Int      @default(0)
+  transcript     String   @default("")
+  createdAt      DateTime @default(now())
+  prospect       Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([prospectId])
 }
 
 model Invitation {
