@@ -20,7 +20,7 @@ export function anthropic() {
   return client;
 }
 
-export type AiContext = { organizationId: string; userId: string };
+export type AiContext = { organizationId: string; userId: string | null };
 export type Effort = "low" | "medium" | "high";
 
 // Erreur dont le message peut être montré tel quel à l'utilisateur.

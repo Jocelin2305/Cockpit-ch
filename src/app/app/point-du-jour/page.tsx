@@ -7,6 +7,7 @@ import { PhoneLink } from "@/components/call-dock";
 import { SendDueButton } from "@/components/mail-buttons";
 import { MailError } from "@/lib/mail";
 import { syncReplies } from "@/lib/mail-flow";
+import { markPhoneEventHandled } from "../parametres/phone-actions";
 
 export const metadata: Metadata = { title: "Point du jour" };
 
@@ -22,11 +23,12 @@ export default async function BriefingPage() {
   const account = await db.mailAccount.findUnique({ where: { userId: user.id } });
   let syncError = "";
   if (account) await syncReplies(account, orgId).catch((e) => { syncError = e instanceof MailError ? e.message : "Lecture de la boîte mail impossible pour le moment."; });
-  const [prospects, callsYesterday, , replies] = await Promise.all([
+  const [prospects, callsYesterday, , replies, missed] = await Promise.all([
     db.prospect.findMany({ where: { organizationId: orgId, status: { notIn: ["Gagné", "Perdu"] } } }),
     db.call.findMany({ where: { organizationId: orgId, userId: user.id, day: yesterday }, select: { issue: true } }),
     db.user.update({ where: { id: user.id }, data: { briefingDay: today } }),
     db.mailMessage.findMany({ where: { organizationId: orgId, direction: "in", at: { gte: daysAgo(3) } }, include: { prospect: { select: { company: true } } }, orderBy: { at: "desc" }, take: 10 }),
+    db.phoneEvent.findMany({ where: { organizationId: orgId, handled: false, at: { gte: daysAgo(7) }, OR: [{ userId: user.id }, { userId: null }] }, orderBy: { at: "desc" }, take: 15 }),
   ]);
   const callBacks = prospects.filter((p) => callBackDue(p, today));
   const toCall = callQueue(prospects, today).slice(0, 8);
@@ -104,7 +106,30 @@ export default async function BriefingPage() {
         ) : (
           <p className="muted">Connectez votre boîte Gmail ou Outlook dans <Link href="/app/parametres">Paramètres</Link> : chaque matin, ce point lira les réponses de vos prospects et vous enverrez vos relances en un clic.</p>
         )}
-        <p className="hint">Messagerie vocale et appels manqués : arrivent avec la connexion de votre téléphonie.{has(user.signature) ? "" : " Pensez aussi à renseigner votre signature dans Paramètres."}</p>
+        {missed.length > 0 && (
+          <div className="list">
+            {missed.map((e) => {
+              const p = prospects.find((x) => x.id === e.prospectId);
+              return (
+                <div key={e.id} className="li">
+                  <div>
+                    <b>{e.kind === "voicemail" ? "Message vocal" : "Appel manqué"} · {p?.company ?? e.number}</b>
+                    <span className="muted small block">
+                      {e.at.toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
+                      {e.transcript ? ` · « ${e.transcript.slice(0, 160)} »` : ""}
+                    </span>
+                    {e.voicemailUrl && <audio controls preload="none" src={e.voicemailUrl} className="vm" />}
+                  </div>
+                  <div className="inline">
+                    {p ? <PhoneLink p={target(p)} /> : <a className="tel" href={`tel:${e.number.replace(/[^\d+]/g, "")}`}>{e.number}</a>}
+                    <form action={markPhoneEventHandled}><input type="hidden" name="id" value={e.id} /><button className="btn sm ghost" type="submit">Traité</button></form>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {missed.length === 0 && <p className="hint">Aucun appel manqué ni message vocal en attente{membership.organization.phoneProvider ? "" : " : connectez votre téléphonie dans Paramètres pour les voir ici"}.{has(user.signature) ? "" : " Pensez aussi à renseigner votre signature dans Paramètres."}</p>}
       </section>
     </div>
   );

@@ -46,6 +46,9 @@ model Organization {
   subscriptionStatus   String?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
+  // Téléphonie connectée (aircall, ringover, generique) et jeton secret de son webhook.
+  phoneProvider        String?
+  phoneWebhookToken    String?   @unique
   createdAt   DateTime     @default(now())
   memberships Membership[]
   invitations Invitation[]
@@ -191,6 +194,9 @@ model Call {
   next           String   @default("")
   durationMs     Int      @default(0)
   transcript     String   @default("")
+  // Identifiant de l'appel chez l'opérateur de téléphonie (appel reçu par webhook).
+  externalId     String?
+  recordingUrl   String   @default("")
   createdAt      DateTime @default(now())
   prospect       Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
 
@@ -259,4 +265,22 @@ model MailMessage {
   @@unique([userId, providerId])
   @@index([organizationId, at])
   @@index([prospectId])
+}
+
+// Appels manqués et messages vocaux remontés par la téléphonie, à traiter dans le Point du jour.
+model PhoneEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  externalId     String
+  kind           String   // "missed" ou "voicemail"
+  number         String
+  prospectId     String?
+  userId         String?
+  voicemailUrl   String   @default("")
+  transcript     String   @default("")
+  at             DateTime
+  handled        Boolean  @default(false)
+
+  @@unique([organizationId, externalId])
+  @@index([organizationId, handled])
 }

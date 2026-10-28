@@ -4,6 +4,7 @@ import { requireMember, ROLES } from "@/lib/auth";
 import { OrgForm } from "./org-form";
 import { SignatureForm } from "./signature-form";
 import { MailPanel } from "./mail-panel";
+import { PhonePanel } from "./phone-panel";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
@@ -27,6 +28,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <MailPanel userId={user.id} status={mail} />
       {isAdmin && (
         <>
+          <PhonePanel provider={membership.organization.phoneProvider} token={membership.organization.phoneWebhookToken} />
           <section className="panel">
             <h2>Entreprise</h2>
             <OrgForm name={membership.organization.name} />
