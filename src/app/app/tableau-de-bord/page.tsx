@@ -159,7 +159,7 @@ function CallStats({ calls, userId, members, today }: { calls: CallRow[]; userId
   ];
   const week = addDays(today, -6);
   return (
-    <section className="panel flush" data-tip="Vos appels : nombre, conversations réelles (avec compte rendu) et temps passé au téléphone.">
+    <section className="panel flush" data-tour="stats" data-tip="Vos appels : nombre, conversations réelles (avec compte rendu) et temps passé au téléphone.">
       <div className="panel-head pad"><h2>Stats d&apos;appels</h2></div>
       <div className="table-wrap">
         <table>

@@ -343,3 +343,10 @@ td.notes { min-width: 200px; }
 .legal-body ul { margin: 0; padding-left: 20px; }
 .legal .auth-foot { max-width: none; }
 .demo-banner { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: var(--accent-soft); }
+
+/* Visite guidée */
+.tour { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 24px 60px -18px rgba(8, 24, 28, 0.55); z-index: 50; }
+.tour .row { margin-top: 4px; }
+.tour-target { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(8, 24, 28, 0.35); z-index: 45; }
+.tour-target:not(.fab) { position: relative; }
+@media (min-width: 861px) { .tour { left: calc(50% + 118px); } }

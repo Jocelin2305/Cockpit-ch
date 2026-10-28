@@ -50,7 +50,7 @@ export default async function BriefingPage() {
         <Link className="btn primary" href="/app/tableau-de-bord">C&apos;est parti →</Link>
       </header>
 
-      <div className="kpis">
+      <div className="kpis" data-tour="briefing">
         <div className={`kpi${callBacks.length ? " alert" : ""}`}><span className="v">{callBacks.length}</span><span className="k">rappels prévus</span></div>
         <div className={`kpi${replied.length ? " alert" : ""}`}><span className="v">{replied.length}</span><span className="k">prospects qui ont répondu</span></div>
         <div className={`kpi${due.length ? " alert" : ""}`}><span className="v">{due.length}</span><span className="k">relances email à faire</span></div>
@@ -58,7 +58,7 @@ export default async function BriefingPage() {
       </div>
 
       <div className="grid2 top">
-        <section className="panel" data-tip="Votre file d'appels du jour, dans l'ordre : cliquez sur un numéro pour appeler.">
+        <section className="panel" data-tour="calls" data-tip="Votre file d'appels du jour, dans l'ordre : cliquez sur un numéro pour appeler.">
           <h2>1. Appels à passer</h2>
           <div className="list">
             {toCall.length === 0 && <p className="muted">Aucun appel prévu. Ajoutez des numéros directs à vos prospects.</p>}
@@ -90,7 +90,7 @@ export default async function BriefingPage() {
         </section>
       </div>
 
-      <section className="panel">
+      <section className="panel" data-tour="inbox">
         <h2>3. Réponses reçues, messagerie vocale, appels manqués</h2>
         {syncError && <p className="alert error">{syncError}</p>}
         {account || membership.organization.isDemo ? (

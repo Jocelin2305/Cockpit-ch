@@ -3,6 +3,7 @@ import { Brand } from "@/components/brand";
 import { NavLinks, NavMenu, type NavItem } from "@/components/shell";
 import { CallDock } from "@/components/call-dock";
 import { Guide } from "@/components/guide";
+import { Tour } from "@/components/tour";
 import { db } from "@/lib/db";
 import { requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
@@ -95,6 +96,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <CallDock aiReady={aiEnabled()} />
       <Guide enabled={user.guideOn} />
+      <Tour initialStep={user.tourStep} isDemo={membership.organization.isDemo} />
     </div>
   );
 }

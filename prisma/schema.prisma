@@ -26,6 +26,8 @@ model User {
   guideOn      Boolean      @default(true)
   // Acceptation des CGU et de la politique de confidentialité (inscription ou invitation).
   termsAcceptedAt DateTime?
+  // Étape en cours de la visite guidée (null : pas de visite en cours).
+  tourStep     Int?
   // Dernier jour (AAAA-MM-JJ) où le point du jour a été affiché.
   briefingDay  String?
   createdAt    DateTime     @default(now())

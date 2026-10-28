@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireMember } from "@/lib/auth";
 import { SubmitButton } from "@/components/forms";
-import { setGuide } from "./actions";
+import { restartTour, setGuide } from "./actions";
 
 export const metadata: Metadata = { title: "Centre d'aide" };
 
@@ -33,6 +33,9 @@ export default async function HelpPage() {
         <form action={setGuide} className="row">
           <input type="hidden" name="on" value={user.guideOn ? "0" : "1"} />
           <SubmitButton pending="…">{user.guideOn ? "Désactiver le guide" : "Activer le guide"}</SubmitButton>
+        </form>
+        <form action={restartTour} className="row">
+          <SubmitButton className="btn" pending="…">Lancer la visite guidée pas à pas</SubmitButton>
         </form>
       </section>
 

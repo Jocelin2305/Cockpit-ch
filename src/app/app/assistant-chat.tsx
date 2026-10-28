@@ -96,7 +96,7 @@ export function AssistantChat({ suggestions, aiReady }: { suggestions: string[];
         ))}
         <div ref={bottom} />
       </div>
-      <form className="chat-bar" onSubmit={(e) => { e.preventDefault(); send(input); }}>
+      <form className="chat-bar" data-tour="assistant" onSubmit={(e) => { e.preventDefault(); send(input); }}>
         <textarea
           ref={inputRef}
           rows={1}

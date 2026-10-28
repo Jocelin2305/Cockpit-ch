@@ -46,7 +46,7 @@ const PROSPECTS: Seed[] = [
 const DELAYS = [3, 7, 12, 20, 30];
 
 // Crée l'espace de démo d'un visiteur et renvoie l'organisation et l'utilisateur à connecter.
-export async function createDemo(source: string) {
+export async function createDemo(source: string, guided: boolean) {
   await cleanupDemos().catch(() => 0);
   if ((await db.demoVisit.count({ where: { createdAt: { gte: new Date(Date.now() - 3600_000) } } })) >= DEMO_PER_HOUR) return null;
 
@@ -57,6 +57,9 @@ export async function createDemo(source: string) {
   const user = await db.user.create({
     data: {
       name: "Visiteur démo",
+      // Première visite : visite guidée pas à pas et infobulles ; sinon, l'interface seule.
+      tourStep: guided ? 0 : null,
+      guideOn: guided,
       email: `visiteur-${id}@${DEMO_DOMAIN}`,
       // Mot de passe aléatoire jamais communiqué : on n'entre dans la démo que par le lien.
       passwordHash: await hashPassword(randomBytes(24).toString("base64url")),

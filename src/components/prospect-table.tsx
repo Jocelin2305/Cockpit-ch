@@ -18,7 +18,7 @@ export function sortRows<T extends Row>(rows: T[], today = todayISO()) {
 export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSearch?: boolean; empty: React.ReactNode }) {
   const today = todayISO();
   return (
-    <div className="panel flush">
+    <div className="panel flush" data-tour="table">
       <div className="table-wrap">
         <table className="prospects">
           <thead>
