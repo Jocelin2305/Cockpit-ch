@@ -1,12 +1,13 @@
 // Identité de l'éditeur, reprise dans les pages légales. À compléter avant le lancement (voir docs/MISE-EN-LIGNE.md).
 export const EDITOR = {
-  name: "[Raison sociale à compléter]",
-  form: "[Forme juridique et capital à compléter]",
-  siren: "[SIREN / RCS à compléter]",
-  address: "[Adresse du siège à compléter]",
+  name: "Dundee SaaS",
+  form: "Micro-entreprise",
+  // SIRET. Micro-entreprise en franchise de TVA : laisser vat vide affiche « TVA non applicable, art. 293 B du CGI ».
+  siren: "951 917 863 00023",
+  address: "51 rue renée auduc - Le Mans 72000",
   director: "Jocelin Querteux",
   email: "jocelin.querteux.lms@gmail.com",
-  vat: "[N° TVA intracommunautaire à compléter]",
+  vat: "",
 };
 export const UPDATED = "28 octobre 2026";
 
