@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { appUrl, hashToken, newToken, requireAdmin, ROLES } from "@/lib/auth";
+import { appUrl, hashToken, newToken, requireAdmin, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { firstError, inviteSchema, type FormState } from "@/lib/validation";
 import { seatLimit } from "@/lib/billing";
+import { inviteEmail, sendPlatformEmail } from "@/lib/email";
 
 const INVITE_DAYS = 7;
 
@@ -42,10 +43,15 @@ export async function inviteMember(_: FormState, form: FormData): Promise<FormSt
       invitedById: user.id,
     },
   });
+  const link = `${appUrl()}/invitation/${token}`;
+  const mail = inviteEmail(membership.organization.name, ROLE_LABEL[role], link, INVITE_DAYS);
+  const sent = await sendPlatformEmail(email, mail.subject, mail.text);
   revalidatePath("/app/equipe");
   return {
-    ok: `Invitation créée pour ${email}. Envoyez-lui ce lien : il est valable ${INVITE_DAYS} jours.`,
-    link: `${appUrl()}/invitation/${token}`,
+    ok: sent
+      ? `Invitation envoyée par email à ${email}. Vous pouvez aussi lui transmettre ce lien (valable ${INVITE_DAYS} jours).`
+      : `Invitation créée pour ${email}. Envoyez-lui ce lien : il est valable ${INVITE_DAYS} jours.`,
+    link,
   };
 }
 

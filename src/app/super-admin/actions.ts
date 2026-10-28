@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { appUrl, hashToken, isSuperAdminEmail, newToken, requireSuperAdmin, requireUser, ROLES } from "@/lib/auth";
 import { TRIAL_DAYS } from "@/lib/plans";
+import { inviteEmail, sendPlatformEmail } from "@/lib/email";
 import { firstError, nameField, type FormState } from "@/lib/validation";
 
 const INVITE_DAYS = 14;
@@ -45,9 +46,15 @@ export async function createClient(_: FormState, form: FormData): Promise<FormSt
     },
   });
   revalidatePath("/super-admin");
+  const link = `${appUrl()}/invitation/${token}`;
+  // L'email part tout de suite : préparez l'espace avant, ou transmettez le lien vous-même plus tard.
+  const mail = inviteEmail(org.name, "administrateur", link, INVITE_DAYS);
+  const sent = form.get("send") === "1" && (await sendPlatformEmail(parsed.data.email, mail.subject, mail.text));
   return {
-    ok: `${org.name} est créé. Paramétrez son espace, puis envoyez ce lien à ${parsed.data.email} (valable ${INVITE_DAYS} jours).`,
-    link: `${appUrl()}/invitation/${token}`,
+    ok: sent
+      ? `${org.name} est créé et l'invitation est partie à ${parsed.data.email}.`
+      : `${org.name} est créé. Paramétrez son espace, puis envoyez ce lien à ${parsed.data.email} (valable ${INVITE_DAYS} jours).`,
+    link,
     values: { orgId: org.id },
   };
 }

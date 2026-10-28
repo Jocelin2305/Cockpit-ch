@@ -16,6 +16,7 @@ export async function acceptAsNewUser(_: FormState, form: FormData): Promise<For
   const values = { name: String(form.get("name") ?? "") };
   const parsed = newUserSchema.safeParse({ ...values, password: form.get("password") });
   if (!parsed.success) return { error: firstError(parsed.error), values };
+  if (form.get("terms") !== "on") return { error: "Acceptez les conditions d'utilisation pour continuer.", values };
 
   if (await db.user.findUnique({ where: { email: invitation.email } }))
     return { error: "Un compte existe déjà avec cet email : connectez-vous pour rejoindre l'équipe.", values };
@@ -26,6 +27,7 @@ export async function acceptAsNewUser(_: FormState, form: FormData): Promise<For
       email: invitation.email,
       passwordHash: await hashPassword(parsed.data.password),
       isSuperAdmin: isSuperAdminEmail(invitation.email),
+      termsAcceptedAt: new Date(),
       lastLoginAt: new Date(),
       memberships: { create: { role: invitation.role, organizationId: invitation.organizationId } },
     },

@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </Link>
         {children}
       </div>
-      <p className="auth-foot">Vos données restent privées et isolées de celles des autres entreprises.</p>
+      <p className="auth-foot">Vos données restent privées et isolées de celles des autres entreprises.<br /><Link href="/mentions-legales">Mentions légales</Link> · <Link href="/cgu">Conditions d&apos;utilisation</Link> · <Link href="/confidentialite">Confidentialité</Link></p>
     </main>
   );
 }

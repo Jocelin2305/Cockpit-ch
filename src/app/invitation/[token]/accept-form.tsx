@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { acceptAsNewUser } from "./actions";
 import { FormMessage, SubmitButton } from "@/components/forms";
+import { TermsCheck } from "@/components/terms-check";
 
 export function AcceptForm({ token }: { token: string }) {
   const [state, action] = useActionState(acceptAsNewUser, undefined);
@@ -19,6 +20,7 @@ export function AcceptForm({ token }: { token: string }) {
         <input className="input" name="password" type="password" autoComplete="new-password" minLength={10} required />
         <span className="hint">10 caractères minimum.</span>
       </label>
+      <TermsCheck />
       <SubmitButton pending="Création de l'accès…">Créer mon accès</SubmitButton>
     </form>
   );

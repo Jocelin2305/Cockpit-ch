@@ -5,6 +5,7 @@ import { OrgForm } from "./org-form";
 import { SignatureForm } from "./signature-form";
 import { MailPanel } from "./mail-panel";
 import { PhonePanel } from "./phone-panel";
+import { DataPanel } from "./data-panel";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
@@ -37,6 +38,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <h2>Abonnement</h2>
             <p className="muted">Offre, paiement et factures : <Link href="/abonnement">gérer l&apos;abonnement</Link>.</p>
           </section>
+          <DataPanel orgName={membership.organization.name} />
         </>
       )}
     </div>

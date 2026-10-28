@@ -24,6 +24,8 @@ model User {
   signature    String       @default("")
   // Guide d'adoption (infobulles) activé, réglé dans le Centre d'aide.
   guideOn      Boolean      @default(true)
+  // Acceptation des CGU et de la politique de confidentialité (inscription ou invitation).
+  termsAcceptedAt DateTime?
   // Dernier jour (AAAA-MM-JJ) où le point du jour a été affiché.
   briefingDay  String?
   createdAt    DateTime     @default(now())
@@ -294,4 +296,16 @@ model LoginAttempt {
   at    DateTime @default(now())
 
   @@index([email, at])
+}
+
+// Lien « mot de passe oublié » : seule l'empreinte du jeton est stockée, valable 1 heure, utilisable une fois.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }

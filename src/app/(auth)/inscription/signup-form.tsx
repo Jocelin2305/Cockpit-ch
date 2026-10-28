@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { signup } from "../actions";
 import { FormMessage, SubmitButton } from "@/components/forms";
+import { TermsCheck } from "@/components/terms-check";
 
 export function SignupForm() {
   const [state, action] = useActionState(signup, undefined);
@@ -27,6 +28,7 @@ export function SignupForm() {
         <input className="input" name="password" type="password" autoComplete="new-password" minLength={10} required />
         <span className="hint">10 caractères minimum.</span>
       </label>
+      <TermsCheck />
       <SubmitButton pending="Création de l'espace…">Créer mon espace</SubmitButton>
     </form>
   );

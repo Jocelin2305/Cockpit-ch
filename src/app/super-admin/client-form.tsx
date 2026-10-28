@@ -11,6 +11,7 @@ export function ClientForm() {
       <form action={action} className="row">
         <label className="field grow"><span className="label-text">Entreprise cliente</span><input className="input" name="company" required defaultValue={state?.error ? state.values?.company : ""} /></label>
         <label className="field grow"><span className="label-text">Email de son administrateur</span><input className="input" name="email" type="email" required defaultValue={state?.error ? state.values?.email : ""} /></label>
+        <label className="check"><input type="checkbox" name="send" value="1" /> Envoyer l&apos;invitation tout de suite</label>
         <SubmitButton pending="Création…">Créer le compte client</SubmitButton>
       </form>
       <FormMessage error={state?.error} ok={state?.ok} />

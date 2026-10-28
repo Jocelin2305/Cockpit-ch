@@ -53,11 +53,11 @@ Chaque variable s'ajoute dans Vercel (Settings → Environment Variables), puis 
 | IA (assistant, angles, comptes rendus) | `ANTHROPIC_API_KEY` | avant la bêta |
 | Paiement | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_SOLO`, `STRIPE_PRICE_EQUIPE` | avant les premiers clients payants |
 | Gmail / Outlook | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | quand on branche la messagerie |
+| Emails de la plateforme (invitations, mot de passe oublié) | `RESEND_API_KEY`, `EMAIL_FROM` (compte resend.com + domaine vérifié) | avant la bêta |
 | Nom de domaine | dans Vercel : Settings → Domains (par exemple `app.cockpitch.fr`), puis mettre à jour `APP_URL` | quand vous voulez |
 
 ## Avant le lancement commercial
 
 - [ ] Prix définitifs des offres (`src/lib/plans.ts`).
-- [ ] Mentions légales, CGV / CGU, politique de confidentialité (RGPD), contrat de sous-traitance des données pour les clients.
-- [ ] Envoi des emails de la plateforme (invitations, mot de passe oublié) : un service d'envoi comme Resend ou Brevo.
+- [ ] Compléter l'identité de la société dans `src/lib/legal.ts` (raison sociale, SIREN, adresse, TVA), puis faire relire les pages Mentions légales, CGU/CGV et Confidentialité par un juriste ; préparer le contrat de sous-traitance (DPA) pour les clients.
 - [ ] Vérification de l'application par Google, nécessaire pour lire les emails Gmail des clients (plusieurs semaines).
