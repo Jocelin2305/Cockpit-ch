@@ -1,0 +1,1703 @@
+<title>Cockpit Prospection B2B</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cockpit à rail latéral (onglets en haut sur mobile), vues opérables, fiche prospect en tiroir. */
+:root{
+  --bg:#F2F5F4; --surface:#FFFFFF; --sunk:#E8EDEB; --ink:#14212A; --muted:#58686F; --line:#D6DEDB;
+  --accent:#0E5A55; --accent-ink:#FFFFFF; --accent-soft:#DCEBE7;
+  --signal:#B86E0B; --signal-soft:#F8EBD6; --good:#2C7A4D; --good-soft:#DDF0E4; --bad:#B03F2C; --bad-soft:#F6E0DB;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1417; --surface:#162025; --sunk:#111A1E; --ink:#E4EBE9; --muted:#93A4A9; --line:#25333A;
+  --accent:#5BC2B4; --accent-ink:#06201D; --accent-soft:#163A36;
+  --signal:#E5A24C; --signal-soft:#3A2A14; --good:#62C08A; --good-soft:#173123; --bad:#E57D67; --bad-soft:#3B1E18;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1417; --surface:#162025; --sunk:#111A1E; --ink:#E4EBE9; --muted:#93A4A9; --line:#25333A;
+  --accent:#5BC2B4; --accent-ink:#06201D; --accent-soft:#163A36;
+  --signal:#E5A24C; --signal-soft:#3A2A14; --good:#62C08A; --good-soft:#173123; --bad:#E57D67; --bad-soft:#3B1E18;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:1.75rem} h2{font-size:1.2rem} h3{font-size:1rem}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+.rail{background:var(--surface);border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:10px;align-items:center;padding:0 8px}
+.brand-mark{width:34px;height:34px;border-radius:9px;background:var(--accent);display:grid;place-items:center;flex:none}
+.brand-mark svg{width:20px;height:20px}
+.brand b{font-family:var(--f-display);font-size:1.05rem;display:block;line-height:1.1}
+.brand span{font-size:.75rem;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:8px;color:var(--muted);font-weight:500}
+.nav button:hover{background:var(--sunk);color:var(--ink)}
+.nav button[aria-current="page"]{background:var(--accent-soft);color:var(--ink)}
+.nav button:focus-visible{outline:2px solid var(--accent)}
+.nav .count{font-family:var(--f-mono);font-size:.75rem;background:var(--sunk);padding:1px 7px;border-radius:20px}
+.nav .count.alert{background:var(--signal-soft);color:var(--signal)}
+.rail-foot{margin-top:auto;display:flex;flex-direction:column;gap:6px;padding:0 8px;font-size:.78rem;color:var(--muted)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
+.dot.on{background:var(--good)} .dot.warn{background:var(--signal)}
+
+main{min-width:0;padding-block:28px 60px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+.view{display:flex;flex-direction:column;gap:22px;max-width:1240px}
+.view-head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.view-head p{color:var(--muted);max-width:62ch;margin-top:4px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);padding:7px 13px;border-radius:8px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.danger{color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:4px 9px;font-size:.82rem}
+.btn .ai{width:14px;height:14px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+
+.kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.kpi{padding:14px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi:last-child{border-right:0}
+.kpi .v{font-family:var(--f-mono);font-size:1.6rem;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .k{font-size:.78rem;color:var(--muted)}
+.kpi.alert{background:var(--signal-soft)} .kpi.alert .v{color:var(--signal)}
+.kpi.win .v{color:var(--good)}
+
+.funnel{display:flex;flex-direction:column;gap:9px}
+.frow{display:grid;grid-template-columns:118px minmax(0,1fr) 92px;gap:10px;align-items:center}
+.fbar{height:22px;background:var(--sunk);border-radius:5px;overflow:hidden}
+.fbar i{display:block;height:100%;background:var(--accent);border-radius:5px;min-width:2px}
+.frow .num{text-align:right;font-size:.85rem}
+.frow .num small{color:var(--muted)}
+
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.li:first-child{border-top:0}
+.li .who{min-width:0}
+.li .who b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .who span{font-size:.82rem;color:var(--muted)}
+.empty{color:var(--muted);padding:14px 0;font-size:.9rem}
+
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;padding:2px 8px;border-radius:20px;background:var(--sunk);white-space:nowrap;font-weight:500}
+.chip.late{background:var(--bad-soft);color:var(--bad)}
+.chip.today{background:var(--signal-soft);color:var(--signal)}
+.chip.ok{background:var(--good-soft);color:var(--good)}
+.chip.ex{background:transparent;border:1px dashed var(--muted);color:var(--muted)}
+.prio{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600}
+.prio::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.prio.A::before{background:var(--bad)} .prio.B::before{background:var(--signal)} .prio.C::before{background:var(--muted)}
+.enrich{color:var(--signal);font-style:italic}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.input,select.input,textarea.input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;min-width:0;width:100%}
+textarea.input{resize:vertical;min-height:70px;line-height:1.45}
+.toolbar .input{width:auto}
+#q{min-width:220px;flex:1 1 220px}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:1280px}
+td.angle{min-width:250px;max-width:340px}
+td.angle .ang{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:.84rem;line-height:1.4;margin-bottom:4px}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.pstep{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.pstep .v{font-family:var(--f-mono);font-size:1.7rem;line-height:1.1}
+.pstep.hot{border-color:var(--accent);background:var(--accent-soft)}
+.pstep p{font-size:.84rem;color:var(--muted)}
+.pstep .btn{align-self:flex-start;margin-top:auto}
+@media (max-width:1100px){.plan{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.plan{grid-template-columns:minmax(0,1fr)}}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--sunk);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--sunk)}
+tr.overdue td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
+tr.due td:first-child{box-shadow:inset 3px 0 0 var(--signal)}
+td .co{min-width:170px}
+td .co b{display:block} td .co span{font-size:.8rem;color:var(--muted)}
+.coords{display:flex;gap:4px}
+.coords span{font-family:var(--f-mono);font-size:.7rem;padding:1px 5px;border-radius:4px;background:var(--sunk);color:var(--muted)}
+.coords span.has{background:var(--good-soft);color:var(--good)}
+.status-sel{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:.82rem}
+.gauge{display:flex;align-items:center;gap:7px;min-width:96px}
+.gauge .g{flex:1;height:6px;border-radius:4px;background:var(--sunk);overflow:hidden}
+.gauge .g i{display:block;height:100%;background:var(--accent)}
+.gauge.low .g i{background:var(--bad)} .gauge.mid .g i{background:var(--signal)}
+.gauge .num{font-size:.75rem;width:32px;text-align:right}
+
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,20,24,.38);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--bg);z-index:41;display:flex;flex-direction:column;border-left:1px solid var(--line);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.drawer-head{padding:18px 22px;border-bottom:1px solid var(--line);background:var(--surface);display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.drawer-body{flex:1;overflow-y:auto;padding:18px 22px 30px;display:flex;flex-direction:column;gap:18px}
+.drawer-foot{padding:12px 22px;border-top:1px solid var(--line);background:var(--surface);display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
+fieldset{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px 16px;margin:0;background:var(--surface);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+legend{font-family:var(--f-display);font-weight:600;padding:0 6px;font-size:.95rem}
+legend small{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:.78rem;margin-left:6px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:.8rem;color:var(--muted);font-weight:500}
+.fld .ordn{font-family:var(--f-mono);color:var(--accent);margin-right:4px}
+.check{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.note{font-size:.82rem;color:var(--muted);background:var(--sunk);border-radius:8px;padding:9px 12px}
+.note.warn{background:var(--signal-soft);color:var(--ink)}
+.qual{grid-column:1/-1;display:flex;flex-direction:column;gap:8px}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:3px 9px;font-size:.75rem;border-left:1px solid var(--line)}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button:focus-visible{outline:2px solid var(--accent)}
+.scorebar{display:flex;align-items:center;gap:10px}
+.scorebar .g{flex:1;height:8px;background:var(--sunk);border-radius:5px;overflow:hidden}
+.scorebar .g i{display:block;height:100%;background:var(--good)}
+
+/* Sequences */
+.timeline{display:flex;flex-direction:column;gap:0;position:relative}
+.step{display:grid;grid-template-columns:76px minmax(0,1fr);gap:16px;position:relative;padding-bottom:18px}
+.step::before{content:"";position:absolute;left:37px;top:30px;bottom:0;width:2px;background:var(--line)}
+.step:last-child::before{display:none}
+.day{font-family:var(--f-mono);font-weight:500;font-size:.85rem;background:var(--surface);border:1px solid var(--line);border-radius:20px;text-align:center;padding:4px 0;height:fit-content;position:relative;z-index:1}
+.day.d0{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.stepcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stepcard header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.stepcard textarea{min-height:120px}
+.reco{display:flex;gap:10px;align-items:flex-start}
+
+/* AI output */
+.ai-out{line-height:1.6;max-width:78ch}
+.ai-out h3{margin:18px 0 6px;font-size:1.02rem;color:var(--accent)}
+.ai-out h3:first-child{margin-top:0}
+.ai-out ul{margin:4px 0 8px;padding-left:20px}
+.ai-out p{margin:4px 0}
+.thinking{color:var(--muted);font-style:italic}
+.seglist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.segcard{border:1px solid var(--line);border-radius:var(--r);padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.segcard ul{margin:0;padding-left:18px;font-size:.88rem}
+.codebox{font-family:var(--f-mono);font-size:.8rem;background:var(--sunk);border-radius:8px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow-y:auto}
+
+/* Profile */
+.qform{display:flex;flex-direction:column;gap:14px}
+.q{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.q .n{font-family:var(--f-display);font-size:1.5rem;color:var(--accent);line-height:1}
+.q .body{display:flex;flex-direction:column;gap:8px;min-width:0}
+.q .ex{font-size:.8rem;color:var(--muted)}
+.subgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.recap{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px 14px;font-size:.9rem}
+.recap dt{color:var(--muted)} .recap dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.cta{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--accent-soft);border-radius:var(--r);padding:16px 18px}
+
+.banner{font-size:.85rem;border-radius:8px;padding:9px 12px;background:var(--signal-soft)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:60;font-size:.88rem;max-width:calc(100% - 32px)}
+.exp{display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr)) auto;gap:10px;align-items:end}
+
+/* Bibliothèque */
+.rail{overflow-y:auto}
+.create{display:flex;flex-direction:column;gap:6px}
+.btn.block{justify-content:center;width:100%}
+.navsec{display:flex;flex-direction:column;gap:4px}
+.navsec>.label,.create>.label{padding:0 10px}
+.nav button .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+tr.total td{background:var(--sunk);font-weight:600}
+@media (max-width:860px){.create,.navsec{flex-direction:row;align-items:center;flex:none}.create>.label,.navsec>.label{display:none}.btn.block{width:auto}}
+
+/* Questionnaire de recherche */
+.wz-prog{height:4px;background:var(--sunk);border-radius:3px;overflow:hidden;margin-top:12px}
+.wz-prog i{display:block;height:100%;background:var(--accent)}
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.choice:hover{border-color:var(--accent)}
+.choice[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.choice:focus-visible{outline:2px solid var(--accent)}
+.presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+
+/* Onglets du profil, connecteurs */
+.tabs{display:inline-flex;gap:4px;background:var(--sunk);padding:4px;border-radius:10px;align-self:flex-start}
+.tabs button{all:unset;cursor:pointer;padding:7px 16px;border-radius:7px;font-weight:500;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.tabs button:focus-visible{outline:2px solid var(--accent)}
+.conns{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.conn{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.conn header{display:flex;align-items:center;gap:10px}
+.conn .logo{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;color:#fff;flex:none}
+.conn header b{display:block;font-family:var(--f-display);font-size:1.02rem}
+.conn header span{font-size:.78rem;color:var(--muted)}
+.conn p{font-size:.88rem;color:var(--muted)}
+.conn .actions{margin-top:auto}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--accent-ink)}
+
+/* Séquences en parallèle */
+.tracks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.track{min-width:0}
+.track-h{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
+.track-h span{font-size:.8rem}
+.tracks .step{grid-template-columns:52px minmax(0,1fr);gap:10px}
+.tracks .step::before{left:25px}
+@media (max-width:980px){.tracks{grid-template-columns:minmax(0,1fr)}}
+
+/* Appels */
+.callgrid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
+.callq{padding:14px;position:sticky;top:calc(64px + env(safe-area-inset-top,0px));max-height:calc(100vh - 90px);overflow-y:auto}
+.callq .li{cursor:pointer;padding:9px 8px;border-radius:8px;border-top:0}
+.callq .li:hover{background:var(--sunk)}
+.callq .li[aria-current="true"]{background:var(--accent-soft)}
+.callcard{display:flex;flex-direction:column;gap:16px}
+.phone{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.phone .num{font-size:1.6rem;font-weight:500}
+.angle-box{background:var(--accent-soft);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.angle-box p{font-size:1rem;line-height:1.55}
+.timer{font-family:var(--f-mono);font-size:1.1rem;font-variant-numeric:tabular-nums}
+.outcomes{display:flex;flex-wrap:wrap;gap:6px}
+.calllog .li{align-items:flex-start}
+.calllog .who span{white-space:normal}
+.callres{border:1px solid var(--accent);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}
+@media (max-width:980px){.callgrid{grid-template-columns:minmax(0,1fr)}.callq{position:static;max-height:none}}
+
+.delays{display:flex;flex-direction:column;gap:6px}
+.delays-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.delays-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Barre CRM */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;display:flex;justify-content:flex-end;align-items:center;gap:12px;max-width:1240px;margin:-14px 0 8px;padding:8px 0;background:var(--bg)}
+.topbar .crm-state{font-size:.8rem;color:var(--muted)}
+.topbar .btn .count{font-family:var(--f-mono);font-size:.72rem;background:var(--accent-ink);color:var(--accent);padding:0 7px;border-radius:20px}
+.crm-pan{position:absolute;right:0;top:calc(100% + 4px);width:min(400px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px -18px rgba(8,24,28,.45);padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:.88rem}
+.crm-pan ul{margin:0;padding-left:18px}
+.crm-pan .prog{height:6px;background:var(--sunk);border-radius:4px;overflow:hidden}.crm-pan .prog i{display:block;height:100%;background:var(--accent)}
+@media (max-width:860px){.topbar{position:relative;top:auto;margin:0 0 8px;flex-wrap:wrap}}
+
+/* Assistant (chat) */
+.ws{max-width:860px;min-height:calc(100vh - 140px)}
+.ws-head p{margin-top:6px;max-width:62ch}
+.ws-log{flex:1;display:flex;flex-direction:column;gap:12px}
+.ws-bar{position:sticky;bottom:calc(14px + env(safe-area-inset-bottom,0px));margin-top:auto}
+.ws-strip{display:flex;flex-wrap:wrap;gap:8px;font-size:.86rem}
+.msg{max-width:88%;padding:10px 13px;border-radius:12px;line-height:1.55;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px;white-space:pre-wrap}
+.msg.ai{align-self:flex-start;background:var(--sunk);border-bottom-left-radius:4px}
+.msg.ai h3{font-size:.95rem;margin:10px 0 4px;color:var(--accent)} .msg.ai h3:first-child{margin-top:0}
+.msg.ai ul{margin:4px 0;padding-left:18px} .msg.ai p{margin:3px 0}
+.msg.err{background:var(--bad-soft)}
+.msg .acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.msg .acts .chip{background:var(--good-soft);color:var(--good)}
+.sugg{display:flex;flex-wrap:wrap;gap:6px}
+.sugg button{all:unset;cursor:pointer;font-size:.82rem;padding:6px 11px;border:1px solid var(--line);border-radius:20px;background:var(--surface)}
+.sugg button:hover{border-color:var(--accent)} .sugg button:focus-visible{outline:2px solid var(--accent)}
+.chat-bar{display:flex;align-items:flex-end;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 14px;box-shadow:0 10px 30px -16px rgba(8,24,28,.4)}
+.chat-bar:focus-within{border-color:var(--accent)}
+.chat-bar .spark{width:18px;height:18px;color:var(--accent);flex:none;margin-bottom:9px}
+.chat-bar textarea{flex:1;border:0;background:transparent;resize:none;max-height:140px;min-height:24px;padding:7px 0;line-height:1.45;outline:none}
+.chat-bar .btn{border-radius:10px}
+.chat-tog{font-size:.78rem}
+@media (max-width:860px){.chat{left:0;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}.msg{max-width:94%}}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi:nth-child(4){border-right:0}.kpi:nth-child(-n+4){border-bottom:1px solid var(--line)}.grid3{grid-template-columns:1fr 1fr}}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:sticky;top:env(safe-area-inset-top,0px);height:auto;z-index:20;flex-direction:row;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+  .brand span,.rail-foot{display:none}
+  .brand{padding:0}
+  .nav{flex-direction:row}
+  .nav button{padding:7px 10px;white-space:nowrap}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 50px}
+  .grid2,.grid3{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{border-right:0;border-bottom:1px solid var(--line)}
+  .kpi:nth-child(odd){border-right:1px solid var(--line)}
+  fieldset,.subgrid{grid-template-columns:minmax(0,1fr)}
+  .exp{grid-template-columns:minmax(0,1fr)}
+  .recap{grid-template-columns:minmax(0,1fr)} .recap dt{margin-top:6px}
+  .step{grid-template-columns:60px minmax(0,1fr);gap:10px} .step::before{left:29px}
+  .q{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .2s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 12 18 6"/></svg></div>
+      <div><b>Cockpit</b><span>Prospection B2B</span></div>
+    </div>
+    <div class="create">
+      <span class="label">Créer</span>
+      <button class="btn primary block" id="nav-new-search">+ Créer une recherche</button>
+      <button class="btn block" id="nav-new-seq">+ Créer une séquence</button>
+    </div>
+    <div class="navsec"><span class="label">Bibliothèque de recherches</span><nav class="nav" id="nav-lib" aria-label="Recherches"></nav></div>
+    <div class="navsec"><span class="label">Outils</span>
+    <nav class="nav" aria-label="Sections">
+      <button data-v="espace">Espace de travail</button>
+      <button data-v="appels">Appels <span class="count" id="nc-c" hidden>0</span></button>
+      <button data-v="tableau">Tableau de bord <span class="count" id="nc-r" hidden>0</span></button>
+      <button data-v="prospects">Prospects <span class="count" id="nc-p">0</span></button>
+      <button data-v="sequences">Séquences</button>
+      <button data-v="profil">Profil</button>
+    </nav></div>
+    <div class="rail-foot">
+      <div><span class="dot" id="st-db"></span><span id="st-db-t">Connexion…</span></div>
+      <div><span class="dot" id="st-ai"></span><span id="st-ai-t">IA : vérification…</span></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <button class="btn ghost" id="support-btn" title="Écrire au support">Support</button>
+      <span class="crm-state" id="crm-state">CRM jamais synchronisé</span>
+      <button class="btn primary" id="crm-sync" title="Envoie vers NetHunt tout ce que vous avez fait dans l'outil depuis la dernière mise à jour">Mettre à jour le CRM</button>
+      <div class="crm-pan" id="crm-pan" hidden role="status"></div>
+      <div class="crm-pan" id="rep-pan" hidden role="status"></div>
+    </div>
+
+    <!-- ESPACE DE TRAVAIL -->
+    <section class="view ws" id="v-espace">
+      <div class="ws-head">
+        <h1>Espace de travail</h1>
+        <p class="muted">Demandez ce que vous voulez en une phrase. L'assistant connaît vos recherches, vos prospects et vos séquences, et agit directement dans l'outil.</p>
+      </div>
+      <div class="ws-log" id="chat-log" aria-live="polite"></div>
+      <form class="chat-bar ws-bar" id="chat-form">
+        <svg class="spark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0l1.8 5.2L15 7l-5.2 1.8L8 14l-1.8-5.2L1 7l5.2-1.8z"/></svg>
+        <textarea id="chat-in" rows="1" aria-label="Message à l'assistant" placeholder="« Relance tout ce qui est dû », « Ajoute la société Durand Logistique à Lyon »…"></textarea>
+        <button class="btn sm ghost" type="button" id="chat-clear">Nouvelle conversation</button>
+        <button class="btn" type="button" id="chat-stop" hidden>Arrêter</button>
+        <button class="btn primary" type="submit" id="chat-send">Envoyer</button>
+      </form>
+    </section>
+
+    <!-- APPELS -->
+    <section class="view" id="v-appels" hidden>
+      <div class="view-head">
+        <div><h1>Appels</h1><p>La file d'appels, dans l'ordre. Après chaque appel, collez la transcription ou vos notes : le compte rendu, le statut, la qualification et le rappel se mettent à jour seuls.</p></div>
+        <div class="actions"><select class="input" id="call-scope" aria-label="Recherche" style="width:auto"></select></div>
+      </div>
+      <div class="callgrid">
+        <div class="panel callq"><div class="panel-head"><h2>File d'appels</h2><span class="label" id="callq-n"></span></div><div class="list" id="callq"></div></div>
+        <div id="callcard"></div>
+      </div>
+    </section>
+
+    <!-- RECHERCHE (bibliothèque) -->
+    <section class="view" id="v-recherche" hidden>
+      <div class="view-head">
+        <div><span class="label">Bibliothèque de recherche</span><h1 id="r-name">Recherche</h1><p id="r-crit"></p></div>
+        <div class="actions">
+          <button class="btn" id="r-add">+ Prospect</button>
+          <button class="btn" id="r-relance-all" title="Crée en une fois les brouillons Gmail de toutes les relances dues de cette recherche">Relancer tout</button>
+          <button class="btn primary" id="r-launch" title="Prépare l'email J0 de tous les prospects « À contacter » et programme leurs relances">Lancer la séquence</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn sm ghost" id="r-import">Importer des prospects</button>
+        <button class="btn sm ghost" id="r-prompt">Prompt de sourcing</button>
+        <button class="btn sm ghost" id="r-target">✦ Ciblage IA</button>
+        <button class="btn sm ghost" id="r-angles">✦ Angles manquants</button>
+        <button class="btn sm ghost" id="r-analyze">✦ Analyser les résultats</button>
+        <button class="btn sm ghost" id="r-edit">Modifier la recherche</button>
+      </div>
+      <div id="r-ai" hidden></div>
+      <div class="kpis" id="r-kpis"></div>
+      <div id="r-import-box" hidden></div>
+      <div class="tablewrap"><table><thead id="r-thead"></thead><tbody id="r-tbody"></tbody></table></div>
+    </section>
+    <!-- TABLEAU DE BORD -->
+    <section class="view" id="v-tableau" hidden>
+      <div class="view-head">
+        <div><h1>Tableau de bord</h1><p id="dash-sub">Votre pipeline de prospection, de l'identification au rendez-vous.</p></div>
+        <div class="actions"><button class="btn primary" id="dash-add">+ Ajouter un prospect</button></div>
+      </div>
+      <div id="dash-cta"></div>
+      <div class="kpis" id="kpis"></div>
+      <div id="rates"></div>
+      <div class="grid2">
+        <div class="panel"><div class="panel-head"><h2>Relances à faire</h2><button class="btn sm primary" id="dash-rl-all" title="Crée les brouillons Gmail de toutes les relances dues">Relancer tout</button></div><div class="list" id="dash-relances"></div></div>
+        <div class="panel"><div class="panel-head"><h2>Priorités à contacter</h2><span class="label">priorité haute</span></div><div class="list" id="dash-top"></div></div>
+      </div>
+    </section>
+
+    <!-- PROSPECTS -->
+    <section class="view" id="v-prospects" hidden>
+      <div class="view-head">
+        <div><h1>Tableau de suivi</h1><p>Un seul tableau vivant : statuts, relances, complétude des fiches et score de qualification se mettent à jour à chaque action.</p></div>
+        <div class="actions">
+          <button class="btn" id="btn-angles">✦ Angles manquants</button>
+          <button class="btn" id="btn-import">Importer</button>
+          <button class="btn" id="btn-export">Exporter CSV (Excel / CRM)</button>
+          <button class="btn primary" id="btn-add">+ Ajouter</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input class="input" id="q" type="search" placeholder="Rechercher une entreprise, un contact, une ville…" aria-label="Rechercher">
+        <select class="input" id="f-status" aria-label="Filtrer par statut"></select>
+        <select class="input" id="f-search" aria-label="Filtrer par recherche"></select>
+        <select class="input" id="f-prio" aria-label="Filtrer par priorité"><option value="">Toutes priorités</option><option value="A">Haute</option><option value="B">Moyenne</option><option value="C">Basse</option></select>
+        <label class="check"><input type="checkbox" id="f-late"> Relances dues seulement</label>
+      </div>
+      <div id="import-box" hidden></div>
+      <div class="tablewrap"><table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+      <p class="muted" style="font-size:.82rem">Coordonnées : T = numéro direct · E = email direct · L = LinkedIn · Q = phrase de qualification. Une donnée « À enrichir » compte comme manquante.</p>
+    </section>
+
+    <!-- SEQUENCES -->
+    <section class="view" id="v-sequences" hidden>
+      <div class="view-head">
+        <div><h1>Séquences de prospection</h1><p>Deux pistes en parallèle : les emails (J0 puis relances) et LinkedIn (invitation, message, relance). Vous relisez tout avant envoi.</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><h2>Bibliothèque de séquences</h2><p class="muted" style="font-size:.85rem">Des modèles réutilisables, attribués à vos recherches. Ce sont eux qui servent aux relances en un clic.</p></div>
+          <div class="actions"><select class="input" id="tpl-pick" aria-label="Choisir une séquence" style="width:auto"></select><button class="btn" id="tpl-new">+ Nouvelle séquence</button></div></div>
+        <div id="tpl-body" style="display:flex;flex-direction:column;gap:14px"></div>
+      </div>
+      <h2 style="margin-top:6px">Séquence personnalisée pour un prospect</h2>
+      <p class="muted" style="margin-top:-14px">Optionnelle : si elle existe, elle remplace le modèle de la recherche pour ce prospect.</p>
+      <div class="panel">
+        <div class="toolbar">
+          <select class="input" id="seq-pick" aria-label="Choisir un prospect" style="flex:1 1 260px"></select>
+          <button class="btn primary" id="seq-gen"><svg class="ai" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0l1.8 5.2L15 7l-5.2 1.8L8 14l-1.8-5.2L1 7l5.2-1.8z"/></svg>Générer la séquence</button>
+          <button class="btn" id="seq-save">Enregistrer</button>
+        </div>
+      </div>
+      <div id="seq-body"></div>
+    </section>
+
+    <!-- PROFIL -->
+    <section class="view" id="v-profil" hidden>
+      <div class="view-head">
+        <div><h1>Profil</h1><p>Votre signature d'emails et les services connectés à l'outil. Les critères de ciblage se règlent dans chaque recherche.</p></div>
+      </div>
+      <div class="panel" id="pf-sig"></div>
+      <div id="pf-conn"></div>
+      <div id="pf-param" hidden>
+      <div id="pf-launch"></div>
+      <form class="qform" id="pf"></form>
+      <div class="panel" id="pf-recap-panel"><div class="panel-head"><h2>Récapitulatif retenu</h2></div><dl class="recap" id="pf-recap"></dl></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Fiche prospect"></aside>
+<div id="toast" hidden role="status"></div>
+
+<script>
+/* ---------- Constantes ---------- */
+const STATUSES=["À contacter","Contacté","Relancé","A répondu","RDV planifié","Gagné","Perdu"];
+const PRIO={A:"Haute",B:"Moyenne",C:"Basse"};
+const FRAMEWORKS={
+  BANT:["Budget","Autorité","Besoin","Délai"],
+  MEDDIC:["Métriques","Acheteur économique","Critères de décision","Processus de décision","Douleur identifiée","Champion"],
+  SPICED:["Situation","Problème","Impact","Événement critique","Décision"],
+  CHAMP:["Défis","Autorité","Argent","Priorité"]
+};
+const FW_HELP={BANT:"Rapide, ventes simples.",MEDDIC:"Ventes complexes, plusieurs décideurs.",SPICED:"Ventes orientées valeur.",CHAMP:"Centré sur le problème du prospect."};
+const F={
+  company:["Nom de l'entreprise","ind"],sector:["Secteur précis","ind"],city:["Ville / localisation","ind"],size:["Taille (salariés, sites…)","ind"],contactName:["Interlocuteur (prénom, nom)","ind"],contactRole:["Fonction de l'interlocuteur","ind"],
+  website:["Site internet","util"],clientele:["Clientèle type","util"],standing:["Gamme / standing","util"],offreExistante:["Offre existante proche de la vôtre","util"],actualite:["Actualité récente","util",1],
+  phone:["Numéro direct","coord"],email:["Email direct","coord"],linkedin:["LinkedIn","coord"],qualification:["Phrase de qualification","coord",1],
+  canal:["Canal préféré","opt"],problematiques:["Problématiques glanées","opt",1],
+  signals:["Signaux d'achat","pil",1],angle:["Angle commercial","pil",1],notes:["Notes","pil",1]
+};
+const WEIGHTS={company:2,sector:2,city:2,size:2,contactName:2,contactRole:2,website:1,clientele:1,standing:1,offreExistante:1,actualite:1,phone:1,email:1,linkedin:1,qualification:2,canal:1,problematiques:1};
+const CSV_COLS=["company","sector","city","size","contactName","contactRole","phone","email","linkedin","website","qualification","priority","status","lastContact","nextFollowUp","relances","signals","angle","canal","clientele","standing","offreExistante","actualite","problematiques","notes"];
+const CSV_HEAD={company:"Entreprise",sector:"Secteur",city:"Ville",size:"Taille",contactName:"Interlocuteur",contactRole:"Fonction",phone:"Téléphone direct",email:"Email",linkedin:"LinkedIn",website:"Site web",qualification:"Phrase de qualification",priority:"Priorité",status:"Statut",lastContact:"Dernier contact",nextFollowUp:"Prochaine relance",relances:"Nb relances",signals:"Signaux d'achat",angle:"Angle d'approche",canal:"Canal",clientele:"Clientèle",standing:"Standing",offreExistante:"Offre existante",actualite:"Actualité",problematiques:"Problématiques",notes:"Notes"};
+const PROFILE_Q=[
+  {k:"geo",t:"Secteur géographique",d:"Où se trouvent vos prospects (pays, régions, villes) ?",ex:"Ex. : Auvergne-Rhône-Alpes et Suisse romande"},
+  {k:"secteur",t:"Secteur d'activité",d:"Quel type d'entreprises cibler ?",ex:"Ex. : groupes hôteliers boutique, cliniques privées, ESN"},
+  {k:"ca",t:"Chiffre d'affaires visé",d:"CA des entreprises cibles, et votre objectif commercial si vous en avez un.",ex:"Ex. : 2 à 50 M€ de CA ; objectif 8 nouveaux clients d'ici juin"},
+  {k:"salaries",t:"Fourchette de salariés",d:"Taille des entreprises cibles.",ex:"Ex. : 20 à 250 salariés"},
+  {k:"motifs",t:"Motifs de prospection",d:"Votre objectif : distributeurs, partenaires, vente directe, revendeurs, nouveau marché…",ex:"Ex. : vente directe + 2 partenaires intégrateurs"},
+  {k:"activite",t:"Détail de l'activité",d:"Ce que vous vendez, à quel prix, ce qui vous différencie.",ex:"Ex. : logiciel de planning, 290 €/mois, déployé en 48 h",sub:[["prix","Prix / panier moyen"],["diff","Différenciation"],["fonctions","Fonctions à viser chez les cibles"],["volume","Prospects dans la première liste"],["ton","Ton et langue des messages"],["signature","Signature des messages"],["fw","Framework de qualification"]]}
+];
+
+/* ---------- État ---------- */
+const S={profile:{},prospects:[],experiments:[],searches:[],templates:[],searchId:"",ciblage:null,coach:null,view:"espace",readonly:false,loaded:false};
+let DB=null,SAMPLE=null,MCP=null,DL=null;
+const LKEY="cockpit-prospection-v1";
+
+/* ---------- Utilitaires ---------- */
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const has=v=>{const s=String(v??"").trim();return !!s&&!/^à enrichir/i.test(s)};
+const isEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
+const pad=n=>String(n).padStart(2,"0");
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())};
+const addDays=(iso,n)=>{const [y,m,d]=iso.split("-").map(Number);const t=new Date(y,m-1,d+n);return t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(t.getDate())};
+const fmtD=iso=>{if(!iso)return"";const [y,m,d]=iso.split("-");return d+"/"+m};
+const uid=()=>"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3200)}
+async function copy(text,btn){try{await navigator.clipboard.writeText(text);toast("Copié dans le presse-papiers")}catch{toast("Copie impossible ici : sélectionnez le texte manuellement")}}
+const use=n=>window.claude&&window.claude.use?window.claude.use(n).catch(()=>null):Promise.resolve(null);
+
+function completeness(p){let got=0,tot=0;for(const k in WEIGHTS){tot+=WEIGHTS[k];if(has(p[k]))got+=WEIGHTS[k]}return Math.round(got/tot*100)}
+function qualScore(p){const q=p.qualif;if(!q||!FRAMEWORKS[q.fw])return null;const items=FRAMEWORKS[q.fw];let s=0;items.forEach(i=>s+=(q.v&&q.v[i])||0);return Math.round(s/(items.length*2)*100)}
+function dueState(p){if(!p.nextFollowUp||!["Contacté","Relancé"].includes(p.status))return null;const t=today();if(p.nextFollowUp<t)return"late";if(p.nextFollowUp===t)return"today";return"later"}
+function applyStatus(p,st){
+  const t=today();p.status=st;
+  if(st==="Contacté"){p.firstContact=p.firstContact||t;p.lastContact=t;p.relances=0;p.nextFollowUp=addDays(t,delaysFor(p).r1)}
+  else if(st==="Relancé"){p.relances=(p.relances||0)+1;p.lastContact=t;p.firstContact=p.firstContact||t;const dl=delaysFor(p).all,k=p.relances,nk=k<5?addDays(p.firstContact,dl[k]):"";p.nextFollowUp=k<5?(nk>t?nk:addDays(t,Math.max(1,dl[k]-dl[k-1]))):""}
+  else{p.nextFollowUp=""; if(st!=="À contacter")p.lastContact=p.lastContact||t}
+  return p;
+}
+function stats(P=S.prospects){
+  const n=P.length,by=s=>P.filter(p=>p.status===s).length;
+  const contacted=P.filter(p=>p.status&&p.status!=="À contacter").length;
+  const replied=by("A répondu")+by("RDV planifié")+by("Gagné");
+  const rdv=by("RDV planifié")+by("Gagné"),won=by("Gagné");
+  return{n,contacted,replied,rdv,won,lost:by("Perdu"),
+    emails:P.filter(p=>isEmail(p.email)).length,
+    enriched:P.filter(p=>completeness(p)>=75).length,
+    late:P.filter(p=>dueState(p)==="late").length,
+    due:P.filter(p=>["late","today"].includes(dueState(p))).length,
+    rReply:pct(replied,contacted),rRdv:pct(rdv,contacted),rConv:pct(won,rdv)};
+}
+const nonEmpty=o=>{const r={};if(o)for(const k in o)if(has(o[k]))r[k]=o[k];return r};
+function profileText(s){const p={...(S.profile||{}),...nonEmpty(s&&pickKeys(s))};return(s?"Recherche : "+s.name+(has(s.notes)?" — notes : "+s.notes:"")+"\n":"")+PROFILE_Q.map(q=>q.t+" : "+(p[q.k]||"non renseigné")).join("\n")+
+  "\nPrix : "+(p.prix||"—")+"\nDifférenciation : "+(p.diff||"—")+"\nFonctions visées : "+(p.fonctions||"—")+"\nTon / langue : "+(p.ton||"professionnel, français")}
+const profileFilled=()=>PROFILE_Q.filter(q=>has(S.profile?.[q.k])).length;
+
+/* ---------- Stockage ---------- */
+function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify({profile:S.profile,prospects:S.prospects,experiments:S.experiments,ciblage:S.ciblage,coach:S.coach,crm:S.crm,searches:S.searches,templates:S.templates}))}catch{}}
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LKEY)||"null");if(d){Object.assign(S,{profile:d.profile||{},prospects:d.prospects||[],experiments:d.experiments||[],ciblage:d.ciblage||null,coach:d.coach||null,crm:d.crm||null,searches:d.searches||[],templates:d.templates||[]});return true}}catch{}return false}
+function clean(o){const r={};for(const k in o){if(k==="id"||o[k]===undefined)continue;r[k]=o[k]}return r}
+function dbErr(e){if(e&&e.code==="invalid_argument"){S.readonly=true;toast("Lecture seule : vous ne pouvez pas modifier ces données.")}else if(e&&e.code==="quota_exceeded")toast("Base pleine : supprimez des prospects pour en ajouter.");else toast("Enregistrement impossible pour le moment. Réessayez.")}
+async function put(col,id,data){
+  if(DB){try{await DB.collection(col).doc(id).set(clean(data))}catch(e){dbErr(e);throw e}}
+  else{const arr={prospects:S.prospects,experiments:S.experiments,searches:S.searches,templates:S.templates}[col]||null;
+    if(arr){const i=arr.findIndex(x=>x.id===id);const v={...data,id};if(i>=0)arr[i]=v;else arr.push(v)}
+    else if(col==="config"){S[id]=data}
+    saveLocal();renderLive()}
+}
+async function del(col,id){
+  if(DB){try{await DB.collection(col).doc(id).delete()}catch(e){dbErr(e)}}
+  else{if(Array.isArray(S[col]))S[col]=S[col].filter(x=>x.id!==id);saveLocal();renderLive()}
+}
+const saveProspect=p=>put("prospects",p.id,p);
+
+function examples(){const t=today();return[
+  {id:"ex1",example:true,company:"Hôtels Alpins Réunis (exemple)",sector:"Groupe hôtelier boutique 4*",city:"Annecy",size:"6 hôtels · 140 salariés",contactName:"À enrichir",contactRole:"Directeur des opérations",website:"À enrichir",actualite:"Ouverture d'un 7e établissement annoncée (exemple)",qualification:"Ouverture d'un 7e hôtel : besoin d'harmoniser les plannings sur tous les sites.",priority:"A",status:"Contacté",firstContact:addDays(t,-5),lastContact:addDays(t,-5),nextFollowUp:addDays(t,-1),relances:0,canal:"LinkedIn",signals:"Croissance, recrutements saisonniers",createdAt:Date.now()},
+  {id:"ex2",example:true,company:"Clinique du Parc (exemple)",sector:"Clinique privée MCO",city:"Lyon 6e",size:"320 salariés",contactName:"À enrichir",contactRole:"DRH",qualification:"À enrichir",priority:"A",status:"À contacter",relances:0,createdAt:Date.now()-1},
+  {id:"ex3",example:true,company:"Logistique Rhône Express (exemple)",sector:"Transport et entreposage",city:"Villeurbanne",size:"85 salariés",contactName:"À enrichir",contactRole:"Responsable d'exploitation",email:"À enrichir",priority:"B",status:"RDV planifié",firstContact:addDays(t,-12),lastContact:addDays(t,-3),relances:1,qualif:{fw:"BANT",v:{Budget:1,"Autorité":2,Besoin:2,"Délai":1}},createdAt:Date.now()-2},
+  {id:"ex4",example:true,company:"Atelier Bois Savoie (exemple)",sector:"Menuiserie industrielle",city:"Chambéry",size:"40 salariés",contactName:"À enrichir",contactRole:"Gérant",priority:"C",status:"Relancé",firstContact:addDays(t,-9),lastContact:addDays(t,-5),nextFollowUp:t,relances:1,createdAt:Date.now()-3}
+]}
+
+async function boot(){
+  routeFromHash();renderAll();
+  const [db,user]=await Promise.all([use("db"),use("user")]);
+  if(db){
+    DB=db;setDot("db","on","Données enregistrées dans l'artefact");
+    try{if(user&&user.can){const c=await user.can("data.write");if(c===false){S.readonly=true;setDot("db","warn","Lecture seule")}}}catch{}
+    db.collection("prospects").onSnapshot(s=>{S.prospects=s.docs.map(d=>({id:d.id,...d.data()}));S.loaded=true;renderLive()},e=>dbErr(e));
+    db.collection("searches").onSnapshot(s=>{S.searches=s.docs.map(d=>({id:d.id,...d.data()}));renderLive()},()=>{});
+    db.collection("templates").onSnapshot(s=>{S.templates=s.docs.map(d=>({id:d.id,...d.data()}));renderLive()},()=>{});
+    db.collection("config").onSnapshot(s=>{
+      const firstLoad=!S._cfg;S._cfg=true;
+      s.docs.forEach(d=>{if(d.id==="profile")S.profile=d.data()||{};if(d.id==="ciblage")S.ciblage=d.data();if(d.id==="coach")S.coach=d.data();if(d.id==="crm")S.crm=d.data()});
+      renderLive(); if(firstLoad&&S.view==="profil")renderProfil();
+    },()=>{});
+  }else{
+    if(!loadLocal()){S.prospects=examples().map(p=>({...p,searchId:"ex-search"}));S.templates=[{...TPL_STD}];S.searches=[{...EX_SEARCH}]}
+    S.loaded=true;setDot("db","warn","Mode local (ce navigateur)");renderAll();
+  }
+  use("sample").then(s=>{SAMPLE=s;setDot("ai",s?"on":"",s?"IA disponible":"IA indisponible ici")});
+  use("mcp").then(m=>{MCP=m});
+  use("downloads").then(d=>{DL=d});
+}
+function setDot(which,cls,txt){const d=$("#st-"+which);d.className="dot "+cls;$("#st-"+which+"-t").textContent=txt}
+
+/* ---------- Navigation ---------- */
+const VIEWS=["espace","appels","tableau","prospects","sequences","profil","recherche"];
+function routeFromHash(){const h=(location.hash||"").slice(1);if(VIEWS.includes(h)&&(h!=="recherche"||S.searchId))S.view=h}
+function go(v){S.view=v;try{history.replaceState(null,"","#"+v)}catch{}renderAll();window.scrollTo(0,0)}
+document.querySelectorAll(".nav button[data-v]").forEach(b=>b.onclick=()=>go(b.dataset.v));
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)go(g.dataset.go)});
+window.addEventListener("hashchange",()=>{routeFromHash();renderAll()});
+
+function renderAll(){
+  VIEWS.forEach(v=>{$("#v-"+v).hidden=v!==S.view});
+  document.querySelectorAll(".nav button[data-v]").forEach(b=>b.dataset.v===S.view?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  renderCounts();
+  ({espace:()=>{renderChat();setTimeout(()=>$("#chat-in").focus(),30)},appels:()=>renderCalls(true),tableau:renderDash,prospects:renderTable,sequences:()=>{renderTpl();renderSeqPicker()},profil:renderProfil,recherche:renderSearch})[S.view]();
+}
+function renderLive(){renderCounts();if(S.view==="tableau")renderDash();if(S.view==="prospects")renderTable();if(S.view==="espace"&&!CH.turns.length&&!CH.busy)renderChat();if(S.view==="appels")renderCalls(false);if(S.view==="recherche")renderSearch();if(S.view==="sequences"){if(!TPL)renderTpl();else renderTplPicker();renderSeqPicker(true)}}
+function renderCounts(){const st=stats();$("#nc-p").textContent=st.n;const r=$("#nc-r");r.hidden=!st.due;r.textContent=st.due;r.className="count alert";
+  const n=crmPending().length,b=$("#crm-sync");if(!b.disabled)b.innerHTML="Mettre à jour le CRM"+(n?` <span class="count" title="prospects modifiés depuis la dernière mise à jour">${n}</span>`:"");
+  $("#crm-state").textContent=S.crm&&S.crm.at?"Dernière mise à jour CRM : "+S.crm.at+(n?"":" · à jour"):"CRM jamais synchronisé";
+  const cb=S.prospects.filter(p=>p.callBack&&p.callBack<=today()&&!["Gagné","Perdu"].includes(p.status)).length,nc=$("#nc-c");nc.hidden=!cb;nc.textContent=cb;nc.className="count alert";
+  renderNavLib()}
+
+/* ---------- Tableau de bord ---------- */
+function renderDash(){
+  const st=stats();
+  $("#kpis").innerHTML=kpiHTML(st);
+  const due=S.prospects.filter(p=>["late","today"].includes(dueState(p))).sort((a,b)=>a.nextFollowUp.localeCompare(b.nextFollowUp));
+  $("#dash-relances").innerHTML=due.length?due.slice(0,6).map(p=>`<div class="li"><div class="who"><b>${esc(p.company)}</b><span>${esc(p.contactRole||"")} · relance ${(p.relances||0)+1}/5 ·${p.canal?esc(p.canal):"canal à définir"}</span></div><div class="actions">${dueChip(p)}<button class="btn sm primary" data-rl="${esc(p.id)}" title="Crée le brouillon Gmail de la relance et programme la suivante">Relancer</button><button class="btn sm ghost" data-relance="${esc(p.id)}" title="Marquer la relance comme faite, sans brouillon">Faite</button></div></div>`).join(""):`<p class="empty">Aucune relance due aujourd'hui. Les relances se programment seules quand un prospect passe en « Contacté » : 5 relances email, selon la séquence de sa recherche.</p>`;
+  const top=S.prospects.filter(p=>p.priority==="A"&&(p.status||"À contacter")==="À contacter");
+  $("#dash-top").innerHTML=top.length?top.slice(0,6).map(p=>`<div class="li"><div class="who"><b>${esc(p.company)}</b><span>${has(p.qualification)?esc(p.qualification):'<span class="enrich">Phrase de qualification à enrichir</span>'}</span></div><div class="actions"><button class="btn sm" data-open="${esc(p.id)}">Fiche</button><button class="btn sm" data-seq="${esc(p.id)}">Séquence</button></div></div>`).join(""):`<p class="empty">Aucun prospect prioritaire en attente. Ajoutez-en ou importez une liste.</p>`;
+  renderRates();
+  renderPlan();
+  const ex=S.prospects.some(p=>p.example);
+  $("#dash-sub").innerHTML=ex?`Le tableau contient des <b>prospects d'exemple</b> (marqués « exemple ») pour vous montrer le fonctionnement. Supprimez-les quand vous ajoutez les vôtres.`:"Votre pipeline de prospection, de l'identification au rendez-vous.";
+}
+function dueChip(p){const d=dueState(p);if(d==="late")return`<span class="chip late">En retard · ${fmtD(p.nextFollowUp)}</span>`;if(d==="today")return`<span class="chip today">Aujourd'hui</span>`;if(d==="later")return`<span class="chip">${fmtD(p.nextFollowUp)}</span>`;return'<span class="muted">—</span>'}
+$("#dash-add").onclick=()=>openDrawer(null);
+document.addEventListener("click",async e=>{
+  const o=e.target.closest("[data-open]");if(o){openDrawer(o.dataset.open);return}
+  const s=e.target.closest("[data-seq]");if(s){S.seqId=s.dataset.seq;go("sequences");return}
+  const r=e.target.closest("[data-relance]");if(r){const p=S.prospects.find(x=>x.id===r.dataset.relance);if(p){await saveProspect(applyStatus({...p},"Relancé"));toast("Relance enregistrée")}}
+});
+
+/* ---------- Tableau de suivi ---------- */
+$("#f-status").innerHTML=`<option value="">Tous statuts</option>`+STATUSES.map(s=>`<option>${s}</option>`).join("");
+["#q","#f-status","#f-prio","#f-late","#f-search"].forEach(s=>$(s).addEventListener("input",renderTable));
+function sortRows(L){const order={A:0,B:1,C:2},rk=p=>dueState(p)==="late"?0:dueState(p)==="today"?1:2;return[...L].sort((a,b)=>rk(a)-rk(b)||(order[a.priority]??3)-(order[b.priority]??3)||(a.createdAt||0)-(b.createdAt||0))}
+function filtered(){
+  const q=$("#q").value.trim().toLowerCase(),fs=$("#f-status").value,fp=$("#f-prio").value,fl=$("#f-late").checked,fr=$("#f-search").value;
+  return sortRows(S.prospects.filter(p=>{
+    if(fs&&(p.status||"À contacter")!==fs)return false;if(fp&&p.priority!==fp)return false;if(fl&&!["late","today"].includes(dueState(p)))return false;
+    if(fr==="none"&&sidOf(p))return false;if(fr&&fr!=="none"&&sidOf(p)!==fr)return false;
+    if(q&&![p.company,p.contactName,p.city,p.sector,p.contactRole].join(" ").toLowerCase().includes(q))return false;return true;
+  }));
+}
+const TH=withS=>`<tr><th>Priorité</th><th>Entreprise</th><th>Angle commercial</th>${withS?"<th>Recherche</th>":""}<th>Ville</th><th>Décideur</th><th>Coordonnées</th><th>Statut</th><th>Prochaine relance</th><th>Fiche</th><th>Qualif.</th><th></th></tr>`;
+function renderTable(){
+  const fs=$("#f-search"),v=fs.value;fs.innerHTML=`<option value="">Toutes recherches</option>`+S.searches.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("")+`<option value="none">Sans recherche</option>`;fs.value=v;if(fs.value!==v)fs.value="";
+  renderRows($("#tbody"),filtered(),true);
+}
+function renderRows(tb,rows,withS){
+  const cols=withS?12:11;
+  if(!S.loaded){tb.innerHTML=`<tr><td colspan="${cols}" class="empty">Chargement de vos prospects…</td></tr>`;return}
+  if(!rows.length){tb.innerHTML=`<tr><td colspan="${cols}" class="empty">${withS&&S.prospects.length?"Aucun prospect ne correspond à ces filtres.":"Aucun prospect ici pour l'instant. Ajoutez-en un ou importez une liste (CSV ou JSON)."}</td></tr>`;return}
+  tb.innerHTML=rows.map(p=>{
+    const c=completeness(p),qs=qualScore(p),d=dueState(p),st=p.status||"À contacter";
+    return`<tr class="${d==="late"?"overdue":d==="today"?"due":""}">
+      <td><span class="prio ${esc(p.priority||"C")}">${PRIO[p.priority]||"Basse"}</span></td>
+      <td><div class="co"><b>${esc(p.company||"Sans nom")}</b><span>${esc(p.sector||"")}</span>${p.example?' <span class="chip ex">exemple</span>':""}</div></td>
+      <td class="angle">${has(p.angle)?`<span class="ang" title="${esc(p.angle)}">${esc(p.angle)}</span><button class="btn sm ghost" data-cpa="${esc(p.id)}">Copier</button>`:`<button class="btn sm" data-ga="${esc(p.id)}">✦ Générer l'angle</button>`}</td>
+      ${withS?`<td>${sidOf(p)?`<button class="btn sm ghost" data-s="${esc(p.searchId)}">${sname(p.searchId)}</button>`:'<span class="muted">—</span>'}</td>`:""}
+      <td>${esc(p.city||"")}</td>
+      <td><div class="co"><b>${has(p.contactName)?esc(p.contactName):'<span class="enrich">À enrichir</span>'}</b><span>${esc(p.contactRole||"")}</span></div></td>
+      <td><div class="coords"><span class="${has(p.phone)?"has":""}" title="Numéro direct">T</span><span class="${isEmail(p.email)?"has":""}" title="Email direct">E</span><span class="${has(p.linkedin)?"has":""}" title="LinkedIn">L</span><span class="${has(p.qualification)?"has":""}" title="Phrase de qualification">Q</span></div></td>
+      <td><select class="status-sel" data-st="${esc(p.id)}" aria-label="Statut de ${esc(p.company)}" ${S.readonly?"disabled":""}>${STATUSES.map(s=>`<option ${s===st?"selected":""}>${s}</option>`).join("")}</select></td>
+      <td>${dueChip(p)}${p.relances?` <span class="muted mono" style="font-size:.72rem">R${p.relances}</span>`:""}</td>
+      <td><div class="gauge ${c<50?"low":c<75?"mid":""}"><div class="g"><i style="width:${c}%"></i></div><span class="num">${c}%</span></div></td>
+      <td class="num">${qs===null?'<span class="muted">—</span>':qs+" %"}</td>
+      <td><div class="actions" style="flex-wrap:nowrap">${canRelance(p)?`<button class="btn sm ${d==="late"||d==="today"?"primary":""}" data-rl="${esc(p.id)}" title="Crée le brouillon Gmail de la relance ${(p.relances||0)+1} et programme la suivante">Relancer</button>`:""}<button class="btn sm" data-open="${esc(p.id)}">Fiche</button><button class="btn sm ghost" data-seq="${esc(p.id)}">Séquence</button></div></td>
+    </tr>`}).join("");
+}
+document.addEventListener("change",async e=>{
+  const s=e.target.closest("[data-st]");if(!s)return;
+  const p=S.prospects.find(x=>x.id===s.dataset.st);if(!p)return;
+  const n=applyStatus({...p},s.value);await saveProspect(n);
+  toast(s.value==="Contacté"?"Relance 1 programmée le "+fmtD(n.nextFollowUp):s.value==="Relancé"?(n.nextFollowUp?"Relance suivante le "+fmtD(n.nextFollowUp):"Séquence de relances terminée"):"Statut mis à jour");
+});
+$("#btn-add").onclick=()=>openDrawer(null);
+
+/* Export */
+function toCSV(){const sep=";";const q=v=>{const s=String(v??"");return /[";\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const lines=[CSV_COLS.map(c=>CSV_HEAD[c]).join(sep)].concat(S.prospects.map(p=>CSV_COLS.map(c=>c==="priority"?PRIO[p[c]]||"":q(p[c])).join(sep)));return"﻿"+lines.join("\r\n")}
+$("#btn-export").onclick=async()=>{
+  if(!S.prospects.length){toast("Aucun prospect à exporter");return}
+  const csv=toCSV();
+  if(DL){try{await DL.save({filename:"Prospects_Suivi_"+today()+".csv",data:csv});toast("Fichier enregistré");return}catch(e){if(e&&e.code==="declined")return}}
+  showImport(true,csv);
+};
+/* Import */
+$("#btn-import").onclick=()=>showImport();
+function showImport(exportMode,csv,b=$("#import-box"),sid=""){
+  ["#import-box","#r-import-box"].forEach(s=>{$(s).hidden=true;$(s).innerHTML=""});b.hidden=false;
+  if(exportMode){b.innerHTML=`<div class="panel"><div class="panel-head"><h3>Export CSV</h3><div class="actions"><button class="btn sm" id="ex-copy">Copier</button><button class="btn sm ghost" id="imp-close">Fermer</button></div></div><p class="muted" style="margin-bottom:8px">Le téléchargement n'est pas disponible ici : copiez ce contenu dans un fichier .csv (séparateur point-virgule, ouvert directement par Excel).</p><textarea class="input mono" id="ex-ta" rows="8" readonly></textarea></div>`;
+    $("#ex-ta").value=csv;$("#ex-copy").onclick=()=>copy(csv);$("#imp-close").onclick=()=>b.hidden=true;return}
+  b.innerHTML=`<div class="panel"><div class="panel-head"><h3>Importer des prospects${sid?" dans « "+sname(sid)+" »":""}</h3><button class="btn sm ghost" id="imp-close">Fermer</button></div>
+    <div class="grid2"><div class="fld"><label for="imp-file">Fichier CSV ou JSON</label><input class="input" type="file" id="imp-file" accept=".csv,.json,.txt"></div>
+    <div class="fld"><label for="imp-ta">…ou collez le contenu</label><textarea class="input mono" id="imp-ta" rows="5" placeholder="Entreprise;Secteur;Ville;Taille;Interlocuteur;Fonction;…"></textarea></div></div>
+    <div class="actions" style="margin-top:10px"><button class="btn primary" id="imp-go">Importer</button><span class="muted" id="imp-msg" style="font-size:.85rem">Colonnes reconnues : celles de l'export (Entreprise, Secteur, Ville, Taille, Interlocuteur, Fonction, Email…). Les cases vides restent « À enrichir ».</span></div></div>`;
+  $("#imp-close").onclick=()=>b.hidden=true;
+  $("#imp-file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>$("#imp-ta").value=r.result;r.readAsText(f)};
+  $("#imp-go").onclick=()=>doImport(sid);
+}
+function parseCSV(text){text=text.replace(/^﻿/,"");const first=text.split(/\r?\n/)[0]||"";const sep=(first.match(/;/g)||[]).length>=(first.match(/,/g)||[]).length?";":(first.includes("\t")?"\t":",");
+  const rows=[];let row=[],cur="",q=false;for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+    else if(c==='"')q=true;else if(c===sep){row.push(cur);cur=""}else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(cur);rows.push(row);row=[];cur=""}else cur+=c}
+  if(cur||row.length){row.push(cur);rows.push(row)}return rows.filter(r=>r.some(x=>x.trim()))}
+const norm=s=>String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z]/g,"");
+async function doImport(sid){
+  const txt=$("#imp-ta").value.trim();if(!txt){toast("Ajoutez un fichier ou collez du contenu");return}
+  let items=[];
+  try{
+    if(/^[\[{]/.test(txt)){let j=JSON.parse(txt);if(!Array.isArray(j))j=j.prospects||[j];items=j}
+    else{const rows=parseCSV(txt);const head=rows.shift().map(norm);const map={};
+      for(const c of CSV_COLS){map[norm(CSV_HEAD[c])]=c;map[norm(c)]=c}
+      Object.assign(map,{nom:"company",societe:"company",entreprise:"company",contact:"contactName",poste:"contactRole",telephone:"phone",tel:"phone",mail:"email",siteweb:"website",site:"website",localisation:"city",priorite:"priority"});
+      items=rows.map(r=>{const o={};head.forEach((h,i)=>{if(map[h])o[map[h]]=(r[i]||"").trim()});return o})}
+  }catch{$("#imp-msg").textContent="Format non reconnu. Utilisez un CSV avec une ligne d'en-têtes, ou un tableau JSON.";return}
+  items=items.filter(o=>o&&(o.company||o.entreprise));let n=0;
+  for(const o of items){const p={id:uid(),createdAt:Date.now()+n,searchId:sid||""};for(const k of Object.keys(F).concat(["priority","status","lastContact","nextFollowUp","relances"]))if(o[k]!=null&&o[k]!=="")p[k]=String(o[k]);
+    p.company=p.company||o.entreprise;const pr=String(p.priority||"").toLowerCase();p.priority=pr.startsWith("h")||pr==="a"?"A":pr.startsWith("m")||pr==="b"?"B":"C";
+    if(!STATUSES.includes(p.status))p.status="À contacter";p.relances=Number(p.relances)||0;
+    for(const k of ["contactName","phone","email","linkedin","qualification"])if(!p[k])p[k]="À enrichir";
+    try{await saveProspect(p);n++}catch{break}}
+  $("#imp-msg").textContent=n+" prospect"+(n>1?"s":"")+" importé"+(n>1?"s":"")+".";toast(n+" prospects importés");
+}
+
+/* ---------- Fiche prospect (tiroir) ---------- */
+let D=null;
+function openDrawer(id){
+  const src=id?S.prospects.find(x=>x.id===id):null;
+  SD=null;D=src?JSON.parse(JSON.stringify(src)):{id:uid(),createdAt:Date.now(),searchId:S.view==="recherche"?S.searchId:"",priority:"B",status:"À contacter",relances:0,contactName:"À enrichir",phone:"À enrichir",email:"À enrichir",linkedin:"À enrichir",qualification:"À enrichir",qualif:{fw:S.profile?.fw&&FRAMEWORKS[S.profile.fw]?S.profile.fw:"BANT",v:{}}};
+  D._new=!src;if(!D.qualif)D.qualif={fw:S.profile?.fw&&FRAMEWORKS[S.profile.fw]?S.profile.fw:"BANT",v:{}};
+  renderDrawer();$("#drawer").hidden=false;$("#scrim").hidden=false;setTimeout(()=>$("#d-company")?.focus(),30);
+}
+function closeDrawer(){$("#drawer").hidden=true;$("#scrim").hidden=true;D=null;SD=null;WZ=null}
+$("#scrim").onclick=closeDrawer;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#drawer").hidden)closeDrawer()});
+function fld(k,full){const [l,,ta]=F[k];const v=esc(D[k]||"");const id="d-"+k;
+  if(k==="canal")return`<div class="fld"><label for="${id}">${l}</label><select class="input" id="${id}" data-k="${k}">${["","Email","LinkedIn","Téléphone"].map(o=>`<option ${o===D[k]?"selected":""} value="${o}">${o||"—"}</option>`).join("")}</select></div>`;
+  return`<div class="fld ${ta||full?"full":""}"><label for="${id}">${l}</label>${ta?`<textarea class="input" id="${id}" data-k="${k}" rows="2">${v}</textarea>`:`<input class="input" id="${id}" data-k="${k}" value="${v}">`}</div>`}
+function renderDrawer(){
+  const c=completeness(D),qs=qualScore(D);const fw=D.qualif.fw;
+  $("#drawer").innerHTML=`
+  <div class="drawer-head"><div><span class="label">${D._new?"Nouveau prospect":"Fiche prospect"}</span><h2 style="margin-top:2px">${esc(D.company||"Sans nom")}</h2>
+    <div class="actions" style="margin-top:8px"><span class="chip">Complétude ${c} %</span>${qs!==null?`<span class="chip ok">Qualification ${qs} %</span>`:""}${D.example?'<span class="chip ex">exemple</span>':""}</div></div>
+    <button class="btn ghost" id="d-close" aria-label="Fermer">✕</button></div>
+  <div class="drawer-body">
+    <div id="d-ai-note" hidden></div>
+    <fieldset><legend>Angle commercial <small>à lire avant tout contact</small></legend>${fld("angle")}</fieldset>
+    ${(D.calls||[]).length?`<fieldset><legend>Appels <small>${D.calls.length} au total</small></legend><div class="list calllog" style="grid-column:1/-1">${callLogHTML(D)}</div></fieldset>`:""}
+    <fieldset><legend>Indispensables</legend>${["company","sector","city","size","contactName","contactRole"].map(k=>fld(k)).join("")}</fieldset>
+    <fieldset><legend>Coordonnées <small>dans l'ordre de priorité</small></legend>
+      <div class="fld"><label for="d-phone"><span class="ordn">1</span>Numéro direct</label><input class="input" id="d-phone" data-k="phone" value="${esc(D.phone||"")}"></div>
+      <div class="fld"><label for="d-email"><span class="ordn">2</span>Email direct</label><input class="input" id="d-email" data-k="email" value="${esc(D.email||"")}"><label class="check"><input type="checkbox" id="d-emailv" ${D.emailVerified?"checked":""}> Vérifié (sinon : format probable, non vérifié)</label></div>
+      <div class="fld"><label><span class="ordn">3</span>Nom, prénom</label><p class="muted" id="d-name-mirror" style="padding:7px 0">${has(D.contactName)?esc(D.contactName):'<span class="enrich">À enrichir (voir Indispensables)</span>'}</p></div>
+      <div class="fld"><label for="d-linkedin"><span class="ordn">4</span>LinkedIn</label><input class="input" id="d-linkedin" data-k="linkedin" value="${esc(D.linkedin||"")}"></div>
+      <div class="fld full"><label for="d-qualification"><span class="ordn">5</span>Phrase de qualification <span class="muted">— « [fait vérifiable] : [bénéfice concret] »</span></label><textarea class="input" id="d-qualification" data-k="qualification" rows="2">${esc(D.qualification||"")}</textarea></div>
+      <p class="note full" style="grid-column:1/-1">N'inscrivez que des données vérifiées (site officiel, presse, outil d'enrichissement). Laissez « À enrichir » sinon : jamais de devinette.</p>
+    </fieldset>
+    <fieldset><legend>Très utiles</legend>${["website","clientele","standing","offreExistante","actualite"].map(k=>fld(k)).join("")}</fieldset>
+    <fieldset><legend>Optionnel mais précieux</legend>${fld("canal")}${fld("problematiques")}</fieldset>
+    <fieldset><legend>Pilotage</legend>
+      <div class="fld full"><label for="d-search">Recherche (bibliothèque)</label><select class="input" id="d-search"><option value="">Aucune</option>${S.searches.map(s=>`<option value="${esc(s.id)}" ${s.id===D.searchId?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
+      <div class="fld"><label for="d-priority">Priorité</label><select class="input" id="d-priority">${Object.entries(PRIO).map(([k,l])=>`<option value="${k}" ${D.priority===k?"selected":""}>${l}</option>`).join("")}</select></div>
+      <div class="fld"><label for="d-status">Statut</label><select class="input" id="d-status">${STATUSES.map(s=>`<option ${s===(D.status||"À contacter")?"selected":""}>${s}</option>`).join("")}</select></div>
+      ${fld("signals")}${fld("notes")}
+      <p class="muted full" style="grid-column:1/-1;font-size:.82rem">${D.firstContact?`Premier contact le ${fmtD(D.firstContact)} · `:""}${D.nextFollowUp?`prochaine relance le ${fmtD(D.nextFollowUp)} · `:""}${D.relances?D.relances+" relance(s) faite(s)":""}</p>
+    </fieldset>
+    <fieldset><legend>Qualification</legend>
+      <div class="qual">
+        <div class="qrow"><div class="seg" role="group" aria-label="Framework">${Object.keys(FRAMEWORKS).map(f=>`<button type="button" data-fw="${f}" aria-pressed="${f===fw}">${f}</button>`).join("")}</div><span class="muted" style="font-size:.8rem">${FW_HELP[fw]}</span></div>
+        ${FRAMEWORKS[fw].map(i=>{const v=(D.qualif.v||{})[i]||0;return`<div class="qrow"><span>${i}</span><div class="seg" role="group" aria-label="${i}">${["Inconnu","Partiel","Validé"].map((l,n)=>`<button type="button" data-qi="${esc(i)}" data-qv="${n}" aria-pressed="${v===n}">${l}</button>`).join("")}</div></div>`}).join("")}
+        <div class="scorebar"><div class="g"><i style="width:${qs||0}%"></i></div><span class="num">${qs||0} %</span></div>
+      </div>
+    </fieldset>
+  </div>
+  <div class="drawer-foot">
+    <div class="actions">${D._new?"":`<button class="btn danger" id="d-del">Supprimer</button>`}<button class="btn" id="d-nethunt" title="Créer l'entreprise dans votre CRM NetHunt">Vers NetHunt</button></div>
+    <div class="actions"><button class="btn" id="d-ai"><svg class="ai" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0l1.8 5.2L15 7l-5.2 1.8L8 14l-1.8-5.2L1 7l5.2-1.8z"/></svg>Compléter avec l'IA</button>${D._new?"":`<button class="btn" id="d-seq">Séquence</button>`}<button class="btn primary" id="d-save" ${S.readonly?"disabled":""}>Enregistrer</button></div>
+  </div>`;
+  const dr=$("#drawer");
+  dr.querySelectorAll("[data-k]").forEach(el=>el.addEventListener("input",()=>{D[el.dataset.k]=el.value;if(el.dataset.k==="contactName")$("#d-name-mirror").innerHTML=has(el.value)?esc(el.value):'<span class="enrich">À enrichir</span>'}));
+  $("#d-emailv").onchange=e=>D.emailVerified=e.target.checked;
+  $("#d-priority").onchange=e=>D.priority=e.target.value;
+  $("#d-search").onchange=e=>D.searchId=e.target.value;
+  $("#d-status").onchange=e=>applyStatus(D,e.target.value);
+  dr.querySelectorAll("[data-fw]").forEach(b=>b.onclick=()=>{D.qualif.fw=b.dataset.fw;renderDrawerKeepScroll()});
+  dr.querySelectorAll("[data-qi]").forEach(b=>b.onclick=()=>{D.qualif.v=D.qualif.v||{};D.qualif.v[b.dataset.qi]=Number(b.dataset.qv);renderDrawerKeepScroll()});
+  $("#d-close").onclick=closeDrawer;
+  $("#d-save").onclick=async()=>{if(!has(D.company)){toast("Indiquez au moins le nom de l'entreprise");$("#d-company").focus();return}const p={...D};delete p._new;delete p._ai;
+    if(p.example&&!D._keepEx)delete p.example;
+    const cur=S.prospects.find(x=>x.id===p.id);if(cur&&cur.crmId){p.crmId=cur.crmId;p.crmSig=cur.crmSig;p.crmSyncedAt=cur.crmSyncedAt}
+    try{await saveProspect(p);toast("Fiche enregistrée");closeDrawer()}catch{}};
+  const del=$("#d-del");if(del)del.onclick=async()=>{if(!del.classList.contains("armed")){del.classList.add("armed");del.textContent="Confirmer la suppression";return}await del_(D.id)};
+  const sq=$("#d-seq");if(sq)sq.onclick=()=>{S.seqId=D.id;closeDrawer();go("sequences")};
+  $("#d-ai").onclick=aiEnrich;$("#d-nethunt").onclick=toNetHunt;
+  if(D._ai)showAiNote(D._ai);
+}
+async function del_(id){await del("prospects",id);toast("Prospect supprimé");closeDrawer()}
+function renderDrawerKeepScroll(){const b=$(".drawer-body"),y=b?b.scrollTop:0;renderDrawer();$(".drawer-body").scrollTop=y}
+function showAiNote(a){const n=$("#d-ai-note");n.hidden=false;n.className="note warn";n.innerHTML=`<b>Suggestions IA appliquées aux champs vides.</b> Les éléments marqués « (déduction) » viennent du secteur, pas d'une source vérifiée.${a.length?"<br>À vérifier : "+a.map(esc).join(" · "):""}`}
+
+function sampleErr(e){const c=e&&e.code;return c==="not_granted"||c==="sampling_disabled"?"L'IA n'est pas autorisée pour cette page.":c==="rate_limited"?"Trop de demandes : réessayez dans un moment.":c==="invalid_json"?"Réponse illisible : réessayez.":c==="refused"?"Demande refusée : reformulez les données de la fiche.":c==="cancelled"?"Arrêté.":"L'IA n'a pas répondu. Réessayez."}
+const RULES=`Règles strictes d'honnêteté : n'invente jamais un nom, un email, un numéro, un profil LinkedIn, un chiffre ou une actualité. Travaille uniquement à partir des données fournies. Tout ce que tu déduis du secteur est préfixé par "(déduction) ". Si une information manque, écris "À enrichir".`;
+function prospectText(p){return Object.keys(F).filter(k=>has(p[k])).map(k=>F[k][0]+" : "+p[k]).join("\n")||"(fiche presque vide)"}
+async function aiEnrich(){
+  if(!SAMPLE){toast("L'IA n'est pas disponible dans cette vue");return}
+  const btn=$("#d-ai");btn.disabled=true;btn.lastChild.textContent="Analyse en cours…";
+  try{
+    const r=await SAMPLE.json(`Tu es un Head of Sales B2B expérimenté. ${RULES}
+Profil du vendeur :
+${profileText(S.searches.find(s=>s.id===D.searchId))}
+
+Fiche prospect :
+${prospectText(D)}
+
+Propose de quoi compléter la fiche. Réponds uniquement avec un objet JSON :
+{"angle": string (angle d'approche précis, 1-2 phrases), "qualification": string (structure « [fait vérifiable sur le prospect] : [bénéfice concret de l'offre] » ; si la fiche ne contient aucun fait vérifiable, commence par "À enrichir :" et dis quel fait chercher), "canal": "Email"|"LinkedIn"|"Téléphone", "signals": string (signaux d'achat à surveiller), "problematiques": string, "priorite": "A"|"B"|"C", "aVerifier": [string] (2 à 4 vérifications à faire, dont actualité/risques)}`,{modelTier:"default"});
+    const map={angle:"angle",qualification:"qualification",canal:"canal",signals:"signals",problematiques:"problematiques"};
+    for(const [k,f] of Object.entries(map))if(r&&r[k]&&!has(D[f]))D[f]=String(r[k]);
+    if(r&&["A","B","C"].includes(r.priorite)&&D._new)D.priority=r.priorite;
+    D._ai=Array.isArray(r?.aVerifier)?r.aVerifier.map(String).slice(0,5):[];
+    renderDrawerKeepScroll();toast("Suggestions ajoutées : relisez puis enregistrez");
+  }catch(e){toast(sampleErr(e));btn.disabled=false;btn.lastChild.textContent="Compléter avec l'IA"}
+}
+
+/* NetHunt */
+function mcpErr(e,server){const c=e&&e.code;return c==="server_not_connected"?`Ajoutez ${server} dans claude.ai › Paramètres › Connecteurs.`:c==="needs_reauth"?`Reconnectez ${server} dans claude.ai › Paramètres › Connecteurs.`:c==="not_in_manifest"||c==="approval_required"?`Autorisez ${server} pour cette page pour continuer.`:c==="selection_required"?`Choisissez quel compte ${server} utiliser.`:c==="tool_error"?`${server} a refusé l'opération : ${String(e.message||"").slice(0,140)}`:c==="server_unavailable"?`${server} ne répond pas pour le moment. Vérifiez dans ${server} avant de réessayer.`:`Connexion à ${server} impossible ici.`}
+async function toNetHunt(){
+  if(!MCP){toast("Les connecteurs ne sont pas disponibles dans cette vue");return}
+  if(!has(D.company)){toast("Indiquez le nom de l'entreprise");return}
+  if(D.example){toast("Les prospects d'exemple ne sont pas envoyés au CRM");return}
+  const btn=$("#d-nethunt");btn.disabled=true;btn.textContent="Envoi…";
+  const p={...D};delete p._new;delete p._ai;
+  const cur=S.prospects.find(x=>x.id===p.id);if(cur&&cur.crmId){p.crmId=cur.crmId;p.crmSig=cur.crmSig}
+  try{await saveProspect(p);const r=await syncCRM([p]);
+    if(r.errors.length){toast(r.errors[0]);btn.disabled=false;btn.textContent="Vers NetHunt"}
+    else{toast(r.created?"Entreprise créée dans NetHunt":"Fiche NetHunt mise à jour");btn.textContent="Envoyé ✓";D.crmId=(S.prospects.find(x=>x.id===p.id)||{}).crmId;D._new=false}
+  }catch(e){toast(mcpErr(e,"NetHunt"));btn.disabled=false;btn.textContent="Vers NetHunt"}
+}
+
+/* ---------- Synchronisation CRM (NetHunt) ---------- */
+const CRM_STATUS={"À contacter":"Lead","Contacté":"Prospect","Relancé":"Prospect","A répondu":"Prospect","RDV planifié":"Prospect","Gagné":"Client"};
+const crmSig=p=>JSON.stringify([p.company,p.sector,p.city,p.website,p.linkedin,p.phone,p.email,p.contactName,p.contactRole,p.status,p.priority,p.lastContact,p.nextFollowUp,p.relances,qualScore(p),p.qualification,p.angle,p.notes,(p.calls||[]).length,p.callBack]);
+const crmPending=()=>S.prospects.filter(p=>!p.example&&has(p.company)&&crmSig(p)!==p.crmSig);
+const CRM_STOP=["server_not_connected","needs_reauth","not_in_manifest","approval_required","selection_required","blocked_by_policy","not_granted","capability_disabled","capability_removed"];
+let CRM=null;
+async function crmCtx(){
+  if(CRM)return CRM;
+  const folders=(await MCP.callTool("NetHunt","list_folders",{})).payload;
+  const co=(Array.isArray(folders)?folders:[]).find(f=>f.role==="company");
+  if(!co)throw{code:"tool_error",message:"aucun dossier « Entreprises » trouvé dans NetHunt"};
+  const schema=(await MCP.callTool("NetHunt","get_folder",{folderId:co.id})).payload;
+  const byRole={};let statusF=null;(schema&&schema.fields||[]).forEach(f=>{if(f.role)byRole[f.role]=f;if(f.type==="status"&&!statusF)statusF=f});
+  CRM={folder:co,byRole,statusF,nameId:byRole.companyName?byRole.companyName.id:"name"};return CRM;
+}
+function crmFields(p,c,isNew){
+  const fields={};
+  const set=(role,val)=>{const f=c.byRole[role];if(!f||!has(val))return;if(f.multiValue&&!isNew)return;fields[f.id]=f.multiValue?[String(val).trim()]:String(val).trim()};
+  fields[c.nameId]=p.company.trim();
+  set("website",p.website);set("address",p.city);set("linkedinUrl",p.linkedin);set("phoneNumber",p.phone);if(isEmail(p.email))set("emailAddress",p.email);set("industry",p.sector);
+  const st=CRM_STATUS[p.status||"À contacter"];
+  if(c.statusF&&st&&(c.statusF.presets||[]).includes(st)&&(isNew||p.status!=="À contacter"))fields[c.statusF.id]=st;
+  return fields;
+}
+function crmNote(p){const q=qualScore(p);return["Mise à jour depuis le Cockpit Prospection — "+new Date().toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"}),
+  "Statut : "+(p.status||"À contacter")+" · Priorité : "+(PRIO[p.priority]||"Basse"),
+  has(p.contactName)?"Interlocuteur : "+p.contactName+(p.contactRole?" ("+p.contactRole+")":""):(p.contactRole?"Fonction ciblée : "+p.contactRole:""),
+  p.lastContact?"Dernier contact : "+p.lastContact:"",p.nextFollowUp?"Prochaine relance : "+p.nextFollowUp:"",p.relances?"Relances faites : "+p.relances:"",
+  (p.calls||[]).length?"Appels : "+p.calls.length+" · dernier le "+fmtD(p.calls[p.calls.length-1].date)+" : "+(p.calls[p.calls.length-1].resume||p.calls[p.calls.length-1].issue||""):"",
+  p.callBack?"Rappel prévu : "+p.callBack:"",
+  q!==null?"Qualification "+p.qualif.fw+" : "+q+" %":"",has(p.qualification)?"Pourquoi maintenant : "+p.qualification:"",has(p.angle)?"Angle d'approche : "+p.angle:"",has(p.notes)?"Notes : "+p.notes:""].filter(Boolean).join("\n")}
+async function syncOne(p,c){
+  let id=p.crmId,created=false;
+  if(!id){const found=(await MCP.callTool("NetHunt","search_records",{folderId:c.folder.id,text:p.company.trim(),limit:10})).payload;
+    const m=(Array.isArray(found)?found:[]).find(r=>String(r&&r.fields&&r.fields[c.nameId]||"").trim().toLowerCase()===p.company.trim().toLowerCase());if(m)id=m.id}
+  if(id){await MCP.callTool("NetHunt","update_record",{folderId:c.folder.id,recordId:id,fields:crmFields(p,c,false)})}
+  else{const r=(await MCP.callTool("NetHunt","create_record",{folderId:c.folder.id,fields:crmFields(p,c,true)})).payload;id=r&&r.id;created=true;if(!id)throw{code:"tool_error",message:"fiche créée sans identifiant renvoyé"}}
+  await MCP.callTool("NetHunt","create_record_comment",{folderId:c.folder.id,recordId:id,text:crmNote(p)});
+  return{id,created};
+}
+async function syncCRM(list,onProgress){
+  if(!MCP)throw{code:"capability_disabled"};
+  const c=await crmCtx();const res={created:0,updated:0,errors:[]};
+  for(let i=0;i<list.length;i++){const p=list[i];onProgress&&onProgress(i,list.length,p);
+    try{const r=await syncOne(p,c);r.created?res.created++:res.updated++;
+      const cur=S.prospects.find(x=>x.id===p.id)||p;await put("prospects",p.id,{...cur,crmId:r.id,crmSig:crmSig(p),crmSyncedAt:Date.now()}).catch(()=>{})}
+    catch(e){if(e&&CRM_STOP.includes(e.code))throw e;res.errors.push(p.company+" : "+mcpErr(e,"NetHunt"))}}
+  const info={at:new Date().toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"}),created:res.created,updated:res.updated,errors:res.errors.length};
+  S.crm=info;await put("config","crm",info).catch(()=>{});renderCounts();return res;
+}
+$("#crm-sync").onclick=async()=>{
+  const btn=$("#crm-sync"),pan=$("#crm-pan");
+  if(!pan.hidden&&!btn.disabled&&pan.dataset.done){pan.hidden=true;pan.dataset.done="";return}
+  pan.hidden=false;pan.dataset.done="";$("#rep-pan").hidden=true;
+  const list=crmPending(),ex=S.prospects.filter(p=>p.example).length;
+  const close=`<button class="btn sm ghost" id="crm-close" style="align-self:flex-end">Fermer</button>`;
+  const done=h=>{pan.innerHTML=h+close;pan.dataset.done="1";$("#crm-close").onclick=()=>{pan.hidden=true;pan.dataset.done=""}};
+  if(!MCP){done(`<b>Connexion au CRM indisponible ici.</b><p class="muted">Ouvrez la page dans claude.ai avec le connecteur NetHunt ajouté (Paramètres › Connecteurs).</p>`);return}
+  if(!list.length){done(`<b>Votre CRM est à jour.</b><p class="muted">Aucune modification depuis la dernière mise à jour.${ex?` Les ${ex} prospects d'exemple ne sont jamais envoyés.`:""}</p>`);return}
+  btn.disabled=true;btn.textContent="Mise à jour…";
+  pan.innerHTML=`<b>Envoi vers NetHunt</b><div class="prog"><i style="width:0%"></i></div><p class="muted" id="crm-prog">Préparation…</p>`;
+  try{
+    const r=await syncCRM(list,(i,n,p)=>{const g=pan.querySelector(".prog i");if(g)g.style.width=Math.round(i/n*100)+"%";const t=$("#crm-prog");if(t)t.textContent=(i+1)+" / "+n+" · "+p.company});
+    done(`<b>CRM mis à jour</b><ul><li>${r.created} entreprise${r.created>1?"s":""} créée${r.created>1?"s":""}</li><li>${r.updated} fiche${r.updated>1?"s":""} mise${r.updated>1?"s":""} à jour</li><li>Une note d'activité (statut, relances, qualification, notes) ajoutée à chaque fiche</li></ul>${r.errors.length?`<p style="color:var(--bad)">${r.errors.length} échec${r.errors.length>1?"s":""} :</p><ul>${r.errors.map(e=>`<li>${esc(e)}</li>`).join("")}</ul><p class="muted">Vérifiez ces fiches dans NetHunt avant de relancer : une partie a pu être enregistrée.</p>`:""}${ex?`<p class="muted">${ex} prospects d'exemple ignorés.</p>`:""}`);
+  }catch(e){done(`<b>Mise à jour interrompue</b><p>${esc(mcpErr(e,"NetHunt"))}</p>`)}
+  btn.disabled=false;renderCounts();
+};
+
+/* ---------- Séquences ---------- */
+const SEQ_STEPS=[
+  {k:"email",day:"J0",t:"Email à froid",subj:"emailObjet",ch:"Email"},
+  {k:"relance1",day:"J+3",t:"Relance 1",subj:"relance1Objet",ch:"Email"},
+  {k:"relance2",day:"J+7",t:"Relance 2",subj:"relance2Objet",ch:"Email"},
+  {k:"relance3",day:"J+12",t:"Relance 3",subj:"relance3Objet",ch:"Email"},
+  {k:"relance4",day:"J+20",t:"Relance 4",subj:"relance4Objet",ch:"Email"},
+  {k:"relance5",day:"J+30",t:"Relance 5 (dernière)",subj:"relance5Objet",ch:"Email"},
+  {k:"linkedinInvitation",day:"J0",t:"Invitation (≤ 300 caractères)",ch:"LinkedIn"},
+  {k:"linkedinMessage",day:"J+2",t:"Message après acceptation",ch:"LinkedIn"},
+  {k:"linkedinRelance",day:"J+7",t:"Relance LinkedIn",ch:"LinkedIn"}
+];
+const tracks=render=>`<div class="tracks">${[["Email","Emails","Préparés dans Gmail en un clic"],["LinkedIn","LinkedIn","En parallèle, à copier-coller : LinkedIn interdit l'envoi automatisé"]].map(([ch,t,n])=>`<div class="track"><div class="track-h"><h3>${t}</h3><span class="muted">${n}</span></div><div class="timeline">${SEQ_STEPS.filter(s=>s.ch===ch).map(render).join("")}</div></div>`).join("")}</div>`;
+let SEQ=null;
+function renderSeqPicker(live){
+  const pick=$("#seq-pick");const cur=S.seqId||pick.value;
+  pick.innerHTML=S.prospects.length?S.prospects.map(p=>`<option value="${esc(p.id)}" ${p.id===cur?"selected":""}>${esc(p.company)}${p.contactRole?" — "+esc(p.contactRole):""}</option>`).join(""):`<option value="">Aucun prospect</option>`;
+  if(live&&SEQ&&SEQ.id===pick.value)return;
+  S.seqId=pick.value;loadSeq();
+}
+$("#seq-pick").onchange=e=>{S.seqId=e.target.value;loadSeq()};
+function loadSeq(){const p=S.prospects.find(x=>x.id===S.seqId);SEQ=p?{id:p.id,data:{...(p.sequence||{})}}:null;renderSeq()}
+function renderSeq(){
+  const body=$("#seq-body");const p=SEQ&&S.prospects.find(x=>x.id===SEQ.id);
+  if(!p){body.innerHTML=`<p class="empty">Ajoutez d'abord un prospect dans le tableau de suivi.</p>`;return}
+  const d=SEQ.data;const any=SEQ_STEPS.some(s=>d[s.k]);
+  body.innerHTML=`${!has(p.qualification)&&!has(p.actualite)?`<div class="banner">La fiche de ${esc(p.company)} ne contient ni actualité ni phrase de qualification : la personnalisation sera limitée et marquée [À compléter].</div>`:""}
+  ${d.canalRecommande?`<div class="panel reco"><span class="chip ok">Canal recommandé : ${esc(d.canalRecommande)}</span><p>${esc(d.pourquoi||"")}</p></div>`:""}
+  ${any?"":`<div class="panel"><p class="muted">Aucune séquence pour ${esc(p.company)}. Cliquez sur « Générer la séquence » : l'IA rédige les 6 étapes à partir de la fiche et de votre profil. Vous pouvez aussi écrire vous-même dans les cartes.</p></div>`}
+  ${tracks(s=>{const ri=/^relance(\d)$/.exec(s.k),dy=ri?"J+"+delaysFor(p).all[ri[1]-1]:s.day;return`<div class="step"><span class="day ${dy==="J0"?"d0":""}">${dy}</span><div class="stepcard">
+    <header><div><b>${s.t}</b> <span class="chip">${s.ch}</span></div><div class="actions"><button class="btn sm" data-cp="${s.k}">Copier</button>${s.ch==="Email"?`<button class="btn sm" data-gm="${s.k}">Brouillon Gmail</button>`:""}</div></header>
+    ${s.subj?`<input class="input" data-sq="${s.subj}" placeholder="Objet" value="${esc(d[s.subj]||"")}" aria-label="Objet ${s.t}">`:""}
+    <textarea class="input" data-sq="${s.k}" aria-label="${s.t}" placeholder="Texte du message">${esc(d[s.k]||"")}</textarea>
+  </div></div>`})}
+  ${seqFor(p)?`<p class="muted" style="font-size:.82rem">Les étapes laissées vides utilisent le modèle « ${esc(seqFor(p).name)} » de la recherche pour les relances en un clic.</p>`:""}
+  <p class="muted" style="font-size:.82rem">Prospection B2B : message lié à la fonction du destinataire et moyen simple de ne plus être contacté (règles à vérifier selon le pays). Les brouillons Gmail ne partent jamais seuls : relisez avant d'envoyer.</p>`;
+  body.querySelectorAll("[data-sq]").forEach(el=>el.addEventListener("input",()=>{SEQ.data[el.dataset.sq]=el.value;SEQ.dirty=true}));
+  body.querySelectorAll("[data-cp]").forEach(b=>b.onclick=()=>{const s=SEQ_STEPS.find(x=>x.k===b.dataset.cp);copy((s.subj&&SEQ.data[s.subj]?"Objet : "+SEQ.data[s.subj]+"\n\n":"")+(SEQ.data[s.k]||""))});
+  body.querySelectorAll("[data-gm]").forEach(b=>b.onclick=()=>gmailDraft(b.dataset.gm,b));
+}
+$("#seq-save").onclick=async()=>{const p=SEQ&&S.prospects.find(x=>x.id===SEQ.id);if(!p)return;try{await saveProspect({...p,sequence:SEQ.data});SEQ.dirty=false;toast("Séquence enregistrée")}catch{}};
+let seqCtl=null;
+$("#seq-gen").onclick=async()=>{
+  const p=SEQ&&S.prospects.find(x=>x.id===SEQ.id);if(!p){toast("Choisissez un prospect");return}
+  if(!SAMPLE){toast("L'IA n'est pas disponible dans cette vue");return}
+  const btn=$("#seq-gen");btn.disabled=true;btn.lastChild.textContent="Rédaction en cours (≈ 30 s)…";
+  try{
+    const r=await SAMPLE.json(`Tu es un Head of Sales B2B expérimenté. ${RULES}
+Rédige une séquence de prospection personnalisée. Privilégie la valeur apportée sur le discours commercial, une seule demande claire par message, des messages courts (email ≤ 110 mots). Utilise [À compléter] pour toute information manquante et [Votre prénom] pour la signature. Chaque email se termine par une ligne de désinscription simple (ex. « Si je ne m'adresse pas à la bonne personne ou si vous préférez ne plus être contacté, dites-le-moi. »). Respecte le ton et la langue du profil.
+
+Profil du vendeur :
+${profileText(S.searches.find(s=>s.id===p.searchId))}
+
+Prospect :
+${prospectText(p)}
+
+Réponds uniquement avec un objet JSON :
+{"canalRecommande":"Email"|"LinkedIn","pourquoi":string,"emailObjet":string,"email":string,"relance1Objet":string,"relance1":string,"relance2Objet":string,"relance2":string,"relance3Objet":string,"relance3":string,"relance4Objet":string,"relance4":string,"relance5Objet":string,"relance5":string (5 relances email : chacune apporte un élément nouveau, la 5e est une clôture courtoise),"linkedinInvitation":string (≤ 300 caractères, sans argumentaire),"linkedinMessage":string (après acceptation, court, qui ne répète pas l'email),"linkedinRelance":string (relance LinkedIn brève)}
+Les emails et LinkedIn se déroulent en parallèle : les messages LinkedIn complètent les emails sans les répéter. Pas de script d'appel.`,{modelTier:"default",cache:false});
+    if(SEQ&&SEQ.id===p.id){for(const k in r)if(typeof r[k]==="string")SEQ.data[k]=r[k];SEQ.dirty=true;renderSeq();toast("Séquence rédigée : relisez puis enregistrez")}
+  }catch(e){toast(sampleErr(e))}
+  btn.disabled=false;btn.lastChild.textContent="Générer la séquence";
+};
+async function gmailDraft(k,btn){
+  const p=SEQ&&S.prospects.find(x=>x.id===SEQ.id);const s=SEQ_STEPS.find(x=>x.k===k);
+  if(!MCP){toast("Les connecteurs ne sont pas disponibles dans cette vue");return}
+  if(!isEmail(p.email)){toast("Ajoutez un email direct valide dans la fiche avant de créer le brouillon");return}
+  const body=SEQ.data[k];if(!body){toast("Le message est vide");return}
+  btn.disabled=true;btn.textContent="Création…";
+  try{const r=(await MCP.callTool("Gmail","create_draft",{to:[p.email.trim()],subject:SEQ.data[s.subj]||"",body,includeSignature:true})).payload;
+    btn.textContent="Brouillon créé ✓";toast(p.emailVerified?"Brouillon créé dans Gmail":"Brouillon créé : l'email n'est pas marqué vérifié, contrôlez-le avant envoi");
+    if(r&&r.viewUrl){const a=document.createElement("a");a.href=r.viewUrl;a.target="_blank";a.rel="noopener";a.className="btn sm ghost";a.textContent="Ouvrir";btn.after(a)}
+  }catch(e){toast(mcpErr(e,"Gmail"));btn.disabled=false;btn.textContent="Brouillon Gmail"}
+}
+
+/* ---------- Ciblage ---------- */
+function searchPrompt(s){const p={...(S.profile||{}),...nonEmpty(s)};return`Utilise ton système de prospection B2B. Voici mes réponses au questionnaire :
+${profileText(s)}
+
+Trouve ${p.volume||"10 à 15"} prospects très qualifiés à partir de sources publiques vérifiables (sites officiels, presse sectorielle), ordonnés par priorité. N'invente aucun nom, email, numéro ou profil LinkedIn : écris « À enrichir » quand c'est introuvable. Vérifie l'actualité de chaque prospect (changement de direction, levée de fonds, difficultés).
+
+Rends la liste sous forme de tableau CSV séparé par des points-virgules, avec exactement cette ligne d'en-têtes :
+${CSV_COLS.slice(0,12).map(c=>CSV_HEAD[c]).join(";")};Signaux d'achat;Angle d'approche;Actualité`}
+
+/* ---------- Comparatif des recherches (tableau de bord) ---------- */
+function renderRates(){
+  const groups=S.searches.map(s=>({id:s.id,name:s.name,tpl:S.templates.find(t=>t.id===s.templateId),L:S.prospects.filter(p=>p.searchId===s.id)}));
+  const none=S.prospects.filter(p=>!sidOf(p));if(none.length)groups.push({id:"",name:"Sans recherche",L:none});
+  const rate=v=>`<div class="gauge"><div class="g"><i style="width:${v}%"></i></div><span class="num">${v}%</span></div>`;
+  const cells=st=>`<td class="num">${st.n}</td><td class="num">${st.contacted}</td><td>${rate(st.rReply)}</td><td>${rate(st.rRdv)}</td><td>${rate(st.rConv)}</td><td class="num">${st.won}</td><td>${st.due?`<span class="chip ${st.late?"late":"today"}">${st.due}</span>`:'<span class="muted">0</span>'}</td>`;
+  const row=g=>{const st=stats(g.L);return`<tr><td><b>${esc(g.name)}</b>${g.tpl?`<br><span class="muted" style="font-size:.78rem">${esc(g.tpl.name)}</span>`:g.id?'<br><span class="enrich" style="font-size:.78rem">sans séquence</span>':""}</td>${cells(st)}<td><div class="actions" style="flex-wrap:nowrap">${g.id?`<button class="btn sm" data-s="${esc(g.id)}">Ouvrir</button>`:""}${g.id&&g.tpl?`<button class="btn sm ${toStart(g.L).length?"primary":""}" data-launch="${esc(g.id)}" ${toStart(g.L).length?"":"disabled"}>Lancer (${toStart(g.L).length})</button>`:""}<button class="btn sm ${st.due?"primary":""}" data-rla="${esc(g.id||"none")}" ${st.due?"":"disabled"}>Relancer tout</button>${g.id?`<button class="btn sm ghost" data-an="${esc(g.id)}">Analyser</button>`:""}</div></td></tr>`};
+  $("#rates").innerHTML=groups.length?`<div class="panel" style="padding:0;overflow:hidden"><div class="panel-head" style="padding:16px 18px 0"><h2>Vos recherches</h2><button class="btn sm ghost" id="rates-new">+ Nouvelle recherche</button></div><div style="overflow-x:auto"><table style="min-width:960px"><thead><tr><th>Recherche</th><th>Prospects</th><th>Contactés</th><th>Réponse</th><th>RDV</th><th>Conversion</th><th>Gagnés</th><th>Relances dues</th><th></th></tr></thead><tbody>${groups.map(row).join("")}<tr class="total"><td>Total</td>${cells(stats())}<td><button class="btn sm ${stats().due?"primary":""}" data-rla="all" ${stats().due?"":"disabled"}>Tout relancer</button></td></tr></tbody></table></div></div>`
+    :`<div class="cta"><div><h3>Pilotez par recherche</h3><p class="muted">Créez une recherche pour regrouper vos prospects, leur associer une séquence et comparer les résultats.</p></div><button class="btn primary" id="rates-new">+ Créer une recherche</button></div>`;
+  const nb=$("#rates-new");if(nb)nb.onclick=()=>openSearchEditor(null);
+}
+function md(t){const lines=esc(t).split(/\r?\n/);let h="",inUl=false;const inline=s=>s.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+  for(const l of lines){if(/^\s*[-*•]\s+/.test(l)){if(!inUl){h+="<ul>";inUl=true}h+="<li>"+inline(l.replace(/^\s*[-*•]\s+/,""))+"</li>";continue}
+    if(inUl){h+="</ul>";inUl=false}
+    if(/^#{1,4}\s+/.test(l))h+="<h3>"+inline(l.replace(/^#{1,4}\s+/,""))+"</h3>";else if(l.trim())h+="<p>"+inline(l)+"</p>"}
+  if(inUl)h+="</ul>";return h}
+/* Ciblage IA et analyse, dans chaque recherche */
+let aiCtl=null;
+async function searchAI(kind){
+  const s=curSearch();if(!s)return;if(!SAMPLE){toast("L'IA n'est pas disponible dans cette vue");return}
+  aiCtl&&aiCtl.abort();aiCtl=new AbortController();
+  const box=$("#r-ai");box.hidden=false;
+  box.innerHTML=`<div class="panel"><div class="panel-head"><h2>${kind==="analyse"?"Analyse des résultats":"Ciblage IA"}</h2><button class="btn sm ghost" id="r-ai-close">Fermer</button></div><div class="ai-out" id="r-ai-out"><p class="thinking">${kind==="analyse"?"Analyse en cours…":"Ciblage en cours…"}</p></div></div>`;
+  $("#r-ai-close").onclick=()=>{aiCtl&&aiCtl.abort();box.hidden=true;box.innerHTML=""};
+  const L=S.prospects.filter(p=>p.searchId===s.id),st=stats(L);
+  const rows=L.slice(0,60).map(p=>`- ${p.company} | ${p.sector||"?"} | ${p.status||"À contacter"} | relances ${p.relances||0}${dueState(p)==="late"?" | relance en retard":""}${has(p.angle)?"":" | sans angle"}${isEmail(p.email)?"":" | sans email"}`).join("\n")||"aucun prospect";
+  const prompt=kind==="analyse"
+    ?`Tu es un Head of Sales B2B expérimenté. Jamais de conseil générique : appuie-toi sur les chiffres. N'invente aucune donnée.
+Recherche analysée :
+${profileText(s)}
+Chiffres : ${st.n} prospects, ${st.contacted} contactés, ${st.replied} réponses (${st.rReply} %), ${st.rdv} RDV (${st.rRdv} %), ${st.won} gagnés, ${st.emails} emails trouvés, ${st.late} relances en retard.
+Prospects :
+${rows}
+Réponds en français, en Markdown, avec ces sections en titres "## " : Analyse, Opportunités identifiées, Recommandation stratégique, Plan d'action (cette semaine), Messages/scripts proposés, KPI à suivre, Prochaine expérimentation (mesurable). Listes à puces, 350 mots maximum.`
+    :`Tu es un Head of Sales B2B expérimenté (outbound, account-based marketing). Ne cite AUCUNE entreprise réelle : décris des types d'entreprises et des méthodes de sourcing. Challenge les critères s'ils te semblent discutables.
+Recherche :
+${profileText(s)}
+Réponds en français, en Markdown, avec ces sections en titres "## " : Profil client idéal (3 phrases, filtre de taille), Segments prioritaires (3, avec signaux d'achat et fonctions à viser), Requêtes de sourcing (6 requêtes Google ou LinkedIn Sales Navigator prêtes à copier), Signaux de risque. 300 mots maximum.`;
+  try{await SAMPLE(prompt,{signal:aiCtl.signal,cache:false,onText:({text})=>{const o=$("#r-ai-out");if(o)o.innerHTML=md(text)}})}
+  catch(e){const o=$("#r-ai-out");if(!o||(e&&e.code==="cancelled"))return;o.innerHTML=e&&e.text?md(e.text):`<p class="muted">${esc(sampleErr(e))}</p>`}
+}
+$("#r-target").onclick=()=>searchAI("ciblage");
+$("#r-analyze").onclick=()=>searchAI("analyse");
+
+/* ---------- Profil ---------- */
+function renderProfil(){
+  renderSig();renderPfTab();
+  const p=S.profile||{};
+  $("#pf").innerHTML=PROFILE_Q.map((q,i)=>`<div class="q"><span class="n">${i+1}</span><div class="body"><label for="pf-${q.k}"><h3>${q.t}</h3></label><p class="muted">${q.d}</p>
+    <textarea class="input" id="pf-${q.k}" name="${q.k}" rows="2" placeholder="${esc(q.ex.replace(/^Ex\. : /,""))}">${esc(p[q.k]||"")}</textarea><span class="ex">${q.ex}</span>
+    ${q.sub?`<div class="subgrid">${q.sub.map(([k,l])=>k==="fw"?`<div class="fld"><label for="pf-fw">${l}</label><select class="input" id="pf-fw" name="fw">${Object.keys(FRAMEWORKS).map(f=>`<option ${p.fw===f?"selected":""} value="${f}">${f} — ${FW_HELP[f]}</option>`).join("")}</select></div>`:`<div class="fld"><label for="pf-${k}">${l}</label><input class="input" id="pf-${k}" name="${k}" value="${esc(p[k]||"")}" placeholder="${k==="volume"?"15":k==="ton"?"Direct et chaleureux, vouvoiement, français":k==="fonctions"?"Directeur des opérations, DRH":""}"></div>`).join("")}</div>`:""}
+  </div></div>`).join("")+`<div class="actions"><button class="btn primary" type="submit" ${S.readonly?"disabled":""}>Enregistrer le profil</button><span class="muted" style="font-size:.85rem">Vos réponses pilotent le ciblage, les fiches, les séquences et l'analyse.</span></div>`;
+  renderRecap();
+}
+function renderRecap(){const p=S.profile||{};$("#pf-recap").innerHTML=PROFILE_Q.map(q=>`<dt>${q.t}</dt><dd>${has(p[q.k])?esc(p[q.k]):'<span class="enrich">à préciser</span>'}${q.k==="activite"&&(p.prix||p.fonctions)?`<br><span class="muted">${[p.prix&&"Prix : "+p.prix,p.diff&&"Différenciation : "+p.diff,p.fonctions&&"Cibles : "+p.fonctions,p.volume&&"Volume : "+p.volume,p.ton&&"Ton : "+p.ton].filter(Boolean).map(esc).join(" · ")}</span>`:""}</dd>`).join("")}
+$("#pf").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);const p={};for(const [k,v] of fd.entries())p[k]=String(v).trim();p.updatedAt=Date.now();
+  try{S.profile=p;await put("config","profile",p);renderRecap();renderCounts();toast("Profil enregistré ("+profileFilled()+"/6)")}catch{}};
+
+/* ---------- Bibliothèque : recherches, séquences, relances ---------- */
+const TPL_STD={id:"tpl-standard",name:"Séquence standard (à personnaliser)",r1:3,r2:7,d:[3,7,12,20,30],createdAt:1793180000000,steps:{
+  emailObjet:"{entreprise} : une idée pour votre équipe",
+  email:"Bonjour {prenom},\n\n{phrase}\n\n[Votre proposition de valeur en une phrase, avec un résultat concret.]\n\nSeriez-vous ouvert(e) à un échange de 15 minutes la semaine prochaine pour voir si cela s'applique à {entreprise} ?\n\nBelle journée,\n{signature}\n\nSi je ne m'adresse pas à la bonne personne ou si vous préférez ne plus être contacté(e), dites-le-moi simplement.",
+  linkedinInvitation:"Bonjour {prenom}, j'accompagne des entreprises du secteur {secteur} sur [votre sujet]. Votre rôle de {fonction} chez {entreprise} m'a donné envie d'échanger. Au plaisir de vous compter dans mon réseau.",
+  linkedinRelance:"{prenom}, je me permets de revenir vers vous ici : avez-vous pu jeter un œil à mon message ? Si le sujet n'est pas prioritaire pour {entreprise}, aucun souci, dites-le-moi simplement.",
+  relance1Objet:"Re : {entreprise}",
+  relance1:"Bonjour {prenom},\n\nJe me permets de revenir vers vous avec un élément concret : [cas client, chiffre ou ressource utile pour le secteur {secteur}].\n\nEst-ce un sujet pour {entreprise} en ce moment ?\n\n{signature}\n\nSi ce n'est pas le bon moment ou la bonne personne, dites-le-moi simplement.",
+  linkedinMessage:"Merci pour la connexion, {prenom}. {phrase} Seriez-vous partant(e) pour un court échange ?",
+  relance2Objet:"Une question rapide, {prenom}",
+  relance2:"Bonjour {prenom},\n\nUne seule question : comment {entreprise} gère-t-elle [le sujet] aujourd'hui ?\n\nSi c'est déjà bien couvert, je ne vous relancerai pas sur ce point.\n\n{signature}",
+  relance3Objet:"Ressource pour {entreprise}",
+  relance3:"Bonjour {prenom},\n\nJe vous partage [une ressource utile : guide, étude, checklist] sur [le sujet], pensée pour le secteur {secteur}. Elle peut vous servir même sans échange de notre part.\n\nSouhaitez-vous que je vous l'envoie ?\n\n{signature}",
+  relance4Objet:"Ce qu'a obtenu [client similaire]",
+  relance4:"Bonjour {prenom},\n\n[Client comparable] avait le même enjeu que {entreprise}. En [durée], il a obtenu [résultat chiffré].\n\n15 minutes pour voir si c'est transposable chez vous ?\n\n{signature}\n\nSi ce n'est pas le bon interlocuteur, dites-le-moi simplement.",
+  relance5Objet:"Dernier message, {prenom}",
+  relance5:"Bonjour {prenom},\n\nDernier message de ma part, je ne veux pas encombrer votre boîte. Si [le problème que vous résolvez] devient une priorité chez {entreprise}, je reste disponible pour en parler.\n\nBonne continuation,\n{signature}"}};
+const EX_SEARCH={id:"ex-search",name:"Exemple : PME Rhône-Alpes",geo:"Auvergne-Rhône-Alpes",secteur:"Hôtellerie, santé privée, logistique",salaries:"40 à 350",ca:"",motifs:"Vente directe",fonctions:"Direction des opérations, DRH",notes:"Recherche d'exemple : remplacez-la par les vôtres.",templateId:"tpl-standard",example:true,createdAt:1793180000000};
+const sidOf=p=>p&&p.searchId&&S.searches.some(s=>s.id===p.searchId)?p.searchId:"";
+const sname=id=>{const s=S.searches.find(x=>x.id===id);return s?esc(s.name):"—"};
+function seqFor(p){const s=S.searches.find(x=>x.id===p.searchId);return s?S.templates.find(t=>t.id===s.templateId)||null:null}
+function tplDelays(t){t=t||{};if(Array.isArray(t.d)&&t.d.length===5)return t.d.map(Number);const r1=Number(t.r1)||3,r2=Number(t.r2)>r1?Number(t.r2):r1+4;return[r1,r2,r2+5,r2+13,r2+23]}
+const relLabel=t=>"5 relances : J+"+tplDelays(t).join(", ");
+function delaysFor(p){const a=tplDelays(seqFor(p));return{r1:a[0],r2:a[1],all:a}}
+function fillVars(txt,p){const nm=has(p.contactName)?p.contactName.trim():"";const map={entreprise:p.company,prenom:nm.split(/\s+/)[0]||"",nom:nm,fonction:p.contactRole,ville:p.city,secteur:p.sector,phrase:has(p.qualification)?p.qualification:"",signature:has(S.profile&&S.profile.signature)?S.profile.signature:""};
+  return String(txt||"").replace(/\{(\w+)\}/g,(m,k)=>k in map?(has(map[k])?map[k]:"[À compléter]"):m)}
+const canRelance=p=>["Contacté","Relancé"].includes(p.status)&&(p.relances||0)<5;
+const dueOf=L=>L.filter(p=>canRelance(p)&&["late","today"].includes(dueState(p)));
+function relanceFor(p){const n=p.relances||0;if(n>=5)return null;const k="relance"+(n+1);const own=p.sequence||{},t=(seqFor(p)||{}).steps||{};
+  const body=own[k]||fillVars(t[k],p);if(!String(body).trim())return null;
+  const subj=own[k+"Objet"]||fillVars(t[k+"Objet"],p)||("Re : "+(own.emailObjet||fillVars(t.emailObjet,p)||p.company));return{k,n:n+1,subject:subj,body}}
+async function draftTo(p,subject,body){
+  if(!isEmail(p.email))throw new Error("email direct manquant");
+  if(!MCP){const e=new Error("Gmail n'est pas disponible dans cette vue");e.stop=true;throw e}
+  try{await MCP.callTool("Gmail","create_draft",{to:[p.email.trim()],subject,body,includeSignature:true})}
+  catch(e){const er=new Error(mcpErr(e,"Gmail"));er.stop=e&&CRM_STOP.includes(e.code);throw er}
+}
+async function relanceOne(p){
+  const r=relanceFor(p);if(!r)throw new Error("aucun texte de relance (associez une séquence à sa recherche)");
+  await draftTo(p,r.subject,r.body);
+  const cur=S.prospects.find(x=>x.id===p.id)||p;await saveProspect(applyStatus({...cur},"Relancé"));return r;
+}
+const toStart=L=>L.filter(p=>(p.status||"À contacter")==="À contacter");
+function firstFor(p){const own=p.sequence||{},t=(seqFor(p)||{}).steps||{};const body=own.email||fillVars(t.email,p);if(!String(body).trim())return null;return{subject:own.emailObjet||fillVars(t.emailObjet,p)||p.company,body}}
+async function startOne(p){
+  const r=firstFor(p);if(!r)throw new Error("aucun email J0 (associez une séquence à sa recherche)");
+  await draftTo(p,r.subject,r.body);
+  const cur=S.prospects.find(x=>x.id===p.id)||p;await saveProspect(applyStatus({...cur},"Contacté"));return r;
+}
+async function launchAll(list,btn,label){
+  const L=toStart(list);
+  if(!L.length){report(`<b>Aucun nouveau prospect à contacter</b><p class="muted">${label?esc(label)+" : ":""}tous les prospects ont déjà reçu leur email J0. Ajoutez ou importez des prospects.</p>`);return}
+  if(!MCP){report(`<b>Gmail indisponible ici</b><p class="muted">Ouvrez la page dans claude.ai avec le connecteur Gmail ajouté.</p>`);return}
+  const old=btn?btn.textContent:"";if(btn)btn.disabled=true;
+  const r=await relanceBatch(L,(i,n)=>{if(btn)btn.textContent=`Email ${i+1}/${n}…`},startOne);
+  if(btn){btn.disabled=false;btn.textContent=old}renderLive();
+  const dl=delaysFor(L[0]);
+  report(`<b>${r.ok} email${r.ok>1?"s":""} de démarchage prêt${r.ok>1?"s":""} dans Gmail</b>${label?`<p class="muted">${esc(label)}</p>`:""}<p class="muted">Les emails J0 sont dans Gmail › Brouillons, adressés et personnalisés : il reste à les envoyer. Les prospects passent en « Contacté » et leurs 5 relances (J+${dl.all.join(", J+")}) sont programmées automatiquement.</p>${r.skip.length?`<p style="color:var(--bad)">${r.skip.length} non traité${r.skip.length>1?"s":""} :</p><ul>${r.skip.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}`);
+}
+async function relanceBatch(L,onProgress,fn){let ok=0;const skip=[];
+  for(let i=0;i<L.length;i++){const p=L[i];onProgress&&onProgress(i,L.length,p);
+    try{await (fn||relanceOne)(p);ok++}catch(e){skip.push(p.company+" : "+e.message);if(e.stop){for(const q of L.slice(i+1))skip.push(q.company+" : non traité");break}}}
+  return{ok,skip}}
+function report(html){const pan=$("#rep-pan");$("#crm-pan").hidden=true;pan.innerHTML=html+`<button class="btn sm ghost" id="rep-close" style="align-self:flex-end">Fermer</button>`;pan.hidden=false;$("#rep-close").onclick=()=>pan.hidden=true;window.scrollTo({top:0,behavior:"smooth"})}
+async function relanceAll(list,btn,label){
+  const due=dueOf(list);
+  if(!due.length){report(`<b>Aucune relance due</b><p class="muted">${label?esc(label)+" : ":""}rien à relancer aujourd'hui.</p>`);return}
+  if(!MCP){report(`<b>Gmail indisponible ici</b><p class="muted">Ouvrez la page dans claude.ai avec le connecteur Gmail ajouté.</p>`);return}
+  const old=btn?btn.textContent:"";if(btn)btn.disabled=true;
+  const r=await relanceBatch(due,(i,n)=>{if(btn)btn.textContent=`Relance ${i+1}/${n}…`});
+  if(btn){btn.disabled=false;btn.textContent=old}renderLive();
+  report(`<b>${r.ok} relance${r.ok>1?"s":""} prête${r.ok>1?"s":""} dans Gmail</b>${label?`<p class="muted">${esc(label)}</p>`:""}<p class="muted">Les messages sont dans Gmail › Brouillons, adressés et rédigés : il reste à les envoyer. Les prospects passent en « Relancé » et la relance suivante est programmée.</p>${r.skip.length?`<p style="color:var(--bad)">${r.skip.length} non traitée${r.skip.length>1?"s":""} :</p><ul>${r.skip.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}`);
+}
+function kpiHTML(st){const k=[["Prospects",st.n],["Contactés",st.contacted],["Emails trouvés",st.emails],["Fiches enrichies",st.enriched],["RDV",st.rdv],["Gagnés",st.won,"win"],["Relances en retard",st.late,st.late?"alert":""]];
+  return k.map(([l,v,c])=>`<div class="kpi ${c||""}"><span class="v">${v}</span><span class="k">${l}</span></div>`).join("")}
+function renderNavLib(){const n=$("#nav-lib");
+  n.innerHTML=S.searches.length?[...S.searches].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)).map(s=>{const L=S.prospects.filter(p=>p.searchId===s.id),due=dueOf(L).length;
+    return`<button data-s="${esc(s.id)}" ${S.view==="recherche"&&S.searchId===s.id?'aria-current="page"':""} title="${esc(s.name)}"><span class="nm">${esc(s.name)}</span><span class="count ${due?"alert":""}" title="${due?due+" relance(s) due(s)":L.length+" prospects"}">${due?due+" ↻":L.length}</span></button>`}).join("")
+    :`<p class="muted" style="font-size:.8rem;padding:4px 10px">Aucune recherche pour l'instant.</p>`}
+function openSearch(id){if(S.searchId!==id){const b=$("#r-ai");b.hidden=true;b.innerHTML=""}S.searchId=id;go("recherche")}
+const curSearch=()=>S.searches.find(x=>x.id===S.searchId);
+function renderSearch(){
+  const s=curSearch();
+  if(!s){$("#r-name").textContent=S.loaded?"Recherche introuvable":"Chargement…";$("#r-crit").textContent="";$("#r-kpis").innerHTML="";$("#r-tbody").innerHTML="";return}
+  const L=S.prospects.filter(p=>p.searchId===s.id),st=stats(L),t=S.templates.find(x=>x.id===s.templateId);
+  $("#r-name").textContent=s.name;
+  $("#r-crit").innerHTML=[s.geo,s.secteur,has(s.salaries)?s.salaries+" salariés":"",has(s.ca)?"CA "+s.ca:"",s.motifs,has(s.fonctions)?"Cibles : "+s.fonctions:""].filter(has).map(esc).join(" · ")+`<br>Séquence : ${t?`<b>${esc(t.name)}</b> (${relLabel(t)})`:'<span class="enrich">aucune — associez-en une pour les relances en un clic</span>'}${s.example?' <span class="chip ex">exemple</span>':""}`;
+  $("#r-kpis").innerHTML=kpiHTML(st);
+  const b=$("#r-relance-all");if(!b.disabled)b.textContent=`Relancer tout (${dueOf(L).length})`;
+  const lb=$("#r-launch");if(!lb.disabled)lb.textContent=`Lancer la séquence (${toStart(L).length})`;
+  renderRows($("#r-tbody"),sortRows(L),false);
+}
+$("#r-edit").onclick=()=>openSearchEditor(S.searchId);
+$("#r-add").onclick=()=>openDrawer(null);
+$("#r-import").onclick=()=>showImport(false,null,$("#r-import-box"),S.searchId);
+$("#r-prompt").onclick=()=>{const s=curSearch();if(!s)return;const t=searchPrompt(s);copy(t);report(`<b>Prompt de sourcing pour « ${esc(s.name)} »</b><p class="muted">Collez-le dans une conversation Claude avec la recherche web, puis importez le CSV ici avec « Importer ici ».</p><div class="codebox">${esc(t)}</div>`)};
+$("#r-relance-all").onclick=e=>{const s=curSearch();if(s)relanceAll(S.prospects.filter(p=>p.searchId===s.id),e.currentTarget,s.name)};
+$("#r-launch").onclick=e=>{const s=curSearch();if(!s)return;
+  if(!S.templates.some(t=>t.id===s.templateId)){report(`<b>Cette recherche n'a pas de séquence email</b><p class="muted">Associez-en une avec « Modifier », ou créez-la avec « Créer une séquence ».</p>`);return}
+  launchAll(S.prospects.filter(p=>p.searchId===s.id),e.currentTarget,s.name)};
+$("#dash-rl-all").onclick=e=>relanceAll(S.prospects,e.currentTarget,"Toute la bibliothèque");
+$("#nav-new-search").onclick=()=>openSearchEditor(null);
+$("#nav-new-seq").onclick=()=>{TPL=newTpl();go("sequences");setTimeout(()=>{const n=$("#tpl-name");if(n){n.focus();n.select()}},40)};
+$("#thead").innerHTML=TH(true);$("#r-thead").innerHTML=TH(false);
+document.addEventListener("click",async e=>{
+  const s=e.target.closest("[data-s]");if(s){openSearch(s.dataset.s);return}
+  const rl=e.target.closest("[data-rl]");
+  if(rl){const p=S.prospects.find(x=>x.id===rl.dataset.rl);if(!p)return;rl.disabled=true;rl.textContent="…";
+    try{const r=await relanceOne(p);toast(`Relance ${r.n} de ${p.company} prête dans Gmail › Brouillons`)}catch(err){toast(p.company+" : "+err.message);rl.disabled=false;rl.textContent="Relancer"}return}
+  const la=e.target.closest("[data-launch]");
+  if(la){const id=la.dataset.launch;launchAll(S.prospects.filter(p=>p.searchId===id),la,sname(id));return}
+  const ra=e.target.closest("[data-rla]");
+  if(ra){const id=ra.dataset.rla;const L=id==="all"?S.prospects:id==="none"?S.prospects.filter(p=>!sidOf(p)):S.prospects.filter(p=>p.searchId===id);relanceAll(L,ra,id==="all"?"Toute la bibliothèque":id==="none"?"Sans recherche":sname(id));return}
+  const an=e.target.closest("[data-an]");
+  if(an){openSearch(an.dataset.an);searchAI("analyse")}
+});
+
+/* Éditeur de recherche (tiroir) */
+let SD=null;
+function openSearchEditor(id){
+  if(!id){openWizard();return}
+  const s=id?S.searches.find(x=>x.id===id):null,pf=S.profile||{};
+  D=null;SD=s?{...s}:{id:"s"+uid().slice(1),name:"",geo:pf.geo||"",secteur:pf.secteur||"",ca:pf.ca||"",salaries:pf.salaries||"",motifs:pf.motifs||"",fonctions:pf.fonctions||"",notes:"",templateId:(S.templates[0]||{}).id||"",createdAt:Date.now(),_new:true};
+  const FS=[["name","Nom de la recherche","Ex. : Cliniques privées Lyon, DRH"],["geo","Zone géographique"],["secteur","Secteur d'activité"],["salaries","Fourchette de salariés"],["ca","Chiffre d'affaires visé"],["motifs","Motif de prospection"],["fonctions","Fonctions à viser"],["notes","Notes, signaux à chercher"]];
+  $("#drawer").innerHTML=`<div class="drawer-head"><div><span class="label">${SD._new?"Nouvelle recherche":"Modifier la recherche"}</span><h2 style="margin-top:2px">${esc(SD.name||"Bibliothèque de prospects")}</h2><p class="muted" style="margin-top:4px;font-size:.85rem">Une recherche regroupe des prospects autour de critères communs et d'une séquence. Le pilotage et les relances groupées se font par recherche.</p></div><button class="btn ghost" id="sd-close" aria-label="Fermer">✕</button></div>
+  <div class="drawer-body">
+    <fieldset><legend>Critères${SD._new?" <small>pré-remplis depuis votre profil</small>":""}</legend>${FS.map(([k,l,ph])=>`<div class="fld ${k==="name"||k==="notes"?"full":""}"><label for="sd-${k}">${l}</label>${k==="notes"?`<textarea class="input" id="sd-${k}" data-sk="${k}" rows="2">${esc(SD[k]||"")}</textarea>`:`<input class="input" id="sd-${k}" data-sk="${k}" value="${esc(SD[k]||"")}"${ph?` placeholder="${esc(ph)}"`:""}>`}</div>`).join("")}</fieldset>
+    <fieldset><legend>Séquence associée</legend><div class="fld full"><label for="sd-tpl">Modèle utilisé pour les relances en un clic</label><select class="input" id="sd-tpl"><option value="">Aucune</option>${S.templates.map(t=>`<option value="${esc(t.id)}" ${t.id===SD.templateId?"selected":""}>${esc(t.name)} (${relLabel(t)})</option>`).join("")}</select></div><p class="muted" style="grid-column:1/-1;font-size:.82rem">Pas encore de séquence adaptée ? Utilisez « Créer une séquence » dans le menu, puis revenez ici.</p></fieldset>
+  </div>
+  <div class="drawer-foot"><div class="actions">${SD._new?"":`<button class="btn danger" id="sd-del">Supprimer la recherche</button>`}</div><div class="actions"><button class="btn primary" id="sd-save" ${S.readonly?"disabled":""}>${SD._new?"Créer la recherche":"Enregistrer"}</button></div></div>`;
+  $("#drawer").hidden=false;$("#scrim").hidden=false;setTimeout(()=>$("#sd-name")?.focus(),30);
+  $("#drawer").querySelectorAll("[data-sk]").forEach(el=>el.addEventListener("input",()=>SD[el.dataset.sk]=el.value));
+  $("#sd-tpl").onchange=e=>SD.templateId=e.target.value;
+  $("#sd-close").onclick=closeDrawer;
+  $("#sd-save").onclick=async()=>{if(!has(SD.name)){toast("Donnez un nom à la recherche");$("#sd-name").focus();return}
+    const s={...SD};delete s._new;try{await put("searches",s.id,s);toast(SD._new?"Recherche créée":"Recherche enregistrée");closeDrawer();openSearch(s.id)}catch{}};
+  const dl=$("#sd-del");if(dl)dl.onclick=async()=>{if(!dl.classList.contains("armed")){dl.classList.add("armed");dl.textContent="Confirmer (les prospects sont conservés)";return}
+    const id=SD.id;await del("searches",id);toast("Recherche supprimée, ses prospects restent dans le tableau de suivi");closeDrawer();go("tableau")};
+}
+
+/* Bibliothèque de séquences */
+let TPL=null;
+const newTpl=()=>({id:"t"+uid().slice(1),name:"Nouvelle séquence",r1:3,r2:7,d:[3,7,12,20,30],steps:{},createdAt:Date.now(),_new:true});
+function renderTplPicker(){const pk=$("#tpl-pick");const cur=TPL&&TPL.id;
+  pk.innerHTML=(S.templates.map(t=>`<option value="${esc(t.id)}" ${t.id===cur?"selected":""}>${esc(t.name)}</option>`).join("")+(TPL&&TPL._new?`<option value="${esc(TPL.id)}" selected>${esc(TPL.name)} (non enregistrée)</option>`:""))||`<option value="">Aucune séquence</option>`}
+$("#tpl-pick").onchange=e=>{const t=S.templates.find(x=>x.id===e.target.value);if(t){TPL=JSON.parse(JSON.stringify(t));renderTpl()}};
+$("#tpl-new").onclick=()=>{TPL=newTpl();renderTpl();$("#tpl-name").focus();$("#tpl-name").select()};
+function renderTpl(){
+  if(!TPL&&S.templates.length)TPL=JSON.parse(JSON.stringify(S.templates[0]));
+  renderTplPicker();const b=$("#tpl-body");
+  if(!TPL){b.innerHTML=`<p class="empty">Aucune séquence dans la bibliothèque. Créez-en une : elle servira de modèle à toutes les recherches qui l'utilisent.</p>`;return}
+  TPL.steps=TPL.steps||{};const used=S.searches.filter(s=>s.templateId===TPL.id).map(s=>s.name);
+  b.innerHTML=`<div class="fld"><label for="tpl-name">Nom de la séquence</label><input class="input" id="tpl-name" value="${esc(TPL.name)}"></div>
+  <div class="delays"><span class="label">Relances email, en jours après l'email J0</span><div class="delays-row">${tplDelays(TPL).map((v,i)=>`<div class="fld"><label for="tpl-d${i}">Relance ${i+1}</label><input class="input" id="tpl-d${i}" data-dl="${i}" type="number" min="1" max="120" value="${v}"></div>`).join("")}</div></div>
+  <p class="note">Variables remplacées pour chaque prospect : <span class="mono">{prenom} {nom} {fonction} {entreprise} {ville} {secteur} {phrase} {signature}</span>. {phrase} reprend la phrase de qualification de la fiche, {signature} celle de votre profil. Une variable vide devient [À compléter] : relisez avant d'envoyer.</p>
+  ${tracks(s=>{const ri=/^relance(\d)$/.exec(s.k),day=ri?"J+"+tplDelays(TPL)[ri[1]-1]:s.day;return`<div class="step"><span class="day ${day==="J0"?"d0":""}">${day}</span><div class="stepcard"><header><div><b>${s.t}</b> <span class="chip">${s.ch}</span></div></header>${s.subj?`<input class="input" data-tp="${s.subj}" placeholder="Objet" value="${esc(TPL.steps[s.subj]||"")}" aria-label="Objet ${s.t}">`:""}<textarea class="input" data-tp="${s.k}" aria-label="${s.t}">${esc(TPL.steps[s.k]||"")}</textarea></div></div>`})}
+  <div class="actions" style="justify-content:space-between"><span class="muted" style="font-size:.85rem">${used.length?"Utilisée par : "+used.map(esc).join(", "):"Utilisée par aucune recherche pour l'instant."}</span><div class="actions">${TPL._new?"":`<button class="btn danger" id="tpl-del">Supprimer</button>`}<button class="btn" id="tpl-ai"><svg class="ai" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0l1.8 5.2L15 7l-5.2 1.8L8 14l-1.8-5.2L1 7l5.2-1.8z"/></svg>Rédiger avec l'IA</button><button class="btn primary" id="tpl-save" ${S.readonly?"disabled":""}>Enregistrer la séquence</button></div></div>`;
+  b.querySelectorAll("[data-tp]").forEach(el=>el.addEventListener("input",()=>TPL.steps[el.dataset.tp]=el.value));
+  $("#tpl-name").oninput=e=>TPL.name=e.target.value;
+  b.querySelectorAll("[data-dl]").forEach(el=>el.onchange=()=>{const a=tplDelays(TPL);a[+el.dataset.dl]=Math.max(1,Math.round(Number(el.value))||a[+el.dataset.dl]);TPL.d=a;TPL.r1=a[0];TPL.r2=a[1];renderTpl()});
+  $("#tpl-save").onclick=async()=>{if(!has(TPL.name)){toast("Donnez un nom à la séquence");return}const dd=tplDelays(TPL);if(dd.some((v,i)=>i&&v<=dd[i-1])){toast("Chaque relance doit venir après la précédente");return}TPL.d=dd;TPL.r1=dd[0];TPL.r2=dd[1];
+    const t={...TPL};delete t._new;try{await put("templates",t.id,t);TPL=JSON.parse(JSON.stringify(t));toast("Séquence enregistrée dans la bibliothèque");renderTpl()}catch{}};
+  const dl=$("#tpl-del");if(dl)dl.onclick=async()=>{if(!dl.classList.contains("armed")){dl.classList.add("armed");dl.textContent="Confirmer la suppression";return}await del("templates",TPL.id);TPL=null;toast("Séquence supprimée");renderTpl()};
+  $("#tpl-ai").onclick=async()=>{
+    if(!SAMPLE){toast("L'IA n'est pas disponible dans cette vue");return}
+    const btn=$("#tpl-ai");btn.disabled=true;btn.lastChild.textContent="Rédaction (≈ 30 s)…";
+    const s=S.searches.find(x=>x.templateId===TPL.id)||null;
+    try{const r=await SAMPLE.json(tplPrompt(s,tplDelays(TPL)),{modelTier:"default",cache:false});
+      for(const k in r)if(typeof r[k]==="string")TPL.steps[k]=r[k];renderTpl();toast("Séquence rédigée : relisez puis enregistrez");
+    }catch(e){toast(sampleErr(e));btn.disabled=false;btn.lastChild.textContent="Rédiger avec l'IA"}
+  };
+}
+
+/* ---------- Lancement de recherche : questionnaire ---------- */
+const TPL_KEYS=["emailObjet","email","relance1Objet","relance1","relance2Objet","relance2","relance3Objet","relance3","relance4Objet","relance4","relance5Objet","relance5","linkedinInvitation","linkedinMessage","linkedinRelance"];
+const WZ_KEYS=["geo","secteur","ca","salaries","motifs","activite","prix","diff","fonctions","volume","ton","notes"];
+const WZ_FLOW=["depart","geo","secteur","ca","salaries","motifs","activite","sequence","recap"];
+let WZ=null;
+const pickKeys=o=>{const r={};WZ_KEYS.forEach(k=>{if(o&&has(o[k]))r[k]=String(o[k])});return r};
+const critLine=o=>[o&&o.geo,o&&o.secteur,o&&has(o.salaries)?o.salaries+" salariés":"",o&&o.motifs].filter(has).map(esc).join(" · ")||'<span class="muted">critères non renseignés</span>';
+const suggestName=d=>[d.secteur,d.geo].filter(has).map(s=>String(s).split(/[,;]/)[0].trim()).join(" — ").slice(0,60);
+function tplPrompt(s,dd){return`Tu es un Head of Sales B2B expérimenté. Rédige un MODÈLE de séquence de prospection réutilisable pour toute une liste de prospects.
+Utilise uniquement ces variables entre accolades : {prenom} {fonction} {entreprise} {ville} {secteur} {phrase} {signature}. {phrase} est la phrase de qualification propre à chaque prospect (fait vérifiable + bénéfice) : place-la là où la personnalisation compte. N'invente aucun fait sur une entreprise. Emails de 110 mots maximum, une seule demande claire, une ligne de désinscription simple à la fin de chaque email. Cinq relances email, envoyées à J+${dd.join(", J+")} : chacune apporte un élément nouveau (question, ressource utile, cas client, chiffre) sans répéter les précédentes ; la 5e est une clôture courtoise. Respecte le ton et la langue du profil.
+Profil :
+${profileText(s)}
+
+Deux pistes en parallèle, sans script d'appel : les emails (J0, relances) et LinkedIn (invitation J0 de 300 caractères maximum sans argumentaire, message court après acceptation, relance LinkedIn brève). Les messages LinkedIn complètent les emails sans les répéter.
+Réponds uniquement avec un objet JSON : {"emailObjet":string,"email":string,"relance1Objet":string,"relance1":string,"relance2Objet":string,"relance2":string,"relance3Objet":string,"relance3":string,"relance4Objet":string,"relance4":string,"relance5Objet":string,"relance5":string,"linkedinInvitation":string,"linkedinMessage":string,"linkedinRelance":string}`}
+function presetFrom(id){const o=id==="profile"?S.profile:S.searches.find(s=>s.id===id);if(!o)return{};const r=pickKeys(o);delete r.notes;
+  if(o.templateId&&S.templates.some(t=>t.id===o.templateId)){r.templateId=o.templateId;r.tplMode="existing"}
+  r.name=id==="profile"?suggestName(r):o.name+" (nouvelle)";return r}
+function openWizard(prefill,step){
+  D=null;SD=null;
+  WZ={i:0,data:{templateId:(S.templates[0]||{}).id||"",tplMode:"ai",updateProfile:false,...(prefill||{})}};
+  if(step)WZ.i=Math.max(0,WZ_FLOW.indexOf(step));
+  $("#drawer").hidden=false;$("#scrim").hidden=false;renderWizard();
+}
+function renderWizard(){
+  const st=WZ_FLOW[WZ.i],d=WZ.data,n=WZ_FLOW.length-1;let body="",title="",help="";
+  if(st==="depart"){
+    title="Comment voulez-vous démarrer ?";help="Réappliquez un paramétrage précédent en un clic, ou répondez aux 6 questions pour cette recherche.";
+    const prev=[...S.searches].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    const card=(id,lab,name,o)=>`<div class="segcard"><span class="label">${lab}</span><b>${esc(name)}</b><p class="muted" style="font-size:.85rem">${critLine(o)}</p><div class="actions"><button class="btn sm primary" data-wz-apply="${esc(id)}">Appliquer en un clic</button><button class="btn sm" data-wz-edit="${esc(id)}">Partir de ces réponses</button></div></div>`;
+    body=`<div class="choices">${profileFilled()?card("profile","Paramétrage par défaut","Mon profil",S.profile):""}${prev.map(s=>card(s.id,"Recherche précédente",s.name,s)).join("")}
+      <button class="choice" type="button" data-wz-blank><b>Partir de zéro</b><span class="muted" style="font-size:.85rem">Répondre aux 6 questions pour cette recherche.</span></button></div>`;
+  }else if(PROFILE_Q.some(q=>q.k===st)){
+    const q=PROFILE_Q.find(x=>x.k===st);title=(PROFILE_Q.indexOf(q)+1)+". "+q.t;help=q.d;
+    body=`<div class="fld"><textarea class="input" id="wz-${q.k}" data-wz="${q.k}" rows="3" placeholder="${esc(q.ex.replace(/^Ex\. : /,""))}">${esc(d[q.k]||"")}</textarea><span class="muted" style="font-size:.8rem">${q.ex}</span></div>
+      ${q.k==="activite"?`<div class="subgrid">${[["prix","Prix / panier moyen"],["diff","Différenciation"],["fonctions","Fonctions à viser"],["volume","Prospects dans la première liste"],["ton","Ton et langue des messages"]].map(([k,l])=>`<div class="fld"><label for="wz-${k}">${l}</label><input class="input" id="wz-${k}" data-wz="${k}" value="${esc(d[k]||"")}"></div>`).join("")}</div>`:""}
+      ${S.profile&&has(S.profile[q.k])&&S.profile[q.k]!==d[q.k]?`<button class="btn sm ghost" type="button" data-wz-fill="${q.k}" style="align-self:flex-start">Reprendre ma réponse de profil : « ${esc(String(S.profile[q.k]).slice(0,60))} »</button>`:""}`;
+  }else if(st==="sequence"){
+    title="Séquence emails + LinkedIn";help="Chaque recherche a sa séquence : emails (J0 puis relances programmées automatiquement) et LinkedIn en parallèle. Elle sert au lancement et aux relances en un clic.";
+    body=`<div class="choices"><button class="choice" type="button" data-wz-tpl="ai" aria-pressed="${d.tplMode==="ai"}"><b>✦ Séquence sur mesure rédigée par l'IA</b><span class="muted" style="font-size:.85rem">Écrite à partir de vos réponses et enregistrée dans la bibliothèque sous le nom de la recherche. Recommandé.</span></button>
+      ${S.templates.map(t=>{const u=S.searches.filter(s=>s.templateId===t.id).map(s=>s.name);return`<button class="choice" type="button" data-wz-tpl="${esc(t.id)}" aria-pressed="${d.tplMode==="existing"&&d.templateId===t.id}"><b>${esc(t.name)}</b><span class="muted" style="font-size:.85rem">${relLabel(t)}${u.length?" · utilisée par "+u.map(esc).join(", "):""}</span></button>`}).join("")}</div>`;
+  }else{
+    title="Récapitulatif";help="Vérifiez, puis créez la recherche. Vous pourrez ensuite importer vos prospects et lancer la séquence.";
+    if(!has(d.name))d.name=suggestName(d);
+    const tn=d.tplMode==="ai"?"Séquence sur mesure (rédigée par l'IA à la création)":esc((S.templates.find(x=>x.id===d.templateId)||{}).name||"aucune");
+    body=`<div class="fld"><label for="wz-name">Nom de la recherche</label><input class="input" id="wz-name" data-wz="name" value="${esc(d.name||"")}" placeholder="Ex. : Cliniques privées Lyon, DRH"></div>
+      <dl class="recap">${PROFILE_Q.map(q=>`<dt>${q.t}</dt><dd>${has(d[q.k])?esc(d[q.k]):'<span class="enrich">non renseigné</span>'}</dd>`).join("")}<dt>Fonctions visées</dt><dd>${has(d.fonctions)?esc(d.fonctions):"—"}</dd><dt>Séquence email</dt><dd>${tn} <button class="btn sm ghost" type="button" data-wz-goto="sequence">Changer</button></dd></dl>
+      <div class="fld"><label for="wz-notes">Notes, signaux à chercher (optionnel)</label><textarea class="input" id="wz-notes" data-wz="notes" rows="2">${esc(d.notes||"")}</textarea></div>
+      <label class="check"><input type="checkbox" id="wz-up" ${d.updateProfile?"checked":""}> Enregistrer aussi ces réponses comme paramétrage par défaut (profil)</label>`;
+  }
+  const last=st==="recap";
+  $("#drawer").innerHTML=`<div class="drawer-head"><div style="flex:1;min-width:0"><span class="label">Nouvelle recherche · étape ${WZ.i+1} / ${WZ_FLOW.length}</span><h2 style="margin-top:2px">${esc(title)}</h2>${help?`<p class="muted" style="margin-top:4px;font-size:.88rem">${esc(help)}</p>`:""}<div class="wz-prog"><i style="width:${Math.round(WZ.i/n*100)}%"></i></div></div><button class="btn ghost" id="wz-close" aria-label="Fermer">✕</button></div>
+  <div class="drawer-body">${body}</div>
+  <div class="drawer-foot"><div class="actions">${WZ.i>0?`<button class="btn" id="wz-back">Retour</button>`:""}</div><div class="actions">${st==="depart"?"":last?`<button class="btn primary" id="wz-go" ${S.readonly?"disabled":""}>Créer la recherche</button>`:`<button class="btn primary" id="wz-next">Suivant</button>`}</div></div>`;
+  const dr=$("#drawer"),go2=i=>{WZ.i=i;renderWizard()};
+  dr.querySelectorAll("[data-wz]").forEach(el=>el.addEventListener("input",()=>WZ.data[el.dataset.wz]=el.value));
+  dr.querySelectorAll("[data-wz-apply]").forEach(b=>b.onclick=()=>{Object.assign(WZ.data,presetFrom(b.dataset.wzApply));go2(WZ_FLOW.indexOf("recap"))});
+  dr.querySelectorAll("[data-wz-edit]").forEach(b=>b.onclick=()=>{Object.assign(WZ.data,presetFrom(b.dataset.wzEdit));WZ.data.name="";go2(1)});
+  dr.querySelectorAll("[data-wz-blank]").forEach(b=>b.onclick=()=>go2(1));
+  dr.querySelectorAll("[data-wz-fill]").forEach(b=>b.onclick=()=>{WZ.data[b.dataset.wzFill]=S.profile[b.dataset.wzFill];renderWizard()});
+  dr.querySelectorAll("[data-wz-tpl]").forEach(b=>b.onclick=()=>{const v=b.dataset.wzTpl;if(v==="ai")WZ.data.tplMode="ai";else{WZ.data.tplMode="existing";WZ.data.templateId=v}renderWizard()});
+  dr.querySelectorAll("[data-wz-goto]").forEach(b=>b.onclick=()=>go2(WZ_FLOW.indexOf(b.dataset.wzGoto)));
+  const up=$("#wz-up");if(up)up.onchange=e=>WZ.data.updateProfile=e.target.checked;
+  $("#wz-close").onclick=closeDrawer;
+  const bk=$("#wz-back");if(bk)bk.onclick=()=>go2(WZ.i-1);
+  const nx=$("#wz-next");if(nx)nx.onclick=()=>go2(WZ.i+1);
+  const gb=$("#wz-go");if(gb)gb.onclick=createFromWizard;
+  setTimeout(()=>{const f=dr.querySelector(".drawer-body textarea, .drawer-body input");if(f&&st!=="recap")f.focus()},30);
+}
+async function createFromWizard(){
+  const d=WZ.data;if(!has(d.name)){toast("Donnez un nom à la recherche");$("#wz-name").focus();return}
+  const btn=$("#wz-go");btn.disabled=true;
+  const s={id:"s"+uid().slice(1),name:d.name.trim(),createdAt:Date.now(),...pickKeys(d)};
+  try{
+    if(d.tplMode==="ai"||!S.templates.some(t=>t.id===d.templateId)){
+      btn.textContent="Rédaction de la séquence (≈ 30 s)…";let steps=null;
+      if(SAMPLE){try{steps=await SAMPLE.json(tplPrompt(s,[3,7,12,20,30]),{modelTier:"default",cache:false})}catch(e){toast(sampleErr(e)+" Le modèle standard est copié à la place.")}}
+      else toast("IA indisponible ici : le modèle standard est copié, à personnaliser.");
+      const base=steps&&typeof steps==="object"?steps:TPL_STD.steps,clean={};TPL_KEYS.forEach(k=>{if(typeof base[k]==="string")clean[k]=base[k]});
+      const t={id:"t"+uid().slice(1),name:"Séquence — "+s.name,r1:3,r2:7,d:[3,7,12,20,30],steps:clean,createdAt:Date.now()};
+      await put("templates",t.id,t);s.templateId=t.id;
+    }else s.templateId=d.templateId;
+    btn.textContent="Création…";
+    await put("searches",s.id,s);
+    if(d.updateProfile){const p={...(S.profile||{}),...pickKeys(d),updatedAt:Date.now()};delete p.notes;S.profile=p;await put("config","profile",p).catch(()=>{})}
+    closeDrawer();openSearch(s.id);
+    report(`<b>Recherche « ${esc(s.name)} » créée</b><p class="muted">Sa séquence email est prête. Prochaines étapes : « Prompt de sourcing » pour trouver de vrais prospects, « Importer ici », puis « Lancer la séquence ».</p>`);
+  }catch(e){btn.disabled=false;btn.textContent="Créer la recherche"}
+}
+function renderPfLaunch(){
+  const prev=[...S.searches].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const card=(id,lab,name,o,tpl)=>`<div class="segcard"><span class="label">${lab}</span><b>${esc(name)}</b><p class="muted" style="font-size:.85rem">${critLine(o)}</p>${tpl?`<span class="chip" style="align-self:flex-start">${esc(tpl.name)}</span>`:""}<div class="actions"><button class="btn sm primary" data-pf-apply="${esc(id)}">Appliquer en un clic</button></div></div>`;
+  $("#pf-launch").innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Lancer une recherche</h2><p class="muted" style="font-size:.88rem;max-width:62ch">Chaque nouvelle recherche démarre par le questionnaire. Réappliquez un paramétrage précédent en un clic : critères et séquence email sont repris, vous n'avez plus qu'à nommer la recherche.</p></div><button class="btn primary" id="pf-new">+ Nouvelle recherche</button></div>
+    ${profileFilled()||prev.length?`<span class="label">Paramétrages précédents</span><div class="presets" style="margin-top:8px">${profileFilled()?card("profile","Par défaut","Mon profil",S.profile,null):""}${prev.map(s=>card(s.id,"Recherche",s.name,s,S.templates.find(t=>t.id===s.templateId))).join("")}</div>`:`<p class="empty">Aucun paramétrage enregistré pour l'instant : votre première recherche en créera un.</p>`}</div>`;
+  $("#pf-new").onclick=()=>openWizard();
+  document.querySelectorAll("[data-pf-apply]").forEach(b=>b.onclick=()=>openWizard(presetFrom(b.dataset.pfApply),"recap"));
+}
+
+/* ---------- Profil : onglet Connecteurs ---------- */
+const CONNECT_URL="https://claude.ai/settings/connectors";
+const CONNS=[
+  {server:"Gmail",ini:"G",col:"#C5432F",kind:"Emails",probe:"create_draft",role:"Prépare les emails de démarchage J0 et les relances en brouillons, adressés et personnalisés, prêts à envoyer."},
+  {server:"NetHunt",ini:"N",col:"#2F6FD0",kind:"CRM",probe:"list_folders",role:"Bouton « Mettre à jour le CRM » : entreprises, statuts et notes d'activité synchronisés."},
+  {server:"Brevo",ini:"B",col:"#0B996E",kind:"Emailing",probe:"accounts_get_account",role:"Campagnes et contacts email. Une fois connecté, demandez-moi d'en brancher l'envoi : je vérifierai s'il peut envoyer vos séquences directement."},
+  {server:"Apollo.io",ini:"A",col:"#3A3FD9",kind:"Enrichissement",probe:"apollo_enrich_person",role:"Trouve emails et numéros directs pour les fiches « À enrichir ». Les crédits sont décomptés de votre compte Apollo, la couverture varie selon le secteur."},
+  {server:"Quo",ini:"☎",col:"#7B4DE0",kind:"Téléphonie VoIP",probe:"fetch-call-transcripts",role:"Ligne téléphonique cloud (ex-OpenPhone) avec transcription automatique des appels. Une fois connecté, demandez-moi de brancher l'import automatique des transcriptions dans l'onglet Appels. Aircall et Ringover n'ont pas encore de connecteur Claude : avec eux, collez la transcription dans l'onglet Appels."},
+  {server:"LinkedIn",ini:"in",col:"#0A66C2",kind:"Réseau social",manual:true,role:"LinkedIn ne propose pas de connecteur de prospection : l'envoi automatisé d'invitations ou de messages est interdit par ses conditions d'utilisation. Vos messages LinkedIn sont prêts dans chaque séquence : copiez-les en un clic."}
+];
+let CONN_ST={},PT="conn";
+function renderSig(){const p=S.profile||{};
+  $("#pf-sig").innerHTML=`<div class="panel-head"><h2>Signature des emails</h2><span class="label">remplace {signature} dans les séquences</span></div>
+  <div class="grid2"><div class="fld"><label for="sig-in">Signature</label><textarea class="input" id="sig-in" rows="3" placeholder="Prénom Nom&#10;Fonction, Société&#10;Téléphone">${esc(p.signature||"")}</textarea></div>
+  <div class="fld"><label for="sig-ton">Ton et langue par défaut des messages</label><input class="input" id="sig-ton" value="${esc(p.ton||"")}" placeholder="Direct et chaleureux, vouvoiement, français"><span class="muted" style="font-size:.8rem">Chaque recherche peut définir son propre ton dans le questionnaire.</span></div></div>
+  <div class="actions" style="margin-top:12px"><button class="btn primary" id="sig-save" ${S.readonly?"disabled":""}>Enregistrer</button></div>`;
+  $("#sig-save").onclick=async()=>{const np={...(S.profile||{}),signature:$("#sig-in").value.trim(),ton:$("#sig-ton").value.trim(),updatedAt:Date.now()};S.profile=np;try{await put("config","profile",np);toast("Signature enregistrée")}catch{}};
+}
+document.querySelectorAll("[data-pt]").forEach(b=>b.onclick=()=>{PT=b.dataset.pt;renderPfTab()});
+function renderPfTab(){
+  document.querySelectorAll("[data-pt]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.pt===PT)));
+  $("#pf-param").hidden=PT!=="param";$("#pf-conn").hidden=PT!=="conn";
+  if(PT==="conn"){renderConn();refreshConn()}
+}
+const CONN_LABEL={on:["ok","Connecté"],off:["","Non connecté"],reauth:["late","À reconnecter"],denied:["today","Non autorisé pour cette page"],unknown:["","À vérifier"],na:["","Indisponible ici"],checking:["","Vérification…"],manual:["","Manuel"]};
+function renderConn(){
+  const card=c=>{const st=c.manual?{state:"manual"}:CONN_ST[c.server]||{state:MCP?"unknown":"na"};const [cls,lab]=CONN_LABEL[st.state]||CONN_LABEL.unknown;
+    const act=c.manual?`<a class="btn sm" href="https://www.linkedin.com/" target="_blank" rel="noopener">Ouvrir LinkedIn</a><button class="btn sm ghost" data-go="sequences">Voir les messages LinkedIn</button>`
+      :st.state==="on"?`<button class="btn sm ghost" data-ctest="${esc(c.server)}">Vérifier</button>`
+      :st.state==="denied"?`<button class="btn sm primary" data-ctest="${esc(c.server)}">Autoriser pour cette page</button>`
+      :`<a class="btn sm primary" href="${CONNECT_URL}" target="_blank" rel="noopener">${st.state==="reauth"?"Reconnecter":"Connecter"} dans claude.ai</a><button class="btn sm" data-ctest="${esc(c.server)}">Vérifier</button>`;
+    return`<div class="conn"><header><span class="logo" style="background:${c.col}" aria-hidden="true">${c.ini}</span><div><b>${esc(c.server)}</b><span>${c.kind}</span></div><span class="chip ${cls}" style="margin-left:auto">${lab}</span></header><p>${c.role}</p>${st.note?`<p style="color:var(--bad)">${esc(st.note)}</p>`:""}<div class="actions">${act}</div></div>`};
+  $("#pf-conn").innerHTML=`<div class="panel" style="display:flex;flex-direction:column;gap:14px"><div class="panel-head" style="margin:0"><div><h2>Connecteurs</h2><p class="muted" style="font-size:.88rem;max-width:68ch">Pour des raisons de sécurité, chaque service se connecte dans claude.ai › Paramètres › Connecteurs, sur la page de connexion du service lui-même. Revenez ensuite ici et cliquez sur « Vérifier » : la page vous demandera l'autorisation d'utiliser ce connecteur.</p></div><button class="btn" id="conn-all">Tout vérifier</button></div>
+    <div class="conns">${CONNS.map(card).join("")}</div>
+    <p class="muted" style="font-size:.82rem">Autres outils d'enrichissement disponibles dans les connecteurs claude.ai : Lusha, Vibe Prospecting, Crustdata (données LinkedIn publiques d'entreprises).</p></div>`;
+  $("#conn-all").onclick=async()=>{for(const c of CONNS)if(!c.manual)await testConn(c,true);renderConn()};
+  document.querySelectorAll("[data-ctest]").forEach(b=>b.onclick=()=>testConn(CONNS.find(c=>c.server===b.dataset.ctest)));
+}
+async function refreshConn(){
+  if(!MCP){renderConn();return}
+  try{const r=await MCP.listTools();const by={};(r&&r.servers||[]).forEach(s=>by[s.server]=s);
+    CONNS.forEach(c=>{if(c.manual)return;const s=by[c.server];if(CONN_ST[c.server]&&CONN_ST[c.server].tested)return;
+      CONN_ST[c.server]=!s?{state:"off"}:s.authStatus==="needs_reauth"?{state:"reauth"}:s.authStatus==="connected"&&s.tools&&s.tools.length?{state:"on"}:{state:"unknown"}})}
+  catch(e){}
+  if(PT==="conn"&&S.view==="profil")renderConn();
+}
+async function testConn(c,quiet){
+  if(!c)return;if(!MCP){CONN_ST[c.server]={state:"na"};if(!quiet)renderConn();return}
+  CONN_ST[c.server]={state:"checking"};if(!quiet)renderConn();
+  try{const perm=await use("permissions");if(perm&&perm.request)await perm.request(["mcp:"+c.server]).catch(()=>{});
+    await MCP.describeTool(c.server,c.probe);CONN_ST[c.server]={state:"on",tested:true}}
+  catch(e){const k=e&&e.code;
+    CONN_ST[c.server]=k==="bad_request"?{state:"on",tested:true}:k==="server_not_connected"||k==="server_not_found"||k==="selection_required"?{state:"off",tested:true}:k==="needs_reauth"?{state:"reauth",tested:true}:k==="not_in_manifest"||k==="approval_required"?{state:"denied",tested:true}:{state:"unknown",tested:true,note:mcpErr(e,c.server)}}
+  if(!quiet)renderConn();
+}
+
+/* ---------- Gain de temps : plan du jour, angles, support ---------- */
+const readyJ0=()=>toStart(S.prospects).filter(p=>sidOf(p)&&seqFor(p)&&isEmail(p.email));
+const activeNoAngle=L=>L.filter(p=>!has(p.angle)&&!["Gagné","Perdu"].includes(p.status));
+function renderPlan(){
+  const due=dueOf(S.prospects).length,j0=readyJ0().length,na=activeNoAngle(S.prospects).length,ne=toStart(S.prospects).filter(p=>!isEmail(p.email)).length;
+  if(!S.searches.length&&!S.prospects.length){$("#dash-cta").innerHTML=`<div class="cta"><div><h3>Créez votre première recherche</h3><p class="muted">Le questionnaire vous guide en 2 minutes et rédige la séquence email avec vous.</p></div><button class="btn primary" id="plan-new">+ Créer une recherche</button></div>`;$("#plan-new").onclick=()=>openWizard();return}
+  const steps=[
+    {v:callQueue("").length,t:"Appels à passer",d:"File triée : rappels prévus, prospects qui ont répondu, puis relancés.",b:"Ouvrir la file",id:"plan-call"},
+    {v:due,t:"Relances dues",d:"Brouillons Gmail prêts, statuts et prochaines relances mis à jour.",b:"Tout relancer",id:"plan-rl"},
+    {v:j0,t:"Emails J0 prêts",d:"Prospects « À contacter » avec email et séquence : premier email personnalisé.",b:"Tout lancer",id:"plan-j0"},
+    {v:na,t:"Angles à générer",d:"L'angle commercial de chaque prospect, pour savoir quoi dire avant d'appeler.",b:"Générer",id:"plan-ang"},
+    {v:ne,t:"Emails à trouver",d:"Prospects à contacter sans email direct : enrichissez-les (Apollo, site, LinkedIn).",b:"Voir la liste",id:"plan-en"}];
+  const hot=steps.findIndex(s=>s.v>0);
+  $("#dash-cta").innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Plan du jour</h2><p class="muted" style="font-size:.86rem">${hot<0?"Rien en attente : ajoutez des prospects ou lancez une nouvelle recherche.":"Dans l'ordre, un clic par étape."}</p></div><span class="label">${new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</span></div>
+    <div class="plan">${steps.map((s,i)=>`<div class="pstep ${i===hot?"hot":""}"><span class="v">${s.v}</span><b>${s.t}</b><p>${s.d}</p><button class="btn sm ${i===hot?"primary":""}" id="${s.id}" ${s.v?"":"disabled"}>${s.b}</button></div>`).join("")}</div></div>`;
+  $("#plan-call").onclick=()=>go("appels");
+  $("#plan-rl").onclick=e=>relanceAll(S.prospects,e.currentTarget,"Toutes les recherches");
+  $("#plan-j0").onclick=e=>launchAll(readyJ0(),e.currentTarget,"Toutes les recherches");
+  $("#plan-ang").onclick=e=>genAngles(S.prospects,e.currentTarget);
+  $("#plan-en").onclick=()=>{go("prospects");$("#f-status").value="À contacter";renderTable()};
+}
+async function genAngles(list,btn){
+  if(!SAMPLE){toast("L'IA n'est pas disponible dans cette vue");return}
+  const all=activeNoAngle(list).slice(0,100);if(!all.length){toast("Tous ces prospects ont déjà un angle commercial");return}
+  const old=btn?btn.textContent:"";if(btn)btn.disabled=true;let n=0;
+  try{for(let i=0;i<all.length;i+=20){const L=all.slice(i,i+20);if(btn)btn.textContent=all.length>1?`Angles ${Math.min(i+20,all.length)}/${all.length}…`:"Génération…";
+    const sids=[...new Set(L.map(p=>sidOf(p)))];
+    const ctx=sids.map(id=>id?`Recherche ${id} :\n${profileText(S.searches.find(s=>s.id===id))}`:`Prospects sans recherche :\n${profileText()}`).join("\n\n");
+    const r=await SAMPLE.json(`Tu es un Head of Sales B2B expérimenté. ${RULES}
+Pour chaque prospect, rédige son angle commercial : 1 à 2 phrases concrètes qui relient ce qu'on sait du prospect à l'offre du vendeur (douleur probable + accroche à utiliser au premier contact). Préfixe "(déduction) " quand l'angle repose seulement sur le secteur.
+Offre et ciblage du vendeur, par recherche :
+${ctx}
+
+Prospects :
+${L.map(p=>`- id ${p.id} | recherche ${sidOf(p)||"aucune"} | ${prospectText(p).replace(/\n/g," ; ")}`).join("\n")}
+
+Réponds uniquement avec un tableau JSON : [{"id":string,"angle":string}]`,{modelTier:"quick",cache:false});
+    for(const x of Array.isArray(r)?r:[]){const p=S.prospects.find(y=>y.id===String(x&&x.id));if(p&&!has(p.angle)&&x.angle){await saveProspect({...p,angle:String(x.angle)});n++}}}
+    toast(n+" angle"+(n>1?"s":"")+" commercia"+(n>1?"ux":"l")+" ajouté"+(n>1?"s":""));
+  }catch(e){toast((n?n+" angles ajoutés. ":"")+sampleErr(e))}
+  if(btn){btn.disabled=false;btn.textContent=old}
+  return n;
+}
+$("#btn-angles").onclick=e=>genAngles(filtered(),e.currentTarget);
+$("#r-angles").onclick=e=>{const s=curSearch();if(s)genAngles(S.prospects.filter(p=>p.searchId===s.id),e.currentTarget)};
+document.addEventListener("click",e=>{
+  const ga=e.target.closest("[data-ga]");if(ga){const p=S.prospects.find(x=>x.id===ga.dataset.ga);if(p)genAngles([p],ga);return}
+  const cp=e.target.closest("[data-cpa]");if(cp){const p=S.prospects.find(x=>x.id===cp.dataset.cpa);if(p)copy(p.angle)}
+});
+document.addEventListener("keydown",e=>{const t=e.target;if(e.key==="/"&&!e.ctrlKey&&!e.metaKey&&!(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))){e.preventDefault();if(S.view!=="espace")go("espace");else $("#chat-in").focus()}});
+const SUPPORT_EMAIL="jocelin.querteux.lms@gmail.com";
+$("#support-btn").onclick=()=>{
+  const pan=$("#rep-pan");$("#crm-pan").hidden=true;
+  pan.innerHTML=`<b>Contacter le support</b><p class="muted">Votre message est adressé à <span class="mono">${SUPPORT_EMAIL}</span>.</p>
+    <div class="fld"><label for="sup-type">Sujet</label><select class="input" id="sup-type"><option>Question</option><option>Problème ou bug</option><option>Suggestion</option></select></div>
+    <div class="fld"><label for="sup-msg">Message</label><textarea class="input" id="sup-msg" rows="4" placeholder="Décrivez votre demande…"></textarea></div>
+    <div class="actions"><button class="btn primary sm" id="sup-send">Préparer l'email dans Gmail</button><button class="btn sm" id="sup-copy">Copier l'adresse</button><button class="btn sm ghost" id="sup-close">Fermer</button></div>
+    <p class="muted" id="sup-note" style="font-size:.82rem"></p>`;
+  pan.hidden=false;$("#sup-msg").focus();
+  $("#sup-close").onclick=()=>pan.hidden=true;
+  $("#sup-copy").onclick=()=>copy(SUPPORT_EMAIL);
+  $("#sup-send").onclick=async e=>{const msg=$("#sup-msg").value.trim(),b=e.currentTarget,note=$("#sup-note");
+    if(!msg){toast("Écrivez votre message");$("#sup-msg").focus();return}
+    if(!MCP){note.textContent="Gmail n'est pas disponible ici : copiez l'adresse et écrivez depuis votre messagerie.";return}
+    b.disabled=true;b.textContent="Préparation…";
+    try{await MCP.callTool("Gmail","create_draft",{to:[SUPPORT_EMAIL],subject:"[Cockpit Prospection] "+$("#sup-type").value,body:msg+"\n\n—\nEnvoyé depuis le Cockpit Prospection · "+S.prospects.length+" prospects · "+S.searches.length+" recherches · vue « "+S.view+" »",includeSignature:true});
+      note.innerHTML="<b>Email prêt dans Gmail › Brouillons</b> : ouvrez-le et cliquez sur Envoyer.";b.textContent="Email préparé ✓"}
+    catch(err){note.textContent=mcpErr(err,"Gmail");b.disabled=false;b.textContent="Préparer l'email dans Gmail"}};
+};
+
+/* ---------- Appels : file, chrono, compte rendu IA ---------- */
+const CALL={id:"",start:0,timer:null,dur:0};
+function callQueue(scope){const t=today();
+  return S.prospects.filter(p=>has(p.phone)&&!["Gagné","Perdu"].includes(p.status)&&(!scope||p.searchId===scope)).map(p=>{
+    let r=p.callBack&&p.callBack<=t?0:p.status==="A répondu"?1:["Contacté","Relancé"].includes(p.status)?2:p.status==="RDV planifié"?6:3;
+    if(p.lastCallAt===t&&!(p.callBack&&p.callBack<=t))r+=10;return{p,r:r+({A:0,B:.3,C:.6}[p.priority]??.6)}}).sort((a,b)=>a.r-b.r).map(x=>x.p)}
+function callLogHTML(p){return[...(p.calls||[])].reverse().map(c=>`<div class="li"><div class="who"><b>${fmtD(c.date)}${c.dur?" · "+Math.round(c.dur/60000)+" min":""} · ${esc(c.issue||"Appel")}${c.interet?` · intérêt ${esc(c.interet)}`:""}</b><span>${esc(c.resume||"")}${c.next?`<br>Prochaine étape : ${esc(c.next)}`:""}</span></div></div>`).join("")}
+$("#call-scope").onchange=()=>{CALL.id="";renderCalls(true)};
+function renderCalls(full){
+  const sel=$("#call-scope"),v=sel.value;sel.innerHTML=`<option value="">Toutes les recherches</option>`+S.searches.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("");sel.value=v;if(sel.value!==v)sel.value="";
+  const Q=callQueue(sel.value),noPhone=S.prospects.filter(p=>!has(p.phone)&&!["Gagné","Perdu"].includes(p.status)&&(!sel.value||p.searchId===sel.value)).length;
+  if(!Q.some(p=>p.id===CALL.id)&&!CALL.start){CALL.id=Q[0]?Q[0].id:"";full=true}
+  $("#callq-n").textContent=Q.length+" à appeler";
+  $("#callq").innerHTML=(Q.length?Q.map((p,i)=>`<div class="li" data-callp="${esc(p.id)}" aria-current="${p.id===CALL.id}"><div class="who"><b>${i+1}. ${esc(p.company)}</b><span>${p.callBack&&p.callBack<=today()?'<b style="color:var(--signal)">Rappel prévu</b> · ':""}${esc(p.status||"À contacter")}${p.lastCallAt===today()?" · appelé aujourd'hui":""}</span></div><span class="prio ${esc(p.priority||"C")}"></span></div>`).join(""):`<p class="empty">Aucun prospect avec numéro direct${sel.value?" dans cette recherche":""}.</p>`)
+    +(noPhone?`<p class="muted" style="font-size:.8rem;padding:8px">${noPhone} prospect(s) sans numéro direct : à enrichir (Apollo, site, LinkedIn).</p>`:"");
+  $("#callq").querySelectorAll("[data-callp]").forEach(el=>el.onclick=()=>{if(CALL.start){toast("Terminez d'abord l'appel en cours");return}CALL.id=el.dataset.callp;renderCalls(true)});
+  if(full)renderCallCard();
+}
+function renderCallCard(){
+  const p=S.prospects.find(x=>x.id===CALL.id),box=$("#callcard");
+  if(!p){box.innerHTML=`<div class="panel"><p class="empty">La file est vide. Ajoutez des numéros directs à vos prospects, ou importez une liste.</p></div>`;return}
+  const s=S.searches.find(x=>x.id===p.searchId);
+  box.innerHTML=`<div class="panel callcard">
+    <div class="panel-head" style="margin:0"><div><span class="label">${s?esc(s.name):"Sans recherche"}</span><h2 style="font-size:1.5rem">${esc(p.company)}</h2><p class="muted">${has(p.contactName)?esc(p.contactName):'<span class="enrich">Interlocuteur à enrichir</span>'}${p.contactRole?" · "+esc(p.contactRole):""}${p.city?" · "+esc(p.city):""}</p></div>
+      <div class="actions"><span class="chip">${esc(p.status||"À contacter")}</span><span class="prio ${esc(p.priority||"C")}">${PRIO[p.priority]||"Basse"}</span><button class="btn sm ghost" data-open="${esc(p.id)}">Fiche</button></div></div>
+    <div class="phone"><span class="num mono">${esc(p.phone)}</span><button class="btn sm" id="call-copy">Copier</button><a class="btn sm" href="tel:${esc(String(p.phone).replace(/[^\d+]/g,""))}">Appeler</a></div>
+    <div class="angle-box"><span class="label">Angle commercial</span>${has(p.angle)?`<p>${esc(p.angle)}</p>`:`<button class="btn sm" data-ga="${esc(p.id)}" style="align-self:flex-start">✦ Générer l'angle</button>`}${has(p.qualification)?`<p class="muted" style="font-size:.88rem">Pourquoi maintenant : ${esc(p.qualification)}</p>`:""}</div>
+    <div class="actions" style="justify-content:space-between"><div class="actions"><button class="btn ${CALL.start?"danger armed":"primary"}" id="call-toggle">${CALL.start?"Terminer l'appel":"Démarrer l'appel"}</button><span class="timer" id="call-timer">${CALL.start?"":"00:00"}</span></div>
+      <div class="outcomes"><button class="btn sm" data-out="noanswer">Pas de réponse</button><button class="btn sm" data-out="voicemail">Messagerie</button><button class="btn sm" data-out="wrong">Mauvais numéro</button><button class="btn sm" data-out="nointerest">Pas intéressé</button></div></div>
+    <div class="fld"><label for="call-notes">Compte rendu : collez la transcription de l'appel (export de votre téléphonie) ou tapez vos notes</label><textarea class="input" id="call-notes" rows="6" placeholder="Transcription ou notes : besoin, budget, décideur, objections, prochaine étape…">${esc(CALL.draft||"")}</textarea></div>
+    <div class="actions"><button class="btn primary" id="call-analyze"><svg class="ai" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0l1.8 5.2L15 7l-5.2 1.8L8 14l-1.8-5.2L1 7l5.2-1.8z"/></svg>Analyser et mettre à jour le suivi</button><button class="btn ghost" id="call-next">Prospect suivant →</button></div>
+    <div id="call-res"></div>
+    ${(p.calls||[]).length?`<div><span class="label">Historique des appels</span><div class="list calllog">${callLogHTML(p)}</div></div>`:""}
+  </div>`;
+  $("#call-copy").onclick=()=>copy(p.phone);
+  $("#call-notes").oninput=e=>CALL.draft=e.target.value;
+  $("#call-toggle").onclick=()=>{if(CALL.start){CALL.dur=Date.now()-CALL.start;CALL.start=0;clearInterval(CALL.timer);renderCallCard();$("#call-notes").focus()}else{CALL.start=Date.now();CALL.dur=0;CALL.timer=setInterval(tick,1000);renderCallCard()}};
+  document.querySelectorAll("[data-out]").forEach(b=>b.onclick=()=>quickOutcome(p,b.dataset.out));
+  $("#call-analyze").onclick=()=>analyzeCall(p);
+  $("#call-next").onclick=()=>nextCall();
+  tick();
+}
+function tick(){const el=$("#call-timer");if(!el)return;const ms=CALL.start?Date.now()-CALL.start:CALL.dur;const s=Math.floor(ms/1000);el.textContent=pad(Math.floor(s/60))+":"+pad(s%60)}
+function nextCall(){if(CALL.start){toast("Terminez d'abord l'appel en cours");return}const Q=callQueue($("#call-scope").value);const i=Q.findIndex(x=>x.id===CALL.id);const n=Q.find((x,j)=>j>i&&x.lastCallAt!==today())||Q.find(x=>x.id!==CALL.id&&x.lastCallAt!==today());CALL.id=n?n.id:"";CALL.draft="";CALL.dur=0;renderCalls(true);window.scrollTo(0,0)}
+async function logCallCRM(p,c){
+  const cur=S.prospects.find(x=>x.id===p.id)||p;if(!MCP||!cur.crmId)return false;
+  try{const ctx=await crmCtx();await MCP.callTool("NetHunt","create_record_call_log",{folderId:ctx.folder.id,recordId:cur.crmId,text:[c.issue||"Appel",c.resume,c.next?"Prochaine étape : "+c.next:"",(c.objections||[]).length?"Objections : "+c.objections.join(" ; "):""].filter(Boolean).join("\n"),...(c.dur?{duration:Math.round(c.dur)}:{})});return true}catch(e){return false}
+}
+async function saveCall(p,c,changes){
+  const cur={...(S.prospects.find(x=>x.id===p.id)||p)};
+  cur.calls=[...(cur.calls||[]),c].slice(-30);cur.lastCallAt=today();Object.assign(cur,changes||{});
+  await saveProspect(cur);const logged=await logCallCRM(cur,c);return logged;
+}
+async function quickOutcome(p,kind){
+  if(CALL.start){CALL.dur=Date.now()-CALL.start;CALL.start=0;clearInterval(CALL.timer)}
+  const t=today(),M={noanswer:["Pas de réponse",{callBack:addDays(t,2)}],voicemail:["Messagerie, message laissé",{callBack:addDays(t,3)}],wrong:["Mauvais numéro",{phone:"À enrichir",callBack:""}],nointerest:["Pas intéressé",{status:"Perdu",nextFollowUp:"",callBack:""}]};
+  const [issue,ch]=M[kind];const c={date:t,at:Date.now(),issue,dur:CALL.dur||0};
+  try{const logged=await saveCall(p,c,ch);toast(issue+(ch.callBack?" · rappel le "+fmtD(ch.callBack):"")+(logged?" · noté dans NetHunt":""));CALL.draft="";nextCall()}catch{}
+}
+async function analyzeCall(p){
+  const notes=($("#call-notes").value||"").trim();if(!notes){toast("Collez la transcription ou tapez vos notes");$("#call-notes").focus();return}
+  if(!SAMPLE){toast("L'IA n'est pas disponible dans cette vue");return}
+  const btn=$("#call-analyze"),res=$("#call-res");btn.disabled=true;btn.lastChild.textContent="Analyse de l'appel…";
+  const fw=(p.qualif&&FRAMEWORKS[p.qualif.fw])?p.qualif.fw:(S.profile&&FRAMEWORKS[S.profile.fw]?S.profile.fw:"BANT");
+  try{
+    const r=await SAMPLE.json(`Tu es un Head of Sales B2B. Voici la transcription ou les notes d'un appel de prospection. N'invente rien : n'utilise que ce qui est dit dans le texte. Date du jour : ${today()}.
+Fiche du prospect :
+${prospectText(p)}
+Statut actuel : ${p.status||"À contacter"}
+
+Transcription / notes :
+"""
+${notes.slice(0,15000)}
+"""
+
+Réponds uniquement avec un objet JSON :
+{"resume":string (3 phrases maximum),"interet":"fort"|"moyen"|"faible"|"aucun","objections":[string],"prochaineEtape":string,"statut":${JSON.stringify(STATUSES.filter(s=>s!=="Relancé"))} (choisis le plus juste après cet appel),"rappelLe":"AAAA-MM-JJ" ou null (si un rappel est convenu ou utile),"qualification":{${FRAMEWORKS[fw].map(i=>`"${i}":0|1|2`).join(",")}} (0 inconnu, 1 partiel, 2 validé, d'après l'appel),"infos":{"contactName":string|null,"contactRole":string|null,"email":string|null,"notes":string|null} (seulement ce qui est dit explicitement)}`,{modelTier:"default",cache:false});
+    const ch={},lines=[];
+    if(r.statut&&STATUSES.includes(r.statut)&&r.statut!==p.status){const sp=applyStatus({...p},r.statut);Object.assign(ch,{status:sp.status,nextFollowUp:sp.nextFollowUp,lastContact:sp.lastContact,firstContact:sp.firstContact,relances:sp.relances});lines.push("Statut → "+r.statut)}
+    if(r.rappelLe&&/^\d{4}-\d{2}-\d{2}$/.test(r.rappelLe)){ch.callBack=r.rappelLe;lines.push("Rappel le "+fmtD(r.rappelLe))}else ch.callBack="";
+    const q={fw,v:{...((p.qualif&&p.qualif.fw===fw&&p.qualif.v)||{})}};let qc=0;for(const i of FRAMEWORKS[fw]){const v=Number(r.qualification&&r.qualification[i]);if(v>(q.v[i]||0)){q.v[i]=v;qc++}}if(qc){ch.qualif=q;lines.push("Qualification "+fw+" mise à jour ("+qc+" critère"+(qc>1?"s":"")+")")}
+    const inf=r.infos||{};
+    if(inf.contactName&&!has(p.contactName)){ch.contactName=String(inf.contactName);lines.push("Interlocuteur : "+inf.contactName)}
+    if(inf.contactRole&&!has(p.contactRole)){ch.contactRole=String(inf.contactRole);lines.push("Fonction : "+inf.contactRole)}
+    if(inf.email&&isEmail(inf.email)&&!isEmail(p.email)){ch.email=String(inf.email).trim();lines.push("Email : "+inf.email)}
+    if(inf.notes){ch.notes=((p.notes?p.notes+"\n":"")+fmtD(today())+" : "+inf.notes).slice(-4000)}
+    const c={date:today(),at:Date.now(),issue:"Appel",dur:CALL.dur||0,resume:String(r.resume||""),interet:r.interet||"",objections:Array.isArray(r.objections)?r.objections.map(String):[],next:String(r.prochaineEtape||""),transcript:notes.slice(0,12000)};
+    res.innerHTML=`<div class="callres"><b>Compte rendu</b><p>${esc(c.resume)}</p>${c.objections.length?`<p class="muted">Objections : ${c.objections.map(esc).join(" · ")}</p>`:""}${c.next?`<p>Prochaine étape : <b>${esc(c.next)}</b></p>`:""}${lines.length?`<ul>${lines.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>`:""}<div class="actions"><button class="btn primary" id="call-ok">Valider et prospect suivant</button><button class="btn" id="call-ok-stay">Valider</button></div></div>`;
+    const ok=async next=>{try{const logged=await saveCall(p,c,ch);toast("Suivi mis à jour"+(logged?" · appel noté dans NetHunt":""));CALL.draft="";CALL.dur=0;if(next)nextCall();else renderCallCard()}catch{}};
+    $("#call-ok").onclick=()=>ok(true);$("#call-ok-stay").onclick=()=>ok(false);
+  }catch(e){toast(sampleErr(e))}
+  btn.disabled=false;btn.lastChild.textContent="Analyser et mettre à jour le suivi";
+}
+
+/* ---------- Assistant (chat) ---------- */
+const CKEY=LKEY+"-chat";
+const CH={turns:[],busy:false,ctl:null};
+try{CH.turns=JSON.parse(localStorage.getItem(CKEY)||"[]").slice(-30)}catch{}
+const saveChat=()=>{try{localStorage.setItem(CKEY,JSON.stringify(CH.turns.slice(-30)))}catch{}};
+const SUGG=["Quels prospects dois-je relancer aujourd'hui ?","Relance tout ce qui est dû aujourd'hui","Crée une recherche « Cliniques privées Lyon — DRH »","Ajoute un prospect : société Durand Logistique, Lyon, 120 salariés, priorité haute","Rédige une accroche LinkedIn pour mon prospect prioritaire","Analyse mon pipeline et dis-moi quoi faire cette semaine","Quel prospect appeler en premier aujourd'hui, et avec quel angle ?"];
+const EDITABLE=Object.keys(F).concat(["priority","searchId"]);
+function chatOpen(){renderChat()}
+const toBottom=()=>{if(S.view==="espace")window.scrollTo(0,document.documentElement.scrollHeight)};
+function chatSugg(){const d=dueOf(S.prospects).length,j=readyJ0().length,a=activeNoAngle(S.prospects).length,out=[];
+  if(d)out.push(`Relance les ${d} prospects dus aujourd'hui`);if(j)out.push(`Lance les ${j} emails J0 prêts`);if(a)out.push(`Génère les ${a} angles commerciaux manquants`);
+  return out.concat(SUGG).slice(0,6)}
+function renderChat(){
+  const log=$("#chat-log");
+  if(!CH.turns.length){const st=stats();log.innerHTML=`<div class="ws-strip"><span class="chip ${st.due?"today":""}">${st.due} relance${st.due>1?"s":""} due${st.due>1?"s":""}</span><span class="chip">${readyJ0().length} email${readyJ0().length>1?"s":""} J0 prêt${readyJ0().length>1?"s":""}</span><span class="chip">${S.searches.length} recherche${S.searches.length>1?"s":""} · ${st.n} prospects</span></div>
+    <div class="msg ai"><p><b>Bonjour !</b> Dites-moi simplement ce que vous voulez faire : relancer, lancer une séquence, ajouter des prospects, rédiger un message, préparer un appel… Je m'en occupe directement dans l'outil.</p></div>
+    <div class="sugg"><button type="button" data-wiz>+ Nouvelle recherche</button>${chatSugg().map(s=>`<button type="button" data-sg="${esc(s)}">${esc(s)}</button>`).join("")}</div>`;
+    log.querySelector("[data-wiz]").onclick=()=>openWizard();
+    log.querySelectorAll("[data-sg]").forEach(b=>b.onclick=()=>{$("#chat-in").value=b.dataset.sg;chatSend()});return}
+  log.innerHTML=CH.turns.map(t=>t.role==="user"?`<div class="msg user">${esc(t.content)}</div>`:`<div class="msg ai ${t.local?"err":""}">${md(t.content)}${t.actions&&t.actions.length?`<div class="acts">${t.actions.map(a=>`<span class="chip">✓ ${esc(a)}</span>`).join("")}</div>`:""}</div>`).join("");
+  toBottom();
+}
+function chatContext(){
+  const st=stats();
+  const list=S.prospects.slice(0,80).map(p=>`${p.id} | ${p.company} | ${p.contactRole||"?"} | prio ${p.priority||"C"} | ${p.status||"À contacter"}${p.nextFollowUp?" | relance "+p.nextFollowUp:""}${dueState(p)==="late"?" (en retard)":""}${sidOf(p)?" | recherche "+p.searchId:""}`).join("\n");
+  const libs=S.searches.map(s=>{const t=S.templates.find(x=>x.id===s.templateId);return`${s.id} | ${s.name} | séquence : ${t?t.name+" ("+t.id+")":"aucune"}`}).join("\n")||"aucune";
+  const tpls=S.templates.map(t=>`${t.id} | ${t.name} | ${relLabel(t)}`).join("\n")||"aucun";
+  return`Tu es l'assistant intégré au « Cockpit Prospection B2B » de l'utilisateur : un Head of Sales B2B expérimenté (outbound, account-based marketing, qualification, CRM). Tu privilégies la qualité des prospects sur le volume, la personnalisation sur l'automatisation et la valeur sur le discours commercial. Challenge l'utilisateur quand c'est utile ; jamais de conseil générique.
+${RULES}
+Tu ne navigues pas sur le web : pour sourcer de nouvelles entreprises réelles, renvoie vers l'onglet « Ciblage IA » (prompt de recherche à copier dans Claude, puis import).
+Quand l'utilisateur demande une action (ajouter, modifier, changer un statut, ouvrir), fais-la avec les outils, puis confirme en une phrase ce que tu as fait. N'ajoute que les informations qu'il a données ; les coordonnées non fournies restent « À enrichir ». Pour plus de 5 modifications d'un coup, demande d'abord confirmation.
+Format : réponds en français, en Markdown concis. Pour une demande de stratégie ou de plan, utilise ces sections en titres "## " : Analyse, Opportunités identifiées, Recommandation stratégique, Plan d'action, Messages/scripts proposés, KPI à suivre, Prochaine expérimentation. Pour une question courte, réponds brièvement sans cette structure.
+
+Date du jour : ${today()}. Vue affichée : ${S.view}${D&&!D._new?" (fiche ouverte : "+D.company+", id "+D.id+")":""}.
+Profil de l'utilisateur :
+${profileText()}
+Chiffres : ${st.n} prospects, ${st.contacted} contactés, ${st.replied} réponses (${st.rReply} %), ${st.rdv} RDV, ${st.won} gagnés, ${st.late} relances en retard, ${st.enriched} fiches enrichies.
+Recherches de la bibliothèque (id | nom | séquence) :
+${libs}
+Modèles de séquence (id | nom | délais de relance) :
+${tpls}
+Prospects (id | entreprise | fonction | priorité | statut) :
+${list||"aucun"}`}
+function chatTools(acts){
+  const find=id=>{const p=S.prospects.find(x=>x.id===String(id));if(!p)throw new Error("Aucun prospect avec l'id "+id);return p};
+  const guard=()=>{if(S.readonly)throw new Error("L'utilisateur est en lecture seule : aucune modification possible.")};
+  const pick=o=>{const r={};for(const k of EDITABLE)if(o&&o[k]!=null&&String(o[k]).trim())r[k]=String(o[k]).trim();if(r.priority&&!["A","B","C"].includes(r.priority))delete r.priority;if(r.searchId&&!S.searches.some(s=>s.id===r.searchId))delete r.searchId;return r};
+  const props={};EDITABLE.forEach(k=>props[k]={type:"string",description:k==="priority"?"A (haute), B (moyenne) ou C (basse)":k==="searchId"?"Id de la recherche (bibliothèque) où ranger le prospect":F[k][0]});
+  return[
+    {name:"lire_fiche",description:"Renvoie la fiche complète d'un prospect (tous les champs, séquence et qualification) à partir de son id.",inputSchema:{type:"object",properties:{id:{type:"string"}},required:["id"]},execute:i=>clean(find(i.id))},
+    {name:"ajouter_prospect",description:"Crée un prospect dans le tableau de suivi avec les informations fournies par l'utilisateur. Renvoie l'id créé.",inputSchema:{type:"object",properties:props,required:["company"]},
+      execute:async i=>{guard();const f=pick(i);if(!f.company)throw new Error("Le nom de l'entreprise est obligatoire");
+        const p={id:uid(),createdAt:Date.now(),status:"À contacter",relances:0,priority:"B",contactName:"À enrichir",phone:"À enrichir",email:"À enrichir",linkedin:"À enrichir",qualification:"À enrichir",...f};
+        await saveProspect(p);acts.push("Ajouté : "+p.company);renderChat();return{id:p.id,ok:true}}},
+    {name:"modifier_prospect",description:"Met à jour un prospect existant. 'champs' contient les champs à changer (mêmes noms que ajouter_prospect). 'statut' change le statut et programme les 5 relances email selon la séquence de la recherche.",
+      inputSchema:{type:"object",properties:{id:{type:"string"},champs:{type:"object",properties:props},statut:{type:"string",enum:STATUSES}},required:["id"]},
+      execute:async i=>{guard();const p={...find(i.id),...pick(i.champs)};const ch=Object.keys(pick(i.champs));
+        if(i.statut&&STATUSES.includes(i.statut))applyStatus(p,i.statut);
+        await saveProspect(p);acts.push("Mis à jour : "+p.company+(i.statut?" → "+i.statut:"")+(ch.length?" ("+ch.length+" champ"+(ch.length>1?"s":"")+")":""));return{ok:true,statut:p.status,prochaineRelance:p.nextFollowUp||null}}},
+    {name:"enregistrer_sequence",description:"Enregistre des messages rédigés dans la séquence d'un prospect. Clés possibles : emailObjet, email, relance1Objet, relance1, relance2Objet, relance2, linkedinInvitation, linkedinMessage, linkedinRelance.",
+      inputSchema:{type:"object",properties:{id:{type:"string"},messages:{type:"object"}},required:["id","messages"]},
+      execute:async i=>{guard();const p=find(i.id);const m={};for(const k of TPL_KEYS)if(i.messages&&typeof i.messages[k]==="string")m[k]=i.messages[k];
+        await saveProspect({...p,sequence:{...(p.sequence||{}),...m}});if(SEQ&&SEQ.id===p.id)loadSeq();acts.push("Séquence enregistrée : "+p.company);return{ok:true}}},
+    {name:"enregistrer_profil",description:"Enregistre ou complète le profil (questionnaire). Clés : geo, secteur, ca, salaries, motifs, activite, prix, diff, fonctions, volume, ton, fw (BANT|MEDDIC|SPICED|CHAMP). Seulement avec les réponses de l'utilisateur.",
+      inputSchema:{type:"object",properties:{geo:{type:"string"},secteur:{type:"string"},ca:{type:"string"},salaries:{type:"string"},motifs:{type:"string"},activite:{type:"string"},prix:{type:"string"},diff:{type:"string"},fonctions:{type:"string"},volume:{type:"string"},ton:{type:"string"},fw:{type:"string"}}},
+      execute:async i=>{guard();const p={...(S.profile||{})};for(const k of ["geo","secteur","ca","salaries","motifs","activite","prix","diff","fonctions","volume","ton","fw"])if(i[k]!=null&&String(i[k]).trim())p[k]=String(i[k]).trim();
+        p.updatedAt=Date.now();S.profile=p;await put("config","profile",p);if(S.view==="profil")renderProfil();acts.push("Profil mis à jour ("+profileFilled()+"/6)");return{ok:true,rempli:profileFilled()+"/6"}}},
+    {name:"creer_recherche",description:"Crée une recherche (bibliothèque de prospects) avec ses critères et, si fourni, l'id d'un modèle de séquence. Renvoie l'id créé.",
+      inputSchema:{type:"object",properties:{name:{type:"string"},geo:{type:"string"},secteur:{type:"string"},salaries:{type:"string"},ca:{type:"string"},motifs:{type:"string"},fonctions:{type:"string"},notes:{type:"string"},templateId:{type:"string"}},required:["name"]},
+      execute:async i=>{guard();if(!String(i.name||"").trim())throw new Error("Le nom est obligatoire");const s={id:"s"+uid().slice(1),createdAt:Date.now()};
+        for(const k of ["name","geo","secteur","salaries","ca","motifs","fonctions","notes"])s[k]=String(i[k]||"").trim();
+        s.templateId=S.templates.some(t=>t.id===i.templateId)?i.templateId:(S.templates[0]||{}).id||"";
+        await put("searches",s.id,s);acts.push("Recherche créée : "+s.name);return{id:s.id}}},
+    {name:"lancer_sequence",description:"Lance la séquence email d'une recherche : prépare dans Gmail l'email J0 de chaque prospect « À contacter » de cette recherche, les passe en « Contacté » et programme leurs relances. Les brouillons ne sont pas envoyés automatiquement.",
+      inputSchema:{type:"object",properties:{searchId:{type:"string"}},required:["searchId"]},
+      execute:async i=>{guard();const s=S.searches.find(x=>x.id===String(i.searchId));if(!s)throw new Error("Recherche introuvable");
+        const L=toStart(S.prospects.filter(p=>p.searchId===s.id));if(!L.length)return{aucunNouveauProspect:true};
+        const r=await relanceBatch(L,null,startOne);acts.push(r.ok+" email(s) J0 prêt(s) dans Gmail ("+s.name+")");return{brouillonsCrees:r.ok,nonTraites:r.skip}}},
+    {name:"generer_angles",description:"Génère l'angle commercial des prospects qui n'en ont pas (toute la bibliothèque, ou une recherche si 'searchId' est donné). Renvoie le nombre d'angles ajoutés.",
+      inputSchema:{type:"object",properties:{searchId:{type:"string"}}},
+      execute:async i=>{guard();const L=i.searchId?S.prospects.filter(p=>p.searchId===String(i.searchId)):S.prospects;if(!activeNoAngle(L).length)return{aucunAngleManquant:true};
+        const n=await genAngles(L);acts.push(n+" angle(s) commercial(aux) ajouté(s)");return{anglesAjoutes:n}}},
+    {name:"relancer",description:"Relance en un clic : crée dans Gmail le brouillon de la relance due (relance 1 à 5, depuis la séquence) et programme la suivante. Donne 'prospectId' pour un prospect, 'searchId' pour toutes les relances dues d'une recherche, ou 'tout' à true pour toute la bibliothèque. Les brouillons ne sont pas envoyés automatiquement.",
+      inputSchema:{type:"object",properties:{prospectId:{type:"string"},searchId:{type:"string"},tout:{type:"boolean"}}},
+      execute:async i=>{guard();let L;if(i.prospectId){const p=find(i.prospectId);if(!canRelance(p))throw new Error("Ce prospect n'est pas en attente de relance");L=[p]}
+        else L=dueOf(i.searchId?S.prospects.filter(p=>p.searchId===String(i.searchId)):S.prospects);
+        if(!L.length)return{aucuneRelanceDue:true};const r=await relanceBatch(L);acts.push(r.ok+" relance(s) prête(s) dans Gmail"+(r.skip.length?", "+r.skip.length+" non traitée(s)":""));return{brouillonsCrees:r.ok,nonTraites:r.skip}}},
+    {name:"mettre_a_jour_crm",description:"Met à jour le CRM NetHunt avec tout ce qui a changé dans l'outil depuis la dernière synchronisation : crée ou met à jour chaque fiche entreprise et y ajoute une note d'activité. Renvoie le bilan. À utiliser seulement si l'utilisateur le demande.",
+      execute:async()=>{guard();const l=crmPending();if(!l.length)return{dejaAJour:true};
+        try{const r=await syncCRM(l);acts.push("CRM mis à jour : "+r.created+" créé(s), "+r.updated+" mis à jour"+(r.errors.length?", "+r.errors.length+" échec(s)":""));return{crees:r.created,misAJour:r.updated,echecs:r.errors}}
+        catch(e){throw new Error(mcpErr(e,"NetHunt"))}}},
+    {name:"ouvrir",description:"Affiche à l'utilisateur une vue de l'application (tableau, prospects, sequences, profil) ou la fiche d'un prospect (prospectId). À utiliser seulement si l'utilisateur demande à voir quelque chose.",
+      inputSchema:{type:"object",properties:{vue:{type:"string",enum:VIEWS},prospectId:{type:"string"}}},
+      execute:i=>{if(i.prospectId){find(i.prospectId);if(i.vue==="sequences"){S.seqId=String(i.prospectId);go("sequences")}else openDrawer(String(i.prospectId))}else if(VIEWS.includes(i.vue))go(i.vue);acts.push("Ouvert : "+(i.prospectId?find(i.prospectId).company:i.vue));return{ok:true}}}
+  ]}
+async function chatSend(){
+  const inp=$("#chat-in"),text=inp.value.trim();if(!text||CH.busy)return;
+  chatOpen(true);
+  if(!SAMPLE){CH.turns.push({role:"user",content:text},{role:"assistant",content:"L'assistant n'est pas disponible dans cette vue (ouvrez la page dans claude.ai).",local:true});inp.value="";renderChat();return}
+  CH.turns.push({role:"user",content:text});inp.value="";inp.style.height="";renderChat();
+  const log=$("#chat-log");const bubble=document.createElement("div");bubble.className="msg ai";bubble.innerHTML=`<p class="thinking">Réflexion…</p>`;log.appendChild(bubble);toBottom();
+  const acts=[];CH.busy=true;CH.ctl=new AbortController();$("#chat-send").disabled=true;$("#chat-stop").hidden=false;
+  const msgs=[{role:"user",content:chatContext()}].concat(CH.turns.filter(t=>!t.local).slice(-14).map(t=>({role:t.role,content:t.content})));
+  if(msgs[1]&&msgs[1].role==="assistant")msgs.splice(1,1);
+  const opts={signal:CH.ctl.signal,cache:false,onText:({text})=>{bubble.innerHTML=md(text);toBottom()}};
+  const lim=await SAMPLE.limits().catch(()=>null);if(lim&&lim.tools){opts.tools=chatTools(acts);delete opts.cache}
+  try{const {text:ans}=await SAMPLE(msgs,opts);CH.turns.push({role:"assistant",content:ans,actions:acts})}
+  catch(e){if(e&&e.text)CH.turns.push({role:"assistant",content:e.text,actions:acts});if(!e||e.code!=="cancelled")CH.turns.push({role:"assistant",content:sampleErr(e),local:true,actions:e&&e.text?[]:acts})}
+  CH.busy=false;$("#chat-send").disabled=false;$("#chat-stop").hidden=true;saveChat();renderChat();
+}
+$("#chat-form").onsubmit=e=>{e.preventDefault();chatSend()};
+$("#chat-in").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();chatSend()}});
+$("#chat-in").addEventListener("input",e=>{const t=e.target;t.style.height="auto";t.style.height=Math.min(t.scrollHeight,140)+"px"});
+$("#chat-in").addEventListener("focus",()=>{if(!CH.turns.length)chatOpen(true)});
+$("#chat-stop").onclick=()=>CH.ctl?.abort();
+$("#chat-clear").onclick=()=>{if(CH.busy)return;CH.turns=[];saveChat();renderChat()};
+
+boot();
+</script>
