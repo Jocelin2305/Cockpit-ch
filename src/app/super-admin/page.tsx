@@ -21,12 +21,23 @@ async function loadOverview() {
     db.user.count({ where: { createdAt: { gte: weekAgo } } }),
     db.user.count({ where: { lastLoginAt: { gte: weekAgo } } }),
     db.user.findMany({ orderBy: { createdAt: "desc" }, take: 10, include: { memberships: { include: { organization: true } } } }),
+    db.aiUsage.groupBy({
+      by: ["organizationId"],
+      where: { createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } },
+      _sum: { inputTokens: true, outputTokens: true },
+    }),
   ]);
 }
 
+// Estimation au tarif public de Claude Opus 5.5 (4 $ / 20 $ par million de jetons), hors réductions du cache.
+const estimate = (input: number, output: number) => (input * 4 + output * 20) / 1_000_000;
+const fmtTokens = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} M` : n >= 1000 ? `${Math.round(n / 1000)} k` : String(n));
+
 export default async function SuperAdminPage() {
   await requireSuperAdmin();
-  const [organizations, userCount, newUsers, activeUsers, recentUsers] = await loadOverview();
+  const [organizations, userCount, newUsers, activeUsers, recentUsers, aiByOrg] = await loadOverview();
+  const ai = new Map(aiByOrg.map((r) => [r.organizationId, { i: r._sum.inputTokens ?? 0, o: r._sum.outputTokens ?? 0 }]));
+  const aiTotal = [...ai.values()].reduce((s, v) => s + estimate(v.i, v.o), 0);
 
   return (
     <div className="view">
@@ -44,17 +55,18 @@ export default async function SuperAdminPage() {
         <div className="kpi"><span className="v">{newUsers}</span><span className="k">nouveaux (7 jours)</span></div>
         <div className="kpi"><span className="v">{activeUsers}</span><span className="k">actifs (7 jours)</span></div>
       </div>
+      <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarif public Claude Opus 5.5, hors réductions du cache).</p>
 
       <section className="panel flush">
         <div className="panel-head pad"><h2>Entreprises clientes</h2></div>
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Formule</th><th>Créée le</th><th aria-label="Actions" /></tr>
+              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Formule</th><th>IA (30 jours)</th><th>Créée le</th><th aria-label="Actions" /></tr>
             </thead>
             <tbody>
               {organizations.length === 0 && (
-                <tr><td colSpan={6} className="muted">Aucune entreprise pour l&apos;instant.</td></tr>
+                <tr><td colSpan={7} className="muted">Aucune entreprise pour l&apos;instant.</td></tr>
               )}
               {organizations.map((o) => (
                 <tr key={o.id}>
@@ -62,6 +74,7 @@ export default async function SuperAdminPage() {
                   <td>{o.memberships[0]?.user.email ?? <span className="muted">aucun</span>}</td>
                   <td className="num">{o._count.memberships}</td>
                   <td><span className="chip">{o.plan}</span></td>
+                  <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.i + u.o)} jetons · ≈ ${estimate(u.i, u.o).toFixed(2)} $` : <span className="muted">—</span>; })()}</td>
                   <td className="muted">{fmt(o.createdAt)}</td>
                   <td><Link className="btn sm" href={`/super-admin/entreprises/${o.id}`}>Détail</Link></td>
                 </tr>

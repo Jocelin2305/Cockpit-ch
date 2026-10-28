@@ -13,6 +13,7 @@ import { deleteProspect, markStepDone } from "../actions";
 import { QualifCard } from "./qualif-card";
 import { SequenceEditor } from "./sequence-editor";
 import { CopyBlock } from "./copy-block";
+import { GenerateAnglesButton } from "@/components/ai-buttons";
 
 export const metadata: Metadata = { title: "Fiche prospect" };
 
@@ -85,7 +86,7 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
 
       <section className="angle-box">
         <span className="label">Angle commercial</span>
-        <p>{has(p.angle) ? p.angle : "Pas encore d'angle. Renseignez-le dans « Pilotage » ci-dessous ; la génération automatique arrive avec l'assistant IA."}</p>
+        {has(p.angle) ? <p>{p.angle}</p> : <div><GenerateAnglesButton prospectId={p.id} label="Rédiger l'angle commercial" className="btn primary" /></div>}
         {has(p.qualification) && <p className="muted small">Pourquoi maintenant : {p.qualification}</p>}
       </section>
 

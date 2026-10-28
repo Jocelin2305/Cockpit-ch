@@ -110,6 +110,7 @@ tr:last-child td { border-bottom: 0; }
 .view.wide { max-width: 1400px; }
 .view.narrow { max-width: 860px; }
 .block { display: block; }
+.nowrap { white-space: nowrap; }
 .btn.block { width: 100%; }
 .pad-x { padding: 0 10px; }
 .navsec { display: flex; flex-direction: column; gap: 4px; }
@@ -216,6 +217,35 @@ a.li:hover b { color: var(--accent); }
 .recap { display: grid; gap: 8px; margin: 0; }
 .recap > div { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 12px; }
 .recap dt { color: var(--muted); } .recap dd { margin: 0; overflow-wrap: anywhere; }
+
+/* IA */
+.spark { width: 14px; height: 14px; flex: none; }
+.ai-action { display: inline-flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.ai-msg { font-size: 0.8rem; color: var(--muted); }
+.ai-msg.error { color: var(--bad); }
+.md h3 { font-size: 1rem; margin: 14px 0 4px; color: var(--accent); }
+.md h3:first-child { margin-top: 0; }
+.md ul { margin: 4px 0 8px; padding-left: 20px; }
+.md p { margin: 4px 0; }
+
+/* Espace de travail */
+.view.ws { max-width: 860px; min-height: calc(100vh - 90px); }
+.chat { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.chat-log { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 88%; padding: 10px 13px; border-radius: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+.msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; white-space: pre-wrap; }
+.msg.ai { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.err { background: var(--bad-soft); }
+.acts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.acts .chip { margin-left: 0; }
+.sugg { display: flex; flex-wrap: wrap; gap: 6px; }
+.sugg button { all: unset; cursor: pointer; font-size: 0.84rem; padding: 6px 11px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); }
+.sugg button:hover { border-color: var(--accent); }
+.sugg button:focus-visible { outline: 2px solid var(--accent); }
+.sugg button:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-bar { position: sticky; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: flex-end; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 8px 8px 14px; box-shadow: 0 10px 30px -16px rgba(8, 24, 28, 0.4); }
+.chat-bar:focus-within { border-color: var(--accent); }
+.chat-bar textarea { flex: 1; border: 0; background: transparent; resize: none; max-height: 140px; min-height: 24px; padding: 7px 0; line-height: 1.45; outline: none; }
 
 @media (max-width: 1100px) {
   .kpis.seven { grid-template-columns: repeat(4, minmax(0, 1fr)); }

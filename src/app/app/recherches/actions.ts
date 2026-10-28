@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { ownedTemplateId } from "@/lib/cockpit";
 import { STANDARD_TEMPLATE } from "@/lib/prospecting";
+import { aiErrorMessage } from "@/lib/ai";
+import { generateTemplateSteps } from "@/lib/ai-features";
 
 const text = (max = 2000) => z.string().trim().max(max).default("");
 const searchSchema = z.object({
@@ -16,7 +18,7 @@ const searchSchema = z.object({
 });
 export type SearchInput = z.input<typeof searchSchema>;
 
-type Result = { error?: string; id?: string };
+type Result = { error?: string; id?: string; warning?: string };
 
 export async function createSearch(input: SearchInput, templateChoice: string): Promise<Result> {
   const { user, membership } = await requireAdmin();
@@ -24,17 +26,26 @@ export async function createSearch(input: SearchInput, templateChoice: string): 
   const parsed = searchSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
 
-  // « standard » : copie du modèle standard, propre à cette recherche ; sinon un modèle existant.
-  let templateId = templateChoice === "standard" ? null : await ownedTemplateId(orgId, templateChoice);
+  // « ai » : séquence sur mesure rédigée par l'IA ; « standard » : copie du modèle standard ; sinon un modèle existant.
+  let templateId = templateChoice === "standard" || templateChoice === "ai" ? null : await ownedTemplateId(orgId, templateChoice);
+  let warning: string | undefined;
   if (!templateId) {
+    let steps = STANDARD_TEMPLATE.steps;
+    if (templateChoice === "ai") {
+      try {
+        steps = await generateTemplateSteps({ organizationId: orgId, userId: user.id }, { ...parsed.data, name: parsed.data.name }, STANDARD_TEMPLATE.delays);
+      } catch (e) {
+        warning = `${aiErrorMessage(e)} Le modèle standard a été copié à la place.`;
+      }
+    }
     const t = await db.sequenceTemplate.create({
-      data: { organizationId: orgId, name: `Séquence — ${parsed.data.name}`, delays: STANDARD_TEMPLATE.delays, steps: STANDARD_TEMPLATE.steps },
+      data: { organizationId: orgId, name: `Séquence — ${parsed.data.name}`, delays: STANDARD_TEMPLATE.delays, steps },
     });
     templateId = t.id;
   }
   const search = await db.search.create({ data: { ...parsed.data, organizationId: orgId, createdById: user.id, templateId } });
   revalidatePath("/app", "layout");
-  return { id: search.id };
+  return { id: search.id, warning };
 }
 
 export async function updateSearch(id: string, input: SearchInput, templateId: string): Promise<Result> {

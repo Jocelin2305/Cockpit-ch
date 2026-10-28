@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { SEQ_STEPS, stepDay } from "@/lib/prospecting";
 import { saveTemplate } from "../actions";
+import { draftTemplate } from "../../ai-actions";
 
 export function TemplateEditor({
   id, name: initialName, delays: initialDelays, steps: initialSteps, readOnly,
@@ -71,6 +72,23 @@ export function TemplateEditor({
       {msg.ok && <p className="alert ok">{msg.ok}</p>}
       {!readOnly && (
         <div className="row">
+          <button
+            type="button"
+            className="btn"
+            disabled={pending}
+            onClick={() =>
+              start(async () => {
+                setMsg({});
+                const res = await draftTemplate(id, delays);
+                if (res.steps) {
+                  setSteps(res.steps);
+                  setMsg({ ok: "Séquence rédigée par l'IA : relisez-la, puis enregistrez." });
+                } else setMsg({ error: res.error });
+              })
+            }
+          >
+            {pending ? "Rédaction (≈ 30 s)…" : "✦ Rédiger avec l'IA"}
+          </button>
           <button
             type="button"
             className="btn primary"

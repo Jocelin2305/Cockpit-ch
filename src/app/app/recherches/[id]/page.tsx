@@ -6,12 +6,14 @@ import { requireMember, ROLES } from "@/lib/auth";
 import { stats, tplDelays } from "@/lib/prospecting";
 import { ProspectTable, sortRows } from "@/components/prospect-table";
 import { Kpis } from "@/components/kpis";
+import { GenerateAnglesButton, SearchAiPanel } from "@/components/ai-buttons";
 
 export const metadata: Metadata = { title: "Recherche" };
 
-export default async function SearchPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SearchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ alerte?: string }> }) {
   const { membership } = await requireMember();
   const { id } = await params;
+  const { alerte } = await searchParams;
   const search = await db.search.findFirst({
     where: { id, organizationId: membership.organizationId },
     include: { template: true, prospects: true },
@@ -39,6 +41,11 @@ export default async function SearchPage({ params }: { params: Promise<{ id: str
           <Link className="btn primary" href={`/app/prospects/nouveau?recherche=${search.id}`}>+ Prospect</Link>
         </div>
       </header>
+      {alerte && <p className="alert">{alerte}</p>}
+      <div className="row">
+        <GenerateAnglesButton searchId={search.id} label="Angles manquants" className="btn sm ghost" />
+      </div>
+      <SearchAiPanel searchId={search.id} />
       <Kpis st={st} />
       <ProspectTable rows={sortRows(search.prospects)} empty="Aucun prospect dans cette recherche : importez une liste ou ajoutez-en un." />
     </div>

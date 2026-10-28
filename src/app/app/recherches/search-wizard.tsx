@@ -27,15 +27,15 @@ const suggestName = (d: Record<string, string>) =>
 const delaysLabel = (d: number[]) => `5 relances : J+${d.join(", ")}`;
 
 export function SearchWizard({
-  presets, templates, initial, searchId, initialTemplateId,
+  presets, templates, initial, searchId, initialTemplateId, aiEnabled = false,
 }: {
-  presets: Preset[]; templates: TemplateOption[]; initial?: Record<string, string>; searchId?: string; initialTemplateId?: string | null;
+  presets: Preset[]; templates: TemplateOption[]; initial?: Record<string, string>; searchId?: string; initialTemplateId?: string | null; aiEnabled?: boolean;
 }) {
   const editing = !!searchId;
   const router = useRouter();
   const [step, setStep] = useState(editing ? 1 : 0);
   const [data, setData] = useState<Record<string, string>>(initial ?? {});
-  const [tpl, setTpl] = useState<string>(initialTemplateId ?? (editing ? "" : "standard"));
+  const [tpl, setTpl] = useState<string>(initialTemplateId ?? (editing ? "" : aiEnabled ? "ai" : "standard"));
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const key = FLOW[step];
@@ -54,7 +54,7 @@ export function SearchWizard({
     start(async () => {
       const res = editing ? await updateSearch(searchId!, payload, tpl) : await createSearch(payload, tpl);
       if (res.error) setError(res.error);
-      else router.push(`/app/recherches/${res.id}`);
+      else router.push(`/app/recherches/${res.id}${"warning" in res && res.warning ? `?alerte=${encodeURIComponent(res.warning)}` : ""}`);
     });
   };
 
@@ -117,10 +117,16 @@ export function SearchWizard({
           <h2>Séquence emails + LinkedIn</h2>
           <p className="muted">Chaque recherche a sa séquence : email J0, 5 relances programmées automatiquement, et LinkedIn en parallèle.</p>
           <div className="choices">
+            {!editing && aiEnabled && (
+              <button type="button" className="choice" aria-pressed={tpl === "ai"} onClick={() => setTpl("ai")}>
+                <b>✦ Séquence sur mesure rédigée par l&apos;IA</b>
+                <span className="muted small">Écrite à partir de vos réponses : email J0, 5 relances et LinkedIn en parallèle. Recommandé.</span>
+              </button>
+            )}
             {!editing && (
               <button type="button" className="choice" aria-pressed={tpl === "standard"} onClick={() => setTpl("standard")}>
                 <b>Nouvelle séquence à partir du modèle standard</b>
-                <span className="muted small">Une copie propre à cette recherche, à personnaliser. La rédaction sur mesure par l&apos;IA arrive avec l&apos;assistant.</span>
+                <span className="muted small">Une copie propre à cette recherche, à personnaliser.{aiEnabled ? "" : " La rédaction par l'IA s'active avec votre clé API."}</span>
               </button>
             )}
             {templates.map((t) => (
@@ -148,7 +154,7 @@ export function SearchWizard({
             <div>
               <dt>Séquence</dt>
               <dd>
-                {tpl === "standard" ? "Nouvelle séquence (modèle standard)" : templates.find((t) => t.id === tpl)?.name ?? "aucune"}{" "}
+                {tpl === "ai" ? "Séquence sur mesure (rédigée par l'IA à la création)" : tpl === "standard" ? "Nouvelle séquence (modèle standard)" : templates.find((t) => t.id === tpl)?.name ?? "aucune"}{" "}
                 <button type="button" className="btn sm ghost" onClick={() => setStep(FLOW.indexOf("sequence"))}>Changer</button>
               </dd>
             </div>
@@ -167,7 +173,7 @@ export function SearchWizard({
           {editing && key !== "recap" && <button type="button" className="btn" onClick={submit} disabled={pending}>Enregistrer maintenant</button>}
           {key === "recap" ? (
             <button type="button" className="btn primary" onClick={submit} disabled={pending}>
-              {pending ? "Enregistrement…" : editing ? "Enregistrer" : "Créer la recherche"}
+              {pending ? (tpl === "ai" && !editing ? "Rédaction de la séquence (≈ 30 s)…" : "Enregistrement…") : editing ? "Enregistrer" : "Créer la recherche"}
             </button>
           ) : key !== "depart" ? (
             <button type="button" className="btn primary" onClick={() => setStep(step + 1)}>Suivant</button>

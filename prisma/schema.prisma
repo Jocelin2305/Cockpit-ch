@@ -180,6 +180,20 @@ model Call {
   @@index([prospectId])
 }
 
+// Consommation de l'IA par entreprise : sert au super admin et, plus tard, aux limites par formule.
+model AiUsage {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  feature        String
+  model          String
+  inputTokens    Int      @default(0)
+  outputTokens   Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
 model Invitation {
   id             String       @id @default(cuid())
   email          String

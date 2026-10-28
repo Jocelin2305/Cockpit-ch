@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireMember, ROLES } from "@/lib/auth";
 import { dueState, fmtDay, has, isDue, isEmail, stats, todayISO } from "@/lib/prospecting";
 import { Kpis } from "@/components/kpis";
+import { GenerateAnglesButton } from "@/components/ai-buttons";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
 
@@ -29,7 +30,7 @@ export default async function DashboardPage() {
   const steps = [
     { v: due.length, t: "Relances dues", d: "Ouvrez chaque fiche : le texte de la relance est prêt à copier.", href: "/app/prospects?dues=1", b: "Voir les relances" },
     { v: ready.length, t: "Emails J0 prêts", d: "Prospects « À contacter » avec email et séquence.", href: "/app/prospects?statut=%C3%80%20contacter", b: "Voir la liste" },
-    { v: noAngle.length, t: "Angles à rédiger", d: "La génération automatique arrive avec l'assistant IA.", href: "/app/prospects", b: "Voir les prospects" },
+    { v: noAngle.length, t: "Angles à rédiger", d: "L'angle commercial de chaque prospect, pour savoir quoi dire avant de contacter.", href: "", b: "Générer" },
     { v: noEmail.length, t: "Emails à trouver", d: "Prospects à contacter sans email direct : à enrichir.", href: "/app/prospects?statut=%C3%80%20contacter", b: "Voir la liste" },
   ];
   const hot = steps.findIndex((s) => s.v > 0);
@@ -66,7 +67,9 @@ export default async function DashboardPage() {
             {steps.map((s, i) => (
               <div key={s.t} className={`pstep${i === hot ? " hot" : ""}`}>
                 <span className="v">{s.v}</span><b>{s.t}</b><p>{s.d}</p>
-                {s.v > 0 && <Link className={`btn sm${i === hot ? " primary" : ""}`} href={s.href}>{s.b}</Link>}
+                {s.v > 0 && (s.href
+                  ? <Link className={`btn sm${i === hot ? " primary" : ""}`} href={s.href}>{s.b}</Link>
+                  : <GenerateAnglesButton label={s.b} className={`btn sm${i === hot ? " primary" : ""}`} />)}
               </div>
             ))}
           </div>

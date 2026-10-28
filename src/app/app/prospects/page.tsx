@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireMember } from "@/lib/auth";
 import { isDue, PRIO, STATUSES, todayISO } from "@/lib/prospecting";
 import { ProspectTable, sortRows } from "@/components/prospect-table";
+import { GenerateAnglesButton } from "@/components/ai-buttons";
 
 export const metadata: Metadata = { title: "Prospects" };
 
@@ -44,6 +45,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
           <p className="muted">Statuts, relances, complétude des fiches et qualification se mettent à jour à chaque action.</p>
         </div>
         <div className="row">
+          <GenerateAnglesButton label="Angles manquants" />
           <Link className="btn" href="/app/prospects/importer">Importer</Link>
           <a className="btn" href={exportHref}>Exporter CSV</a>
           <Link className="btn primary" href="/app/prospects/nouveau">+ Ajouter</Link>

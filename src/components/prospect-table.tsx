@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { completeness, dueState, fmtDay, has, isEmail, PRIO, qualScore, todayISO, type ProspectLike } from "@/lib/prospecting";
 import { StatusSelect } from "./status-select";
+import { GenerateAnglesButton } from "./ai-buttons";
 
 export type Row = ProspectLike & { id: string; company: string; searchId: string | null; searchName?: string | null };
 
@@ -46,9 +47,9 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
                   <td>
                     <Link href={`/app/prospects/${p.id}`} className="co"><b>{p.company}</b><span>{p.sector}</span></Link>
                   </td>
-                  <td className="angle">{has(p.angle) ? <span className="ang">{p.angle}</span> : <span className="enrich">À générer</span>}</td>
+                  <td className="angle">{has(p.angle) ? <span className="ang">{p.angle}</span> : <GenerateAnglesButton prospectId={p.id} label="Générer l'angle" className="btn sm" />}</td>
                   {showSearch && (
-                    <td>{p.searchId ? <Link href={`/app/recherches/${p.searchId}`}>{p.searchName}</Link> : <span className="muted">—</span>}</td>
+                    <td>{p.searchId ? <Link className="nowrap" href={`/app/recherches/${p.searchId}`}>{p.searchName}</Link> : <span className="muted">—</span>}</td>
                   )}
                   <td><div className="co"><b>{has(p.contactName) ? p.contactName : <span className="enrich">À enrichir</span>}</b><span>{p.contactRole}</span></div></td>
                   <td>
