@@ -5,7 +5,7 @@ import { SubmitButton } from "@/components/forms";
 import { db } from "@/lib/db";
 import { requireMember, ROLES } from "@/lib/auth";
 import { accessState, stripe, stripeEnabled, syncSubscription } from "@/lib/billing";
-import { PLANS, priceIdFor, TRIAL_DAYS } from "@/lib/plans";
+import { PLANS, priceIdFor } from "@/lib/plans";
 import { logout } from "../(auth)/actions";
 import { openPortal, startCheckout } from "./actions";
 

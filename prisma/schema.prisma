@@ -59,6 +59,9 @@ model Organization {
   // Téléphonie connectée (aircall, ringover, generique) et jeton secret de son webhook.
   phoneProvider        String?
   phoneWebhookToken    String?   @unique
+  // Clé d'IA de l'entreprise (chiffrée) ; sans elle, la clé de la plateforme sert.
+  aiProvider           String?
+  aiKeyEnc             String?
   // CRM connecté (hubspot, pipedrive) et son jeton d'accès chiffré.
   crmProvider          String?
   crmTokenEnc          String?

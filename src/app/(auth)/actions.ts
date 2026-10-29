@@ -6,7 +6,6 @@ import {
   appUrl,
   createSession,
   destroySession,
-  getSession,
   hashPassword,
   hashToken,
   isSuperAdminEmail,

@@ -33,7 +33,7 @@ export async function weeklyReport(organizationId: string, today = todayISO()) {
     const mine = <T extends { userId?: string | null; ownerId?: string | null }>(r: T) => !userId || (r.userId ?? r.ownerId) === userId;
     const c = { ...ZERO };
     for (const x of calls) if (mine(x) && inWeek(x.day, start)) { c.calls++; if (x.issue === "Appel") c.talks++; }
-    for (const m of mails) if (mine(m) && inWeek(iso(m.at), start)) m.direction === "out" ? c.emails++ : c.replies++;
+    for (const m of mails) if (mine(m) && inWeek(iso(m.at), start)) { if (m.direction === "out") c.emails++; else c.replies++; }
     for (const p of prospects) {
       if (!mine(p)) continue;
       if (inWeek(iso(p.createdAt), start)) c.added++;

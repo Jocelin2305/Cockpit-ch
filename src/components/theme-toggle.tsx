@@ -12,7 +12,7 @@ export function ThemeToggle() {
     setDark(!dark);
   };
   return (
-    <button type="button" className="btn sm ghost" onClick={toggle} aria-label={dark ? "Passer en thème clair" : "Passer en thème sombre"} title={dark ? "Thème clair" : "Thème sombre"} suppressHydrationWarning>
+    <button type="button" className="theme-toggle" onClick={toggle} aria-label={dark ? "Passer en thème clair" : "Passer en thème sombre"} title={dark ? "Thème clair" : "Thème sombre"} suppressHydrationWarning>
       {dark ? "☀" : "☾"}
     </button>
   );

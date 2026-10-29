@@ -1,7 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { z } from "zod";
+import { createHash } from "node:crypto";
 import { db } from "./db";
+import { decrypt } from "./mail";
 
 // Modèle par défaut : Claude Opus 5.5. Modifiable sans toucher au code via ANTHROPIC_MODEL.
 export const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
@@ -12,12 +14,30 @@ export const FALLBACK = {
   fallbacks: "default" as const,
 };
 
+// Clé de la plateforme (variable d'environnement), utilisée quand l'entreprise n'a pas connecté la sienne.
 export const aiEnabled = () => !!process.env.ANTHROPIC_API_KEY;
+// IA disponible pour une entreprise : sa propre clé (Paramètres → API IA) ou celle de la plateforme.
+export const aiReady = (org: { aiKeyEnc?: string | null }) => aiEnabled() || !!org.aiKeyEnc;
 
 let client: Anthropic | null = null;
 export function anthropic() {
   if (!client) client = new Anthropic();
   return client;
+}
+
+const orgClients = new Map<string, Anthropic>();
+// Client de l'entreprise : sa clé Claude si elle en a une, sinon celle de la plateforme.
+export async function aiClient(organizationId: string | null) {
+  const org = organizationId ? await db.organization.findUnique({ where: { id: organizationId }, select: { aiKeyEnc: true } }) : null;
+  if (org?.aiKeyEnc) {
+    let key: string;
+    try { key = decrypt(org.aiKeyEnc); } catch { throw new AiError("La clé IA enregistrée est illisible : reconnectez-la dans Paramètres → API IA."); }
+    const id = createHash("sha256").update(key).digest("hex");
+    if (!orgClients.has(id)) orgClients.set(id, new Anthropic({ apiKey: key }));
+    return orgClients.get(id)!;
+  }
+  if (!aiEnabled()) throw new AiError("L'IA n'est pas connectée : ajoutez votre clé Claude dans Paramètres → API IA.");
+  return anthropic();
 }
 
 export type AiContext = { organizationId: string; userId: string | null };
@@ -28,7 +48,7 @@ export class AiError extends Error {}
 
 export function aiErrorMessage(e: unknown) {
   if (e instanceof AiError) return e.message;
-  if (e instanceof Anthropic.AuthenticationError) return "La clé API Anthropic est refusée : vérifiez ANTHROPIC_API_KEY dans le fichier .env.";
+  if (e instanceof Anthropic.AuthenticationError) return "La clé Claude est refusée : vérifiez-la dans Paramètres → API IA.";
   if (e instanceof Anthropic.PermissionDeniedError) return "La clé API Anthropic n'a pas accès à ce modèle.";
   if (e instanceof Anthropic.RateLimitError) return "L'IA reçoit trop de demandes : réessayez dans une minute.";
   if (e instanceof Anthropic.APIConnectionError) return "Impossible de joindre l'IA : vérifiez la connexion internet.";
@@ -57,14 +77,9 @@ export async function logUsage(ctx: AiContext, feature: string, usage: { input_t
     .catch(() => undefined);
 }
 
-function requireAi() {
-  if (!aiEnabled()) throw new AiError("L'IA n'est pas encore configurée : ajoutez votre clé ANTHROPIC_API_KEY dans le fichier .env, puis relancez l'application.");
-}
-
 // Réponse JSON validée par un schéma Zod.
 export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature: string, schema: S, prompt: string, effort: Effort = "medium"): Promise<z.infer<S>> {
-  requireAi();
-  const res = await anthropic().beta.messages.parse({
+  const res = await (await aiClient(ctx.organizationId)).beta.messages.parse({
     model: AI_MODEL,
     max_tokens: 16000,
     ...FALLBACK,
@@ -81,8 +96,7 @@ export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature:
 
 // Réponse en texte (Markdown), en streaming côté serveur pour éviter les délais d'attente.
 export async function generateText(ctx: AiContext, feature: string, prompt: string, effort: Effort = "medium") {
-  requireAi();
-  const stream = anthropic().beta.messages.stream({
+  const stream = (await aiClient(ctx.organizationId)).beta.messages.stream({
     model: AI_MODEL,
     max_tokens: 32000,
     ...FALLBACK,

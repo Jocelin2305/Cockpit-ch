@@ -4,7 +4,6 @@ import { BackButton } from "@/components/back-button";
 import { Brand } from "@/components/brand";
 import { NavLinks, NavMenu, type NavItem } from "@/components/shell";
 import { CallDock } from "@/components/call-dock";
-import { Guide } from "@/components/guide";
 import { GuideButton, Tour } from "@/components/tour";
 import { ContextMenus } from "@/components/context-menus";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -12,7 +11,7 @@ import { db } from "@/lib/db";
 import { requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
 import { accessState } from "@/lib/billing";
-import { aiEnabled } from "@/lib/ai";
+import { aiReady } from "@/lib/ai";
 import { isDue, todayISO } from "@/lib/prospecting";
 import { logout } from "../(auth)/actions";
 import { leaveOrganization } from "../super-admin/actions";
@@ -66,14 +65,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <b>{user.name}</b>
             <span className="muted small">{onboarding ? "Super admin" : ROLE_LABEL[membership.role]}</span>
           </div>
-          <div className="inline">
-            <ThemeToggle />
-            <form action={logout}>
-              <button className="btn sm ghost" type="submit">Se déconnecter</button>
-            </form>
-          </div>
+          <form action={logout}>
+            <button className="btn sm ghost" type="submit">Se déconnecter</button>
+          </form>
         </div>
       </aside>
+      <ThemeToggle />
       <main className="main">
         <Suspense fallback={null}><BackButton /></Suspense>
         {onboarding && (
@@ -90,8 +87,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         )}
         {children}
       </main>
-      <CallDock aiReady={aiEnabled()} />
-      <Guide enabled={user.guideOn} />
+      <CallDock aiReady={aiReady(membership.organization)} />
       <Tour initialStep={user.tourStep} />
       <ContextMenus isAdmin={membership.role === ROLES.ADMIN} />
     </div>

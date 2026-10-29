@@ -112,7 +112,7 @@ export async function runSourcing(search: Search, wanted: number) {
       company: companyName(c),
       siren: c.siren,
       source: "registre",
-      sector: [sectionLabel(c.section_activite_principale), naf && `NAF ${naf}`].filter(Boolean).join(" · "),
+      sector: sectionLabel(c.section_activite_principale) || (naf ? `NAF ${naf}` : ""),
       city: [place?.code_postal, place?.libelle_commune ? title(place.libelle_commune) : ""].filter(Boolean).join(" "),
       size: effectifLabel(c.tranche_effectif_salarie),
       contactName: l.name,

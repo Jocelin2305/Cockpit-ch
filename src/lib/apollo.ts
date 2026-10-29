@@ -2,6 +2,8 @@
 // Recherche de personnes : gratuite ; enrichissement (bulk_match) : 1 crédit par contact trouvé.
 // Les téléphones directs d'Apollo (8 crédits, livrés en différé) ne sont pas demandés ; le standard de l'entreprise l'est.
 import type { Prisma, Prospect } from "@prisma/client";
+import { createHmac } from "node:crypto";
+import { appUrl } from "./auth";
 import { db } from "./db";
 import { decrypt } from "./mail";
 import { has } from "./prospecting";
@@ -34,10 +36,19 @@ async function call(key: string, path: string, query: [string, string][], body?:
 // Vérifie la clé par une recherche gratuite d'une personne.
 export const testApollo = (key: string) => call(key, "/mixed_people/api_search", [["per_page", "1"], ["person_titles[]", "ceo"]]);
 
-async function bulkMatch(key: string, details: Record<string, string>[]) {
+// Téléphones directs : Apollo les livre plus tard sur un webhook public (HTTPS), signé par entreprise.
+export const apolloWebhookToken = (orgId: string) => `${orgId}.${createHmac("sha256", process.env.TOKEN_ENCRYPTION_KEY ?? "cockpitch").update(`apollo:${orgId}`).digest("base64url").slice(0, 22)}`;
+export function apolloWebhookOrg(token: string) {
+  const [orgId] = token.split(".");
+  return orgId && apolloWebhookToken(orgId) === token ? orgId : null;
+}
+const phoneParams = (orgId: string | null): [string, string][] =>
+  orgId && appUrl().startsWith("https://") ? [["reveal_phone_number", "true"], ["webhook_url", `${appUrl()}/api/apollo/${apolloWebhookToken(orgId)}`]] : [];
+
+async function bulkMatch(key: string, details: Record<string, string>[], phoneFor: string | null = null) {
   const out: Match[] = [];
   for (let i = 0; i < details.length; i += 10) {
-    const res = await call(key, "/people/bulk_match", [["reveal_personal_emails", "false"]], { details: details.slice(i, i + 10) });
+    const res = await call(key, "/people/bulk_match", [["reveal_personal_emails", "false"], ...phoneParams(phoneFor)], { details: details.slice(i, i + 10) });
     out.push(...((res.matches ?? []) as Match[]));
   }
   return out;
@@ -55,12 +66,14 @@ const fullName = (m: NonNullable<Match>) => m.name || [m.first_name, m.last_name
 // Enrichit jusqu'à ENRICH_MAX prospects pas encore traités d'une recherche :
 // 1) le dirigeant trouvé au registre (nom + entreprise) ; 2) si des fonctions sont visées et que le site est connu,
 // la personne qui occupe ce poste devient le contact principal (le dirigeant reste dans les notes).
-export async function enrichSearch(org: { id: string; apolloKeyEnc: string | null }, searchId: string | null, fonctions: string) {
+// `prospectId` : enrichissement manuel d'une ligne (même déjà traitée), téléphone direct compris quand c'est possible.
+export async function enrichSearch(org: { id: string; apolloKeyEnc: string | null }, scope: { searchId?: string | null; prospectId?: string }, fonctions: string) {
+  const { searchId = null, prospectId } = scope;
   if (!org.apolloKeyEnc) throw new ApolloError("Connectez Apollo dans Paramètres pour enrichir les contacts.");
   let key: string;
   try { key = decrypt(org.apolloKeyEnc); } catch { throw new ApolloError("Clé Apollo illisible : reconnectez-la dans Paramètres."); }
   const todo = await db.prospect.findMany({
-    where: { organizationId: org.id, enrichedAt: null, status: { notIn: ["Gagné", "Perdu"] }, ...(searchId ? { searchId } : {}) },
+    where: prospectId ? { id: prospectId, organizationId: org.id } : { organizationId: org.id, enrichedAt: null, status: { notIn: ["Gagné", "Perdu"] }, ...(searchId ? { searchId } : {}) },
     orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
     take: ENRICH_MAX,
   });
@@ -68,7 +81,7 @@ export async function enrichSearch(org: { id: string; apolloKeyEnc: string | nul
 
   // 1. Le contact connu (dirigeant ou contact saisi), par son nom et son entreprise.
   const named = todo.filter((p) => has(p.contactName));
-  const first = await bulkMatch(key, named.map((p) => ({ ...splitName(p.contactName), organization_name: p.company, ...(has(p.website) ? { domain: domainOf(null, p.website) } : {}) })));
+  const first = await bulkMatch(key, named.map((p) => ({ ...splitName(p.contactName), organization_name: p.company, ...(has(p.website) ? { domain: domainOf(null, p.website) } : {}) })), prospectId ? org.id : null);
   const byId = new Map(named.map((p, i) => [p.id, first[i] ?? null]));
 
   // 2. La fonction visée, dans l'entreprise dont on connaît le domaine (recherche gratuite, puis 1 crédit si trouvée).
@@ -84,7 +97,7 @@ export async function enrichSearch(org: { id: string; apolloKeyEnc: string | nul
       const hit = ((res.people ?? []) as { id?: string; title?: string }[]).find((x) => x.id && x.id !== m?.id);
       if (hit?.id) wanted.push({ p, id: hit.id });
     }
-    const matches = await bulkMatch(key, wanted.map((w) => ({ id: w.id })));
+    const matches = await bulkMatch(key, wanted.map((w) => ({ id: w.id })), prospectId ? org.id : null);
     wanted.forEach((w, i) => matches[i] && target.set(w.p.id, matches[i]));
   }
 

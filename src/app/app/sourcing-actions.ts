@@ -25,7 +25,7 @@ export async function launchProspectSearch(searchId: string): Promise<Res> {
     if (!r.added) return { ok: r.total ? "Aucune nouvelle entreprise : toutes celles trouvées sont déjà dans vos prospects." : "Aucune entreprise ne correspond à ces critères : élargissez la zone, le secteur ou l'effectif." };
     let msg = `${r.added} entreprise${r.added > 1 ? "s" : ""} ajoutée${r.added > 1 ? "s" : ""} (${r.total.toLocaleString("fr-FR")} correspondent à vos critères).`;
     if (org.apolloKeyEnc) {
-      const e = await enrichSearch(org, search.id, search.fonctions);
+      const e = await enrichSearch(org, { searchId: search.id }, search.fonctions);
       msg += ` Apollo : ${e.found} contact${e.found > 1 ? "s" : ""} enrichi${e.found > 1 ? "s" : ""} sur ${e.done}${e.left ? ` · ${e.left} restent à enrichir` : ""}.`;
     }
     return { ok: msg };
@@ -41,7 +41,7 @@ export async function enrichWithApollo(searchId: string | null): Promise<Res> {
   const search = searchId ? await db.search.findFirst({ where: { id: searchId, organizationId: org.id }, select: { id: true, fonctions: true } }) : null;
   if (searchId && !search) return { error: "Recherche introuvable." };
   try {
-    const e = await enrichSearch(org, search?.id ?? null, search?.fonctions ?? "");
+    const e = await enrichSearch(org, { searchId: search?.id ?? null }, search?.fonctions ?? "");
     revalidatePath("/app", "layout");
     if (!e.done) return { ok: "Tous les prospects sont déjà enrichis." };
     return { ok: `Apollo : ${e.found} contact${e.found > 1 ? "s" : ""} enrichi${e.found > 1 ? "s" : ""} sur ${e.done}${e.left ? ` · ${e.left} restent, recliquez pour continuer` : ""}.` };
@@ -70,3 +70,18 @@ export async function disconnectApollo() {
   revalidatePath("/app", "layout");
 }
 
+
+// Bouton « Enrichir » d'une ligne : email, LinkedIn et poste tout de suite ; téléphone direct envoyé par Apollo quelques minutes plus tard.
+export async function enrichProspect(prospectId: string): Promise<Res> {
+  const { membership } = await requireMember();
+  const org = membership.organization;
+  const p = await db.prospect.findFirst({ where: { id: prospectId, organizationId: org.id }, select: { search: { select: { fonctions: true } } } });
+  if (!p) return { error: "Prospect introuvable." };
+  try {
+    const e = await enrichSearch(org, { prospectId }, p.search?.fonctions ?? "");
+    revalidatePath("/app", "layout");
+    return e.found ? { ok: "Contact enrichi. Le téléphone direct, s'il existe, arrive dans quelques minutes." } : { ok: "Apollo ne trouve pas encore ce contact." };
+  } catch (e) {
+    return { error: e instanceof ApolloError ? e.message : "L'enrichissement a échoué. Réessayez dans un instant." };
+  }
+}

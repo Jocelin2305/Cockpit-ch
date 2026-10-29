@@ -47,14 +47,12 @@ export default async function SuperAdminLayout({ children }: { children: React.R
             <b>{user.name}</b>
             <span className="muted small">{role} · {resellerId ? "vos clients" : "toutes les entreprises"}</span>
           </div>
-          <div className="inline">
-            <ThemeToggle />
-            <form action={logout}>
-              <button className="btn sm ghost" type="submit">Se déconnecter</button>
-            </form>
-          </div>
+          <form action={logout}>
+            <button className="btn sm ghost" type="submit">Se déconnecter</button>
+          </form>
         </div>
       </aside>
+      <ThemeToggle />
       <main className="main">
         <Suspense fallback={null}><BackButton /></Suspense>
         {children}

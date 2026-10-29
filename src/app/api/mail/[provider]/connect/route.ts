@@ -5,7 +5,7 @@ import { authUrl, isProvider, mailEnabled } from "@/lib/mail";
 
 // Démarre la connexion OAuth de la boîte mail de l'utilisateur.
 export async function GET(_: Request, { params }: { params: Promise<{ provider: string }> }) {
-  const { membership } = await requireMember();
+  await requireMember();
   const { provider } = await params;
   if (!isProvider(provider) || !mailEnabled(provider)) redirect("/app/parametres/connecteurs/mailing?mail=indisponible");
   const state = newToken();

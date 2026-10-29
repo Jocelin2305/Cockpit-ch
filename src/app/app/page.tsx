@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { requireMember, ROLES } from "@/lib/auth";
-import { aiEnabled } from "@/lib/ai";
+import { aiReady } from "@/lib/ai";
 import { has, isDue, isEmail, todayISO } from "@/lib/prospecting";
 import { AssistantChat } from "./assistant-chat";
 import { Briefing } from "./briefing";
@@ -40,7 +40,7 @@ export default async function WorkspacePage() {
         </div>
       </header>
       {membership.role === ROLES.ADMIN && !user.onboardingHidden && <Onboarding userId={user.id} organizationId={orgId} />}
-      <AssistantChat suggestions={suggestions} aiReady={aiEnabled()} intro={<Briefing user={user} membership={membership} />} />
+      <AssistantChat suggestions={suggestions} aiReady={aiReady(membership.organization)} intro={<Briefing user={user} membership={membership} />} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireMember, ROLES } from "@/lib/auth";
 import { stats, tplDelays } from "@/lib/prospecting";
-import { ProspectTable, sortRows } from "@/components/prospect-table";
+import { LAST_INCLUDE, lastInteraction, ProspectTable, sortRows } from "@/components/prospect-table";
 import { Kpis } from "@/components/kpis";
 import { GenerateAnglesButton, SearchAiPanel } from "@/components/ai-buttons";
 import { EnrichButton, LaunchSearchButton } from "@/components/sourcing-buttons";
@@ -19,7 +19,7 @@ export default async function SearchPage({ params, searchParams }: { params: Pro
   const { alerte } = await searchParams;
   const search = await db.search.findFirst({
     where: { id, organizationId: membership.organizationId },
-    include: { template: true, prospects: true },
+    include: { template: true, prospects: { include: LAST_INCLUDE } },
   });
   if (!search) notFound();
   const st = stats(search.prospects);
@@ -63,7 +63,7 @@ export default async function SearchPage({ params, searchParams }: { params: Pro
       </div>
       <SearchAiPanel searchId={search.id} />
       <Kpis st={st} />
-      <ProspectTable rows={sortRows(search.prospects)} empty="Aucun prospect dans cette recherche : importez une liste ou ajoutez-en un." />
+      <ProspectTable rows={sortRows(search.prospects.map((p) => ({ ...p, last: lastInteraction(p) })))} empty="Aucun prospect dans cette recherche : importez une liste ou ajoutez-en un." />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireMember, ROLES } from "@/lib/auth";
 import { isDue, PRIO, STATUSES, todayISO } from "@/lib/prospecting";
-import { ProspectTable, sortRows } from "@/components/prospect-table";
+import { LAST_INCLUDE, lastInteraction, ProspectTable, SORTS, sortRows } from "@/components/prospect-table";
 import { GenerateAnglesButton } from "@/components/ai-buttons";
 import { LaunchSequenceButton, UpdateCrmButton } from "@/components/mail-buttons";
 import { EnrichButton, LaunchSearchButton } from "@/components/sourcing-buttons";
@@ -12,7 +12,7 @@ import { CRM_PROVIDERS, type CrmProvider } from "@/lib/crm-providers";
 
 export const metadata: Metadata = { title: "Prospects" };
 
-type Filters = { q?: string; statut?: string; priorite?: string; recherche?: string; dues?: string };
+type Filters = { q?: string; statut?: string; priorite?: string; recherche?: string; dues?: string; tri?: string };
 
 export default async function ProspectsPage({ searchParams }: { searchParams: Promise<Filters> }) {
   const { user, membership } = await requireMember();
@@ -32,7 +32,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
           ? { OR: ["company", "contactName", "city", "sector", "contactRole"].map((k) => ({ [k]: { contains: f.q, mode: "insensitive" as const } })) }
           : {}),
       },
-      include: { search: { select: { name: true } } },
+      include: { search: { select: { name: true } }, ...LAST_INCLUDE },
       take: 1000,
     }),
     db.search.findMany({ where: { organizationId: orgId }, include: { _count: { select: { prospects: true } } }, orderBy: { createdAt: "asc" } }),
@@ -43,8 +43,8 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
   const current = searches.find((s) => s.id === searchId);
   const today = todayISO();
   const rows = sortRows(
-    prospects.filter((p) => !f.dues || isDue(p, today)).map((p) => ({ ...p, searchName: p.search?.name })),
-    today,
+    prospects.filter((p) => !f.dues || isDue(p, today)).map((p) => ({ ...p, searchName: p.search?.name, last: lastInteraction(p) })),
+    f.tri,
   );
   const exportHref = `/app/prospects/export${searchId ? `?recherche=${searchId}` : ""}`;
 
@@ -100,6 +100,9 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
           <option value="aucune">Sans recherche</option>
         </select>
         <label className="check"><input type="checkbox" name="dues" value="1" defaultChecked={!!f.dues} /> Relances dues</label>
+        <select className="input" name="tri" defaultValue={f.tri ?? "ajout"} aria-label="Trier par">
+          {SORTS.map(([k, l]) => <option key={k} value={k}>Trier : {l}</option>)}
+        </select>
         <button className="btn" type="submit">Filtrer</button>
       </form>
 
@@ -108,7 +111,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         showSearch
         empty={prospects.length ? "Aucun prospect ne correspond à ces filtres." : "Aucun prospect pour l'instant. Ajoutez-en un ou importez une liste."}
       />
-      <p className="hint">Coordonnées : cliquez sur T (numéro direct), E (email) ou L (LinkedIn) pour les afficher. Une valeur « À enrichir » compte comme manquante. Clic droit sur une ligne ou une bibliothèque : stopper ou reprendre la séquence, supprimer.{!mailbox && <> Pour lancer une séquence, <Link href="/app/parametres/connecteurs/mailing">connectez votre boîte mail</Link>.</>}</p>
+      <p className="hint">Cliquez sur un email pour lancer la séquence de ce contact, sur un numéro pour l&apos;appeler ; « Enrichir » débloque l&apos;email et le téléphone avec Apollo. Clic droit sur une ligne ou une bibliothèque : stopper ou reprendre la séquence, supprimer.{!mailbox && <> Pour lancer une séquence, <Link href="/app/parametres/connecteurs/mailing">connectez votre boîte mail</Link>.</>}</p>
       </>)}
     </div>
   );
