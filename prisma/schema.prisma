@@ -56,9 +56,6 @@ model Organization {
   subscriptionStatus   String?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
-  // Espace de démonstration ouvert par un prospect via /demo : supprimé après demoExpiresAt.
-  isDemo               Boolean   @default(false)
-  demoExpiresAt        DateTime?
   // Téléphonie connectée (aircall, ringover, generique) et jeton secret de son webhook.
   phoneProvider        String?
   phoneWebhookToken    String?   @unique
@@ -211,6 +208,8 @@ model Prospect {
   rdvDay         String?
   wonDay         String?
   optOutAt       DateTime?
+  // Séquence stoppée à la main (clic droit) : plus aucun email ni relance jusqu'à la reprise.
+  seqStoppedAt   DateTime?
   // Entreprise trouvée par la recherche automatique (SIREN) et contact enrichi par Apollo.
   siren          String?
   source         String       @default("")
@@ -360,16 +359,6 @@ model PasswordReset {
   @@index([userId, createdAt])
 }
 
-// Démos ouvertes via /demo : conservées après la suppression de l'espace, pour le suivi des conversions.
-model DemoVisit {
-  id             String   @id @default(cuid())
-  organizationId String   @unique
-  source         String   @default("")
-  convertedAt    DateTime?
-  createdAt      DateTime @default(now())
-
-  @@index([createdAt])
-}
 
 // ---------- Revendeurs ----------
 

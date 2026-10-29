@@ -52,7 +52,7 @@ export async function launchSequence(searchId: string | null) {
   const { user, orgId, account, signature } = await context();
   if (!account) return { error: "Connectez d'abord votre boîte mail dans Paramètres." };
   const todo = await db.prospect.findMany({
-    where: { organizationId: orgId, status: "À contacter", optOutAt: null, email: { contains: "@" }, ...(searchId ? { searchId } : { searchId: { not: null } }) },
+    where: { organizationId: orgId, status: "À contacter", optOutAt: null, seqStoppedAt: null, email: { contains: "@" }, ...(searchId ? { searchId } : { searchId: { not: null } }) },
     include: { search: { include: { template: true } } },
     take: BATCH_MAX,
   });

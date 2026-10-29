@@ -8,7 +8,6 @@ const MSG: Record<string, [string, string]> = {
   erreur: ["error", "La connexion a échoué. Réessayez."],
   refuse: ["error", "Connexion annulée ou expirée. Réessayez."],
   indisponible: ["error", "Ce service n'est pas encore activé sur Cockpit'ch."],
-  demo: ["error", "La connexion d'une boîte mail est désactivée dans la démo."],
 };
 
 export async function MailPanel({ userId, status }: { userId: string; status?: string }) {

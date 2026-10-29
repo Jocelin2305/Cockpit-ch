@@ -64,7 +64,6 @@ function requireAi() {
 // Réponse JSON validée par un schéma Zod.
 export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature: string, schema: S, prompt: string, effort: Effort = "medium"): Promise<z.infer<S>> {
   requireAi();
-  await checkDemoQuota(ctx);
   const res = await anthropic().beta.messages.parse({
     model: AI_MODEL,
     max_tokens: 16000,
@@ -83,7 +82,6 @@ export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature:
 // Réponse en texte (Markdown), en streaming côté serveur pour éviter les délais d'attente.
 export async function generateText(ctx: AiContext, feature: string, prompt: string, effort: Effort = "medium") {
   requireAi();
-  await checkDemoQuota(ctx);
   const stream = anthropic().beta.messages.stream({
     model: AI_MODEL,
     max_tokens: 32000,
@@ -98,11 +96,3 @@ export async function generateText(ctx: AiContext, feature: string, prompt: stri
   return msg.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("\n").trim();
 }
 
-// Espaces de démo : nombre d'appels à l'IA plafonné, pour maîtriser le coût des visiteurs.
-export const DEMO_AI_CALLS = 12;
-export async function checkDemoQuota(ctx: AiContext) {
-  const org = await db.organization.findUnique({ where: { id: ctx.organizationId }, select: { isDemo: true } });
-  if (!org?.isDemo) return;
-  if ((await db.aiUsage.count({ where: { organizationId: ctx.organizationId } })) >= DEMO_AI_CALLS)
-    throw new AiError("Limite de la démo atteinte pour l'IA. Créez votre espace (14 jours gratuits) pour continuer.");
-}

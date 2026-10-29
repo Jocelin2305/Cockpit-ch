@@ -17,7 +17,6 @@ export async function inviteMember(_: FormState, form: FormData): Promise<FormSt
   const parsed = inviteSchema.safeParse(values);
   if (!parsed.success) return { error: firstError(parsed.error), values };
   const { email, role } = parsed.data;
-  if (membership.organization.isDemo) return { error: "Les invitations sont désactivées dans la démo. Créez votre espace pour inviter votre équipe.", values };
 
   const already = await db.membership.findFirst({ where: { organizationId: orgId, user: { email } } });
   if (already) return { error: "Cette personne fait déjà partie de l'équipe.", values };

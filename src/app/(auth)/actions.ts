@@ -34,12 +34,10 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
   if (await db.user.findUnique({ where: { email } }))
     return { error: "Un compte existe déjà avec cet email. Connectez-vous.", values };
   // Visiteur venu de la démo : la conversion est comptée dans le super admin.
-  const demoOrgId = (await getSession())?.membership?.organization.isDemo ? (await getSession())?.membership?.organizationId : null;
 
-  // Lien ou code d'un revendeur (ou démo ouverte avec son code) : le client lui est rattaché et son premier mois est offert.
-  const visit = demoOrgId ? await db.demoVisit.findUnique({ where: { organizationId: demoOrgId }, select: { source: true } }) : null;
+  // Lien ou code d'un revendeur : le client lui est rattaché et son premier mois est offert.
   const typed = values.partner.toLowerCase();
-  const partner = typed || visit?.source || "";
+  const partner = typed;
   const reseller = partner ? await db.reseller.findFirst({ where: { code: partner, active: true }, select: { id: true } }) : null;
   if (typed && !reseller) return { error: "Code partenaire inconnu : vérifiez-le auprès de votre revendeur, ou laissez le champ vide.", values };
   const trialDays = reseller ? PARTNER_TRIAL_DAYS : TRIAL_DAYS;
@@ -58,7 +56,6 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
     },
     include: { memberships: true },
   });
-  if (demoOrgId) await db.demoVisit.updateMany({ where: { organizationId: demoOrgId }, data: { convertedAt: new Date() } });
   await createSession(user.id, user.memberships[0].organizationId);
   redirect("/app");
 }

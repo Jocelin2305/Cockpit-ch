@@ -1,13 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireAdmin, requireMember } from "@/lib/auth";
 import { encrypt } from "@/lib/mail";
 import { ApolloError, enrichSearch, testApollo } from "@/lib/apollo";
 import { runSourcing, SourcingError } from "@/lib/sourcing";
-import { sectionLabel } from "@/lib/sourcing-data";
 import type { FormState } from "@/lib/validation";
 
 type Res = { ok?: string; error?: string };
@@ -22,11 +20,11 @@ export async function launchProspectSearch(searchId: string): Promise<Res> {
   const search = await db.search.findFirst({ where: { id: searchId, organizationId: org.id } });
   if (!search) return { error: "Recherche introuvable." };
   try {
-    const r = await runSourcing(search, org.isDemo ? 10 : batch(search.volume));
+    const r = await runSourcing(search, batch(search.volume));
     revalidatePath("/app", "layout");
     if (!r.added) return { ok: r.total ? "Aucune nouvelle entreprise : toutes celles trouvées sont déjà dans vos prospects." : "Aucune entreprise ne correspond à ces critères : élargissez la zone, le secteur ou l'effectif." };
     let msg = `${r.added} entreprise${r.added > 1 ? "s" : ""} ajoutée${r.added > 1 ? "s" : ""} (${r.total.toLocaleString("fr-FR")} correspondent à vos critères).`;
-    if (org.apolloKeyEnc && !org.isDemo) {
+    if (org.apolloKeyEnc) {
       const e = await enrichSearch(org, search.id, search.fonctions);
       msg += ` Apollo : ${e.found} contact${e.found > 1 ? "s" : ""} enrichi${e.found > 1 ? "s" : ""} sur ${e.done}${e.left ? ` · ${e.left} restent à enrichir` : ""}.`;
     }
@@ -55,7 +53,6 @@ export async function enrichWithApollo(searchId: string | null): Promise<Res> {
 export async function connectApollo(_: FormState, form: FormData): Promise<FormState> {
   const { membership } = await requireAdmin();
   const key = String(form.get("key") ?? "").trim();
-  if (membership.organization.isDemo) return { error: "La connexion d'Apollo n'est pas disponible dans la démo." };
   if (key.length < 10) return { error: "Collez la clé API de votre compte Apollo." };
   try {
     await testApollo(key);
@@ -73,44 +70,3 @@ export async function disconnectApollo() {
   revalidatePath("/app", "layout");
 }
 
-const DEMO_SEARCHES = 3;
-
-// Démo : le visiteur tape son secteur et son département, et voit tout de suite de vraies entreprises de son marché.
-export async function demoMarketSearch(_: FormState, form: FormData): Promise<FormState> {
-  const { user, membership } = await requireMember();
-  const org = membership.organization;
-  if (!org.isDemo) return { error: "Réservé à la démo." };
-  const section = String(form.get("section") ?? "").trim().toUpperCase().slice(0, 1);
-  const deps = String(form.get("deps") ?? "").trim().slice(0, 40);
-  const keyword = String(form.get("keyword") ?? "").trim().slice(0, 60);
-  const values = { section, deps, keyword };
-  if (!deps) return { error: "Indiquez au moins un département (ex. : 69).", values };
-  if ((await db.search.count({ where: { organizationId: org.id, name: { startsWith: "Votre marché" } } })) >= DEMO_SEARCHES)
-    return { error: `La démo est limitée à ${DEMO_SEARCHES} recherches : créez votre espace pour continuer, c'est gratuit pendant 14 jours.`, values };
-  const template = await db.sequenceTemplate.findFirst({ where: { organizationId: org.id }, orderBy: { createdAt: "asc" }, select: { id: true } });
-  const search = await db.search.create({
-    data: {
-      organizationId: org.id,
-      createdById: user.id,
-      templateId: template?.id,
-      name: `Votre marché · ${[sectionLabel(section), keyword && `« ${keyword} »`, `dép. ${deps}`].filter(Boolean).join(" · ")}`.slice(0, 100),
-      srcSection: section,
-      srcDeps: deps,
-      srcKeyword: keyword,
-      srcEffectifs: "03,11,12,21,22",
-      fonctions: "Dirigeant",
-    },
-  });
-  try {
-    const r = await runSourcing(search, 10);
-    if (!r.added) {
-      await db.search.delete({ where: { id: search.id } });
-      return { error: "Aucune entreprise trouvée : élargissez le secteur ou ajoutez un département.", values };
-    }
-  } catch (e) {
-    await db.search.delete({ where: { id: search.id } });
-    return { error: e instanceof SourcingError ? e.message : "La recherche a échoué. Réessayez dans un instant.", values };
-  }
-  revalidatePath("/app", "layout");
-  redirect(`/app/prospects?recherche=${search.id}`);
-}

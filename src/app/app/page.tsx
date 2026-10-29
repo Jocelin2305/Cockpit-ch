@@ -39,7 +39,7 @@ export default async function WorkspacePage() {
           <h1>Espace de travail</h1>
         </div>
       </header>
-      {membership.role === ROLES.ADMIN && !membership.organization.isDemo && !user.onboardingHidden && <Onboarding userId={user.id} organizationId={orgId} />}
+      {membership.role === ROLES.ADMIN && !user.onboardingHidden && <Onboarding userId={user.id} organizationId={orgId} />}
       <AssistantChat suggestions={suggestions} aiReady={aiEnabled()} intro={<Briefing user={user} membership={membership} />} />
     </div>
   );

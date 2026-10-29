@@ -4,6 +4,7 @@ import { NavLinks, NavMenu, type NavItem } from "@/components/shell";
 import { CallDock } from "@/components/call-dock";
 import { Guide } from "@/components/guide";
 import { Tour } from "@/components/tour";
+import { ContextMenus } from "@/components/context-menus";
 import { db } from "@/lib/db";
 import { requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
@@ -13,8 +14,6 @@ import { isDue, todayISO } from "@/lib/prospecting";
 import { logout } from "../(auth)/actions";
 import { leaveOrganization } from "../super-admin/actions";
 
-// Heures restantes avant la suppression de l'espace de démo.
-const demoHoursLeft = (end: Date | null) => Math.max(1, Math.ceil(((end?.getTime() ?? 0) - Date.now()) / 3600_000));
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, membership, onboarding, reseller } = await requireMember();
@@ -75,13 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <button className="btn sm" type="submit">Quitter cet espace</button>
           </form>
         )}
-        {membership.organization.isDemo && (
-          <p className="alert banner demo-banner">
-            <span><b>Démo</b> : données fictives, à vous de cliquer partout. Cet espace s&apos;efface dans {demoHoursLeft(membership.organization.demoExpiresAt)} h.</span>
-            <Link className="btn sm primary" href="/inscription">Créer mon espace · 14 jours gratuits</Link>
-          </p>
-        )}
-        {!membership.organization.isDemo && billing.kind === "trial" && billing.daysLeft <= 5 && (
+        {billing.kind === "trial" && billing.daysLeft <= 5 && (
           <p className="alert banner">Essai gratuit : plus que {billing.daysLeft} jour{billing.daysLeft > 1 ? "s" : ""}. <Link href="/abonnement">Choisir une offre</Link></p>
         )}
         {billing.kind === "past_due" && (
@@ -91,7 +84,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <CallDock aiReady={aiEnabled()} />
       <Guide enabled={user.guideOn} />
-      <Tour initialStep={user.tourStep} isDemo={membership.organization.isDemo} />
+      <Tour initialStep={user.tourStep} />
+      <ContextMenus isAdmin={membership.role === ROLES.ADMIN} />
     </div>
   );
 }

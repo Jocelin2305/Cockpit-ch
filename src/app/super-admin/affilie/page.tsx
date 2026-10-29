@@ -12,7 +12,7 @@ const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: 
 export default async function AffiliatePage() {
   const { reseller: r } = await requireReseller();
   const [orgs, messages, videos] = await Promise.all([
-    db.organization.findMany({ where: { resellerId: r.id, isDemo: false } }),
+    db.organization.findMany({ where: { resellerId: r.id } }),
     db.resellerMessage.findMany({ where: { createdAt: { gte: r.createdAt } }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.resellerVideo.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
@@ -71,7 +71,6 @@ export default async function AffiliatePage() {
         <p className="muted small">Partagez votre lien ou votre code : chaque entreprise qui s&apos;inscrit avec l&apos;un d&apos;eux vous est rattachée et profite de son premier mois offert. Vous pouvez aussi créer et paramétrer son compte vous-même dans « Mes clients ».</p>
         <input className="input mono" readOnly value={referral} aria-label="Lien d'inscription parrainé" />
         <p className="muted small">Votre code partenaire, à saisir à l&apos;inscription : <b className="mono">{r.code}</b></p>
-        <p className="muted small">Lien de démonstration à envoyer à un prospect : <span className="mono">{appUrl()}/demo?source={r.code}</span></p>
       </section>
 
       {messages.length > 0 && (

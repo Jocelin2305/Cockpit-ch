@@ -16,7 +16,6 @@ async function customerFor(org: { id: string; name: string; stripeCustomerId: st
 
 export async function startCheckout(form: FormData) {
   const { user, membership } = await requireAdmin({ allowInactive: true });
-  if (membership.organization.isDemo) redirect("/inscription");
   if (!stripeEnabled()) redirect("/abonnement?erreur=stripe");
   const plan = planById(String(form.get("plan")));
   const price = plan ? priceIdFor(plan) : null;

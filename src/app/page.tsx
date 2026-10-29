@@ -29,6 +29,7 @@ const FEATURES = [
 
 const FAQ = [
   ["Faut-il une carte bancaire pour l'essai ?", `Non. L'essai dure ${TRIAL_DAYS} jours (${PARTNER_TRIAL_DAYS} avec le code d'un partenaire), sans engagement.`],
+  ["Que se passe-t-il à la fin de l'essai ?", "Vous gardez votre compte, vos recherches, vos prospects et vos séquences : il suffit de choisir une offre et de démarrer le paiement. Sans abonnement, l'accès est suspendu et vos données sont conservées 90 jours."],
   ["D'où viennent les prospects ?", "Du registre national des entreprises (données publiques), de vos imports, et d'Apollo si vous connectez votre compte pour les emails et LinkedIn."],
   ["Mes emails partent-ils de ma boîte ?", "Oui : vous connectez Gmail ou Outlook, les emails partent de votre adresse et les réponses remontent dans l'outil."],
   ["Est-ce conforme au RGPD ?", "La base de données est hébergée dans l'Union européenne, chaque email contient un lien de désinscription et les adresses désinscrites ne sont plus jamais contactées."],
@@ -56,8 +57,7 @@ export default async function Home() {
         <h1>Le copilote de prospection qui vous dit qui contacter, quoi leur dire, et quand relancer.</h1>
         <p className="lp-lead">Cockpit&apos;ch trouve vos prospects, rédige vos messages, envoie et relance depuis votre boîte, et vous ouvre chaque matin avec le point du jour. Un seul outil à la place du fichier Excel, de l&apos;outil d&apos;emailing et du bloc-notes d&apos;appels.</p>
         <div className="row">
-          <Link className="btn primary lg" href="/demo">Essayer la démo, sans inscription</Link>
-          <Link className="btn lg" href="/inscription">Créer mon espace · {TRIAL_DAYS} jours gratuits</Link>
+          <Link className="btn primary lg" href="/inscription">Essai gratuit · {TRIAL_DAYS} jours</Link>
           <a className="btn ghost lg" href={BOOKING_URL} target="_blank" rel="noreferrer">Réserver un appel</a>
         </div>
       </section>
@@ -122,9 +122,9 @@ export default async function Home() {
       </section>
 
       <section className="lp-cta">
-        <h2>Voyez-le sur votre propre marché</h2>
-        <p>Dans la démo, choisissez votre secteur et votre département : Cockpit&apos;ch trouve de vraies entreprises en quelques secondes.</p>
-        <div className="row"><Link className="btn primary lg" href="/demo">Lancer la démo</Link><a className="btn lg" href={BOOKING_URL} target="_blank" rel="noreferrer">Réserver un appel</a></div>
+        <h2>Testez-le sur votre propre marché</h2>
+        <p>Créez votre espace, indiquez votre secteur et votre département : vos premiers prospects arrivent en 2 minutes. À la fin de l&apos;essai, vous gardez tout et choisissez simplement votre offre.</p>
+        <div className="row"><Link className="btn primary lg" href="/inscription">Commencer l&apos;essai gratuit</Link><a className="btn lg" href={BOOKING_URL} target="_blank" rel="noreferrer">Réserver un appel</a></div>
       </section>
 
       <footer className="lp-foot">

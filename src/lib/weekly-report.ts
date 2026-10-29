@@ -81,7 +81,7 @@ export async function sendWeeklyReport(organizationId: string, opts: { force?: b
     where: { id: organizationId },
     include: { memberships: { where: { role: ROLES.ADMIN }, include: { user: { select: { id: true, email: true, weeklyReport: true } } } } },
   });
-  if (!org || org.isDemo) return 0;
+  if (!org) return 0;
   if (!opts.force && org.lastReportAt && Date.now() - org.lastReportAt.getTime() < 6 * 86_400_000) return 0;
   const r = await weeklyReport(organizationId);
   const text = reportText(org.name, r);

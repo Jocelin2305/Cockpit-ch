@@ -30,6 +30,7 @@ export async function isOptedOut(p: Pick<Prospect, "organizationId" | "email" | 
 
 // Prochaine étape email du prospect : J0 s'il n'a jamais été contacté, sinon la relance suivante.
 export function nextEmail(p: WithTemplate, signature: string) {
+  if (p.seqStoppedAt) return null;
   const status = p.status ?? "À contacter";
   const key = status === "À contacter" ? "email" : ["Contacté", "Relancé"].includes(status) && canRelance(p, tplDelays(p.search?.template?.delays).length) ? `relance${(p.relances ?? 0) + 1}` : null;
   const step = SEQ_STEPS.find((s) => s.k === key);
@@ -102,6 +103,7 @@ export async function sendDue(a: MailAccount, organizationId: string, signature:
     where: {
       organizationId,
       optOutAt: null,
+      seqStoppedAt: null,
       status: { in: opts.includeFirst ? ["À contacter", "Contacté", "Relancé"] : ["Contacté", "Relancé"] },
       searchId: { not: null },
       ...(opts.ownOnly ? { OR: [{ ownerId: a.userId }, { ownerId: null }] } : {}),

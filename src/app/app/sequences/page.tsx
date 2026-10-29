@@ -23,7 +23,7 @@ export default async function SequencesPage() {
       <header className="view-head">
         <div>
           <h1>Bibliothèque de séquences</h1>
-          <p className="muted">Des modèles réutilisables : emails (J0 + 5 relances) et LinkedIn en parallèle. Chaque recherche en utilise un.</p>
+          <p className="muted">Préparez ici vos modèles d&apos;emails et de messages LinkedIn ; lancez-les depuis Prospects. Clic droit sur une séquence pour la supprimer.</p>
         </div>
         {isAdmin && (
           <form action={createTemplate}>
@@ -33,7 +33,7 @@ export default async function SequencesPage() {
       </header>
       <div className="cards">
         {templates.map((t) => (
-          <Link key={t.id} href={`/app/sequences/${t.id}`} className="card">
+          <Link key={t.id} href={`/app/sequences/${t.id}`} className="card" data-menu="template" data-id={t.id} data-name={t.name}>
             <b>{t.name}</b>
             <span className="muted small">{tplDelays(t.delays).length} relances email : J+{tplDelays(t.delays).join(", J+")}</span>
             <span className="small">{t.searches.length ? `Utilisée par : ${t.searches.map((s) => s.name).join(", ")}` : "Utilisée par aucune recherche"}</span>

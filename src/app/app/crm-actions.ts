@@ -12,7 +12,6 @@ export async function connectCrm(_: FormState, form: FormData): Promise<FormStat
   const provider = String(form.get("provider") ?? "");
   const token = String(form.get("token") ?? "").trim();
   if (!isCrmProvider(provider)) return { error: "CRM inconnu." };
-  if (membership.organization.isDemo) return { error: "La connexion d'un CRM n'est pas disponible dans la démo." };
   if (token.length < 10) return { error: "Collez le jeton d'accès de votre CRM." };
   try {
     await testCrm(provider, token);

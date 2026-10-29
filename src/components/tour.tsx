@@ -20,7 +20,7 @@ const STEPS: Step[] = [
   { path: "/app/aide", title: "Besoin d'aide ?", text: "Le Centre d'aide garde les infobulles (points orange), les réponses rapides et le support. Vous pouvez y relancer cette visite à tout moment." },
 ];
 
-export function Tour({ initialStep, isDemo }: { initialStep: number | null; isDemo: boolean }) {
+export function Tour({ initialStep }: { initialStep: number | null }) {
   const path = usePathname();
   const router = useRouter();
   const [step, setStep] = useState(initialStep);
@@ -58,7 +58,7 @@ export function Tour({ initialStep, isDemo }: { initialStep: number | null; isDe
           {current.path !== path
             ? <button type="button" className="btn sm primary" onClick={() => go(step!)}>Y aller</button>
             : last
-              ? (isDemo ? <Link className="btn sm primary" href="/inscription" onClick={() => go(null)}>Créer mon espace</Link> : <button type="button" className="btn sm primary" onClick={() => go(null)}>Terminer</button>)
+              ? <button type="button" className="btn sm primary" onClick={() => go(null)}>Terminer</button>
               : <button type="button" className="btn sm primary" onClick={() => go(step! + 1)}>Suivant</button>}
         </div>
       </div>

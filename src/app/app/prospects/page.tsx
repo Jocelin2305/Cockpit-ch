@@ -8,7 +8,6 @@ import { GenerateAnglesButton } from "@/components/ai-buttons";
 import { LaunchSequenceButton, UpdateCrmButton } from "@/components/mail-buttons";
 import { EnrichButton, LaunchSearchButton } from "@/components/sourcing-buttons";
 import { sourcingQuery } from "@/lib/sourcing";
-import { DemoMarket } from "@/components/demo-market";
 import { CRM_PROVIDERS, type CrmProvider } from "@/lib/crm-providers";
 
 export const metadata: Metadata = { title: "Prospects" };
@@ -39,7 +38,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
     db.search.findMany({ where: { organizationId: orgId }, include: { _count: { select: { prospects: true } } }, orderBy: { createdAt: "asc" } }),
     db.mailAccount.findUnique({ where: { userId: user.id }, select: { id: true } }),
   ]);
-  const toContact = prospects.filter((p) => p.status === "À contacter" && p.email.includes("@") && p.searchId).length;
+  const toContact = prospects.filter((p) => p.status === "À contacter" && !p.seqStoppedAt && p.email.includes("@") && p.searchId).length;
   const crm = membership.organization.crmProvider as CrmProvider | null;
   const current = searches.find((s) => s.id === searchId);
   const today = todayISO();
@@ -68,14 +67,12 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         </div>
       </header>
 
-      {membership.organization.isDemo && !open && <DemoMarket />}
-
       <section className="library" aria-label="Bibliothèque de recherches" data-tip="Vos recherches : chaque bibliothèque regroupe une cible, ses prospects et sa séquence. Cliquez pour l'ouvrir.">
         <span className="label">Bibliothèque de recherches</span>
         <div className="library-list">
           <Link className={`lib-card${f.recherche === "tous" ? " on" : ""}`} href="/app/prospects?recherche=tous"><b>Tous les prospects</b><span className="muted small">{searches.reduce((n, s) => n + s._count.prospects, 0)}</span></Link>
           {searches.map((s) => (
-            <span key={s.id} className={`lib-card${f.recherche === s.id ? " on" : ""}`}>
+            <span key={s.id} className={`lib-card${f.recherche === s.id ? " on" : ""}`} data-menu="library" data-id={s.id} data-name={s.name}>
               <Link href={`/app/prospects?recherche=${s.id}`}><b>{s.name}</b></Link>
               <span className="muted small">{s._count.prospects} prospects · <Link href={`/app/recherches/${s.id}`}>ouvrir</Link></span>
             </span>
@@ -111,7 +108,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         showSearch
         empty={prospects.length ? "Aucun prospect ne correspond à ces filtres." : "Aucun prospect pour l'instant. Ajoutez-en un ou importez une liste."}
       />
-      <p className="hint">Coordonnées : cliquez sur T (numéro direct), E (email) ou L (LinkedIn) pour les afficher. Une valeur « À enrichir » compte comme manquante.{!mailbox && <> Pour lancer une séquence, <Link href="/app/parametres">connectez votre boîte mail</Link>.</>}</p>
+      <p className="hint">Coordonnées : cliquez sur T (numéro direct), E (email) ou L (LinkedIn) pour les afficher. Une valeur « À enrichir » compte comme manquante. Clic droit sur une ligne ou une bibliothèque : stopper ou reprendre la séquence, supprimer.{!mailbox && <> Pour lancer une séquence, <Link href="/app/parametres">connectez votre boîte mail</Link>.</>}</p>
       </>)}
     </div>
   );

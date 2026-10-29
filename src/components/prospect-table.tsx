@@ -5,7 +5,7 @@ import { GenerateAnglesButton } from "./ai-buttons";
 import { AngleCell, CoordChips, PrioritySelect } from "./prospect-cells";
 import { NoteCell } from "./note-cell";
 
-export type Row = ProspectLike & { id: string; company: string; searchId: string | null; searchName?: string | null };
+export type Row = ProspectLike & { id: string; company: string; searchId: string | null; searchName?: string | null; seqStoppedAt?: Date | null };
 
 const PRIO_RANK: Record<string, number> = { A: 0, B: 1, C: 2 };
 
@@ -45,7 +45,7 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
               const c = completeness(p);
               const q = qualScore(p.qualif);
               return (
-                <tr key={p.id} className={due === "late" ? "overdue" : due === "today" ? "due" : ""}>
+                <tr key={p.id} className={due === "late" ? "overdue" : due === "today" ? "due" : ""} data-menu="prospect" data-id={p.id} data-name={p.company} data-stopped={p.seqStoppedAt ? "1" : undefined}>
                   <td><PrioritySelect id={p.id} priority={p.priority ?? "C"} /></td>
                   <td>
                     <Link href={`/app/prospects/${p.id}`} className="co"><b>{p.company}</b><span>{p.sector}</span></Link>
@@ -65,7 +65,8 @@ export function ProspectTable({ rows, showSearch, empty }: { rows: Row[]; showSe
                   <td className="notes"><NoteCell id={p.id} notes={p.notes ?? ""} /></td>
                   <td><StatusSelect id={p.id} status={p.status ?? "À contacter"} label={p.company} /></td>
                   <td>
-                    {due === "late" ? <span className="chip late">En retard · {fmtDay(p.nextFollowUp)}</span>
+                    {p.seqStoppedAt ? <span className="chip">Séquence stoppée</span>
+                      : due === "late" ? <span className="chip late">En retard · {fmtDay(p.nextFollowUp)}</span>
                       : due === "today" ? <span className="chip today">Aujourd&apos;hui</span>
                       : p.nextFollowUp ? <span className="chip">{fmtDay(p.nextFollowUp)}</span>
                       : <span className="muted">—</span>}

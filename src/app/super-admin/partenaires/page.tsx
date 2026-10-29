@@ -14,7 +14,7 @@ const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: 
 export default async function PartnersPage() {
   const { user } = await requireSuperAdmin();
   if (!user.isFounder) redirect("/super-admin");
-  const resellers = await db.reseller.findMany({ orderBy: { createdAt: "desc" }, include: { organizations: { where: { isDemo: false } } } });
+  const resellers = await db.reseller.findMany({ orderBy: { createdAt: "desc" }, include: { organizations: true } });
   const rows = resellers.map((r) => ({ r, s: resellerStats(r.organizations, r.offer) }));
   const total = rows.reduce((t, { r, s }) => ({ active: t.active + (r.active ? 1 : 0), clients: t.clients + s.active, ca: t.ca + s.ca, commission: t.commission + s.commission }), { active: 0, clients: 0, ca: 0, commission: 0 });
   // Abonnements des revendeurs eux-mêmes (20 € / mois chacun).

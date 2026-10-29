@@ -20,7 +20,7 @@ export default async function ResellerDetail({ params }: { params: Promise<{ id:
   const { user } = await requireSuperAdmin();
   if (!user.isFounder) redirect("/super-admin");
   const { id } = await params;
-  const r = await db.reseller.findUnique({ where: { id }, include: { organizations: { where: { isDemo: false }, orderBy: { createdAt: "desc" } } } });
+  const r = await db.reseller.findUnique({ where: { id }, include: { organizations: { orderBy: { createdAt: "desc" } } } });
   if (!r) notFound();
   const s = resellerStats(r.organizations, r.offer);
   const offer = offerById(r.offer);

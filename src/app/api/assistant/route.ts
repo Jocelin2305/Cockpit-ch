@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getSession, ROLE_LABEL } from "@/lib/auth";
-import { AI_MODEL, aiEnabled, aiErrorMessage, anthropic, checkDemoQuota, FALLBACK, logUsage, SYSTEM_PROMPT } from "@/lib/ai";
+import { AI_MODEL, aiEnabled, aiErrorMessage, anthropic, FALLBACK, logUsage, SYSTEM_PROMPT } from "@/lib/ai";
 import { ASSISTANT_RULES, assistantContext, assistantTools } from "@/lib/assistant";
 
 export const maxDuration = 300;
@@ -33,7 +33,6 @@ export async function POST(request: Request) {
           send({ type: "error", message: "L'IA n'est pas encore configurée : ajoutez votre clé ANTHROPIC_API_KEY dans le fichier .env, puis relancez l'application." });
           return;
         }
-        await checkDemoQuota(ctx);
         const context = await assistantContext(ctx, membership.organization.name, user.name, ROLE_LABEL[membership.role]);
         const messages: Anthropic.Beta.BetaMessageParam[] = parsed.data.messages.map((m) => ({ role: m.role, content: m.content }));
         const runner = anthropic().beta.messages.toolRunner(

@@ -9,7 +9,7 @@ import { markPhoneEventHandled } from "./parametres/phone-actions";
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 
-type Viewer = { user: { id: string; name: string; signature: string }; membership: { organizationId: string; organization: { isDemo: boolean; phoneProvider: string | null } } };
+type Viewer = { user: { id: string; name: string; signature: string }; membership: { organizationId: string; organization: { phoneProvider: string | null } } };
 
 // Point du jour : la première réponse de l'agent dans l'Espace de travail, à chaque ouverture.
 export async function Briefing({ user, membership }: Viewer) {
@@ -30,7 +30,7 @@ export async function Briefing({ user, membership }: Viewer) {
   const callBacks = prospects.filter((p) => callBackDue(p, today));
   const toCall = callQueue(prospects, today).slice(0, 8);
   const due = prospects.filter((p) => isDue(p, today));
-  const ready = prospects.filter((p) => p.status === "À contacter" && p.searchId && isEmail(p.email));
+  const ready = prospects.filter((p) => p.status === "À contacter" && p.searchId && !p.seqStoppedAt && isEmail(p.email));
   const replied = prospects.filter((p) => p.status === "A répondu");
   const talks = callsYesterday.filter((c) => c.issue === "Appel").length;
   const target = (p: (typeof prospects)[number]) => ({ id: p.id, company: p.company, contactName: p.contactName, phone: p.phone, status: p.status, angle: p.angle, qualification: p.qualification });
@@ -83,7 +83,7 @@ export async function Briefing({ user, membership }: Viewer) {
       <section className="panel" data-tour="inbox">
         <h2>3. Réponses reçues, messagerie vocale, appels manqués</h2>
         {syncError && <p className="alert error">{syncError}</p>}
-        {account || membership.organization.isDemo ? (
+        {account ? (
           <div className="list">
             {replies.length === 0 && <p className="muted">Aucune réponse de prospect ces 3 derniers jours {account ? ` dans ${account.email}` : ""}.</p>}
             {replies.map((m) => (

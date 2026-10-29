@@ -58,7 +58,6 @@ export async function setPreference(form: FormData) {
 
 export async function sendReportNow(): Promise<{ ok?: string; error?: string }> {
   const { user, membership } = await requireAdmin();
-  if (membership.organization.isDemo) return { error: "L'envoi du rapport n'est pas disponible dans la démo." };
   const sent = await sendWeeklyReport(membership.organizationId, { force: true, onlyUserId: user.id });
   return sent ? { ok: `Rapport envoyé à ${user.email}.` } : { error: "Envoi impossible : les emails de la plateforme (Resend) ne sont pas encore configurés. Le rapport reste consultable ci-dessous." };
 }

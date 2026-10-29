@@ -5,7 +5,6 @@ import { accessState } from "@/lib/billing";
 import { planById } from "@/lib/plans";
 import { enterOrganization, setSuperAdmin } from "./actions";
 import { ClientForm } from "./client-form";
-import { cleanupDemos, DEMO_DOMAIN } from "@/lib/demo";
 
 export type Section = "pilotage" | "clients" | "utilisateurs";
 
@@ -22,11 +21,11 @@ const fmt = (d: Date | null) => (d ? d.toLocaleDateString("fr-FR", { day: "numer
 async function loadOverview(resellerId: string | null) {
   const weekAgo = new Date(Date.now() - 7 * 86_400_000);
   // Les visiteurs de la démo ne comptent pas comme utilisateurs.
-  const real = { NOT: { email: { endsWith: `@${DEMO_DOMAIN}` } }, ...(resellerId ? { memberships: { some: { organization: { resellerId } } } } : {}) };
+  const real = { ...(resellerId ? { memberships: { some: { organization: { resellerId } } } } : {}) };
   const sinceMonth = new Date(Date.now() - 30 * 86_400_000);
   return Promise.all([
     db.organization.findMany({
-      where: { isDemo: false, ...(resellerId ? { resellerId } : {}) },
+      where: { ...(resellerId ? { resellerId } : {}) },
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { memberships: true } },
@@ -38,7 +37,6 @@ async function loadOverview(resellerId: string | null) {
     db.user.count({ where: { ...real, createdAt: { gte: weekAgo } } }),
     db.user.count({ where: { ...real, lastLoginAt: { gte: weekAgo } } }),
     db.user.findMany({ where: real, orderBy: { createdAt: "desc" }, take: 10, include: { memberships: { include: { organization: true } } } }),
-    resellerId ? [] : db.demoVisit.findMany({ where: { createdAt: { gte: sinceMonth } }, select: { createdAt: true, convertedAt: true, source: true } }),
     resellerId ? [] : db.aiUsage.groupBy({ by: ["organizationId"], where: { createdAt: { gte: sinceMonth } }, _sum: { inputTokens: true, outputTokens: true } }),
   ]);
 }
@@ -50,11 +48,7 @@ const fmtTokens = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)
 // Espace super admin, une rubrique par page du menu.
 export async function Overview({ section }: { section: Section }) {
   const { user: me, resellerId } = await requireAdminSpace();
-  if (!resellerId) await cleanupDemos().catch(() => 0);
-  const [organizations, userCount, newUsers, activeUsers, recentUsers, demos, aiByOrg] = await loadOverview(resellerId);
-  const demosWeek = demos.filter((d) => d.createdAt > daysAgo(7)).length;
-  const converted = demos.filter((d) => d.convertedAt).length;
-  const sources = Object.entries(demos.reduce<Record<string, number>>((acc, d) => ({ ...acc, [d.source || "lien direct"]: (acc[d.source || "lien direct"] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1]);
+  const [organizations, userCount, newUsers, activeUsers, recentUsers, aiByOrg] = await loadOverview(resellerId);
   const ai = new Map(aiByOrg.map((r) => [r.organizationId, { i: r._sum.inputTokens ?? 0, o: r._sum.outputTokens ?? 0 }]));
   const aiTotal = [...ai.values()].reduce((s, v) => s + estimate(v.i, v.o), 0);
   const states = new Map(organizations.map((o) => [o.id, accessState(o)]));
@@ -62,6 +56,9 @@ export async function Overview({ section }: { section: Section }) {
   const paying = organizations.filter((o) => !o.isPartner && ["active", "past_due"].includes(states.get(o.id)!.kind));
   const mrr = paying.reduce((s, o) => s + (planById(o.plan)?.price ?? 0), 0);
   const trials = organizations.filter((o) => states.get(o.id)!.kind === "trial").length;
+  // Essais ouverts ces 30 derniers jours, et ceux déjà passés à l'abonnement (même compte, paiement démarré).
+  const opened = organizations.filter((o) => !o.isPartner && o.createdAt > daysAgo(30));
+  const converted = opened.filter((o) => paying.includes(o)).length;
   const statusLabel = (id: string) => {
     const st = states.get(id)!;
     return st.kind === "trial" ? `Essai · ${st.daysLeft} j` : st.kind === "active" ? `${st.planName}${st.cancelAtPeriodEnd ? " (résilié)" : ""}` : st.kind === "past_due" ? `${st.planName} · impayé` : st.reason === "trial_over" ? "Essai terminé" : st.reason === "unpaid" ? "Suspendu" : "Résilié";
@@ -90,13 +87,12 @@ export async function Overview({ section }: { section: Section }) {
         <div className="kpi"><span className="v">{trials}</span><span className="k">en essai gratuit</span></div>
         <div className="kpi"><span className="v">{organizations.filter((o) => !o.isPartner).length - paying.length - trials}</span><span className="k">essai terminé ou résilié</span></div>
       </div>
-      {!resellerId && <div className="kpis">
-        <div className="kpi"><span className="v">{demosWeek}</span><span className="k">démos ouvertes (7 jours)</span></div>
-        <div className="kpi"><span className="v">{demos.length}</span><span className="k">démos ouvertes (30 jours)</span></div>
-        <div className="kpi win"><span className="v">{converted}</span><span className="k">démos converties en espace (30 jours)</span></div>
-        <div className="kpi"><span className="v">{demos.length ? Math.round((converted / demos.length) * 100) : 0} %</span><span className="k">taux de conversion</span></div>
-      </div>}
-      {sources.length > 0 && <p className="muted small">Provenance des démos (30 jours) : {sources.map(([s, n]) => `${s} (${n})`).join(" · ")}.</p>}
+      <div className="kpis">
+        <div className="kpi"><span className="v">{opened.length}</span><span className="k">essais ouverts (30 jours)</span></div>
+        <div className="kpi win"><span className="v">{converted}</span><span className="k">convertis en abonnement</span></div>
+        <div className="kpi"><span className="v">{opened.length ? Math.round((converted / opened.length) * 100) : 0} %</span><span className="k">taux de conversion</span></div>
+        <div className="kpi"><span className="v">{organizations.filter((o) => o.resellerId).length}</span><span className="k">clients apportés par des revendeurs</span></div>
+      </div>
       {!resellerId && <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarif public Claude Opus 5.5, hors réductions du cache).</p>}
       </>}
 

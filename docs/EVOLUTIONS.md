@@ -48,3 +48,13 @@ Liste des évolutions demandées par le fondateur, avec ce qui est fait dans ce 
 | 5 | Démo « Essayez sur votre marché » | Fait : vraie recherche dans le registre, 3 par démo |
 | 6 | Checklist de démarrage en 4 étapes | Fait (Espace de travail, administrateurs) |
 | 7 | Cas client chiffré (Ryo) | En attente des chiffres |
+
+## Sprint 11 : simplification
+
+| # | Demande | Statut |
+|---|---|---|
+| 1 | Stopper ou supprimer une séquence par clic droit | Fait : clic droit sur une ligne de prospect, une bibliothèque ou une séquence (stopper, reprendre, supprimer) |
+| 2 | Supprimer une bibliothèque de prospects | Fait (clic droit, avec ses prospects, après confirmation) |
+| 3 | Guide pas à pas de l'appli au style de la page d'accueil | Fait (checklist de démarrage en cartes numérotées) |
+| 4 | Supprimer l'espace démo : l'essai se fait sur Cockpit'ch classique | Fait : `/demo` supprimé, liens de la page d'accueil vers l'essai gratuit, statistiques d'essais dans le super admin |
+| 5 | L'essai devient abonnement sur le même compte | Déjà le cas : le paiement démarre sur l'espace d'essai, rien n'est recréé |
