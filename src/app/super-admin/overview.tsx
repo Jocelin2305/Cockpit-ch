@@ -124,7 +124,7 @@ export async function Overview({ section }: { section: Section }) {
                   <td>{o.memberships[0]?.user.email ?? <span className="muted">aucun</span>}</td>
                   <td className="num">{o._count.memberships}</td>
                   <td><span className={`chip ${["active", "past_due"].includes(states.get(o.id)!.kind) ? "ok" : states.get(o.id)!.kind === "blocked" ? "late" : ""}`}>{statusLabel(o.id)}</span></td>
-                  {!resellerId && <td>{o.isPartner ? <span className="chip">espace partenaire</span> : o.reseller ? o.reseller.companyName || o.reseller.email : <span className="muted">direct</span>}</td>}
+                  {!resellerId && <td>{o.isPartner ? <span className="chip">espace offert</span> : o.reseller ? o.reseller.companyName || o.reseller.email : <span className="muted">direct</span>}</td>}
                   {!resellerId && <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.i + u.o)} jetons · ≈ ${estimate(u.i, u.o).toFixed(2)} $` : <span className="muted">—</span>; })()}</td>}
                   <td className="muted">{fmt(o.createdAt)}</td>
                   <td><div className="inline"><form action={enterOrganization}><input type="hidden" name="id" value={o.id} /><button className="btn sm primary" type="submit">Paramétrer</button></form><Link className="btn sm" href={`/super-admin/entreprises/${o.id}`}>Détail</Link></div></td>
