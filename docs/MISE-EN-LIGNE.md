@@ -55,7 +55,7 @@ Chaque variable s'ajoute dans Vercel (Settings → Environment Variables), puis 
 | Gmail / Outlook | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | quand on branche la messagerie |
 | Emails de la plateforme (invitations, mot de passe oublié) | `RESEND_API_KEY`, `EMAIL_FROM` (compte resend.com + domaine vérifié) | avant la bêta |
 | Relances automatiques et rapport du lundi | `CRON_SECRET` (une longue valeur aléatoire ; les tâches sont déclarées dans `vercel.json`) | à la mise en ligne |
-| Modèle IA moins cher pour les tâches simples (facultatif) | `ANTHROPIC_MODEL_LIGHT` (ex. `claude-haiku-5-5`) | quand vous voulez |
+| Modèle des tâches simples (facultatif, Claude Haiku 5.5 par défaut) | `ANTHROPIC_MODEL_LIGHT` | seulement pour en changer |
 | Nom de domaine | dans Vercel : Settings → Domains (par exemple `app.cockpitch.fr`), puis mettre à jour `APP_URL` | quand vous voulez |
 
 ## Avant le lancement commercial

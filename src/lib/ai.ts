@@ -7,8 +7,8 @@ import { decrypt } from "./mail";
 
 // Modèle par défaut : Claude Opus 5.5. Modifiable sans toucher au code via ANTHROPIC_MODEL.
 export const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
-// Tâches simples (compte rendu d'appel, test public) : modèle moins cher si ANTHROPIC_MODEL_LIGHT est renseigné.
-export const AI_MODEL_LIGHT = process.env.ANTHROPIC_MODEL_LIGHT || AI_MODEL;
+// Tâches simples (compte rendu d'appel, test des 5 leads) : Claude Haiku 5.5, bien moins cher ; modifiable via ANTHROPIC_MODEL_LIGHT.
+export const AI_MODEL_LIGHT = process.env.ANTHROPIC_MODEL_LIGHT || "claude-haiku-5-5";
 
 // En cas de refus par les filtres de sécurité, Anthropic relance automatiquement la demande sur un modèle adapté.
 export const FALLBACK = {
