@@ -1,0 +1,779 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cockpit'ch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: une seule colonne éditoriale large, rythmée par des bandes pleine largeur ; le module de test est un « tableau de pipeline » qui reprend le vocabulaire commercial (score, priorité, séquence). */
+:root {
+  /* Palette alignée sur l'app Cockpit'ch */
+  --bg: #F2F5F4;
+  --surface: #FFFFFF;
+  --ink: #14212A;
+  --muted: #58686F;
+  --line: #D6DEDB;
+  --accent: #0E5A55;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCEBE7;
+  --hot: #B03F2C;
+  --warm: #B86E0B;
+  --cold: #58686F;
+  --good: #2C7A4D;
+  --band: #14212A;
+  --band-ink: #F2F5F4;
+  --band-muted: #9DB0B4;
+  --band-accent: #5BC2B4;
+  --f-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --wrap: 1120px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1417; --surface: #162025; --ink: #E4EBE9; --muted: #93A4A9; --line: #25333A;
+    --accent: #5BC2B4; --accent-ink: #06201D; --accent-soft: #163A36; --hot: #E57D67; --warm: #E5A24C; --cold: #93A4A9; --good: #62C08A;
+    --band: #162025; --band-ink: #E4EBE9; --band-muted: #93A4A9; --band-accent: #5BC2B4; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1417; --surface: #162025; --ink: #E4EBE9; --muted: #93A4A9; --line: #25333A;
+  --accent: #5BC2B4; --accent-ink: #06201D; --accent-soft: #163A36; --hot: #E57D67; --warm: #E5A24C; --cold: #93A4A9; --good: #62C08A;
+  --band: #162025; --band-ink: #E4EBE9; --band-muted: #93A4A9; --band-accent: #5BC2B4; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.6; }
+.wrap { max-width: var(--wrap); margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.02; letter-spacing: -0.02em; }
+p { margin: 0; }
+a { color: inherit; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.btn { display: inline-flex; align-items: center; gap: 10px; font: 600 16px/1 var(--f-body); padding: 16px 22px; border-radius: 10px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); text-decoration: none; cursor: pointer; transition: transform .15s ease, background .15s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.btn[disabled] { opacity: .55; cursor: wait; transform: none; }
+section { padding-block: clamp(56px, 9vw, 112px); }
+
+/* Hero */
+.hero { padding-block: clamp(40px, 7vw, 88px) clamp(32px, 5vw, 56px); }
+.hero-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: clamp(36px, 6vw, 72px); }
+.brand { font-family: var(--f-display); font-weight: 800; font-size: 20px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+.brand-mark { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); display: grid; place-items: center; flex: none; }
+.brand-mark svg { width: 21px; height: 21px; }
+.handoff { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; background: var(--accent-soft); border-radius: 14px; padding: 18px 20px; }
+.handoff > div { display: grid; gap: 4px; min-width: 0; flex: 1 1 280px; }
+.handoff b { font-family: var(--f-display); font-size: 20px; }
+.handoff p { font-size: 15px; color: var(--muted); }
+.hero h1 { font-size: clamp(46px, 9.4vw, 128px); font-weight: 800; max-width: 13ch; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero h1 .strike { position: relative; color: var(--muted); white-space: nowrap; }
+.hero h1 .strike::after { content: ""; position: absolute; left: -2%; right: -2%; top: 54%; height: .09em; background: var(--hot); transform: rotate(-3deg); }
+.hero-sub { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: end; margin-top: clamp(28px, 4vw, 44px); }
+.hero-sub p { font-size: clamp(18px, 2vw, 21px); max-width: 52ch; color: var(--muted); }
+.hero-sub p strong { color: var(--ink); font-weight: 600; }
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 760px) { .hero-sub { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  .hero-top .cta-row { gap: 8px; }
+  .hero-top .cta-row .ghost-link { display: none; }
+  .hero-top .btn { padding: 10px 14px; font-size: 14px; white-space: nowrap; }
+  .brand { font-size: 17px; }
+  .hero-sub .cta-row .btn { width: 100%; justify-content: center; }
+}
+
+/* Inscription (fenêtre) */
+.reg-scrim { position: fixed; inset: 0; z-index: 50; background: rgba(10, 20, 24, .5); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.reg { width: min(560px, 100%); background: var(--surface); color: var(--ink); border-radius: 18px; padding: clamp(20px, 4vw, 30px); display: grid; gap: 18px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.45); }
+.reg-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.reg-head h2 { font-size: clamp(26px, 4vw, 32px); }
+.reg-head p { color: var(--muted); font-size: 15px; margin-top: 6px; }
+.reg-x { border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.reg-choices { display: grid; gap: 10px; }
+.reg-choice { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 16px; border: 1.5px solid var(--line); border-radius: 14px; }
+.reg-choice:hover, .reg-choice:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+.reg-choice .ic { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.reg-choice b { display: block; font-size: 17px; }
+.reg-choice span.d { color: var(--muted); font-size: 14px; line-height: 1.4; }
+.reg-choice .arr { color: var(--accent); font-weight: 700; }
+.reg ul { margin: 0; padding-left: 20px; color: var(--muted); font-size: 15px; display: grid; gap: 4px; }
+.reg .btn { justify-content: center; }
+.reg-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.reg-note { font-size: 13px; color: var(--muted); }
+.reg-aff { display: inline-flex; gap: 8px; align-items: center; font-family: var(--f-mono); font-size: 13px; padding: 6px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); justify-self: start; }
+
+/* Video */
+.video-sec { padding-block: 0 clamp(56px, 9vw, 112px); }
+.video-frame { position: relative; border-radius: 18px; overflow: hidden; background: #000; aspect-ratio: 16 / 9; max-width: 100%; box-shadow: 0 30px 60px -30px rgba(0,0,0,.45); }
+.video-frame video { width: 100%; height: 100%; display: block; object-fit: contain; background: #000; }
+.video-cap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+.video-cap span { font-family: var(--f-mono); font-size: 12px; color: var(--muted); letter-spacing: .06em; }
+
+/* Cas client */
+.case { margin-top: 20px; border: 1.5px solid var(--ink); border-radius: 18px; background: var(--surface); display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); overflow: hidden; }
+.case-id { padding: 24px; display: grid; gap: 12px; align-content: center; border-right: 1px solid var(--line); }
+.case-id svg { width: 120px; height: auto; color: var(--ink); }
+.case-id p { font-size: 14px; color: var(--muted); line-height: 1.4; }
+.case-res { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.case-res div { padding: 24px; display: grid; gap: 6px; align-content: start; }
+.case-res div + div { border-left: 1px solid var(--line); }
+.case-res b { font-family: var(--f-display); font-weight: 800; font-size: clamp(30px, 3.6vw, 44px); line-height: 1; letter-spacing: -0.02em; color: var(--accent); }
+.case-res span { font-size: 15px; color: var(--muted); line-height: 1.45; }
+@media (max-width: 860px) {
+  .case { grid-template-columns: 1fr; }
+  .case-id { border-right: 0; border-bottom: 1px solid var(--line); grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px; }
+  .case-id svg { width: 96px; }
+}
+@media (max-width: 600px) {
+  .case-res { grid-template-columns: 1fr; }
+  .case-res div + div { border-left: 0; border-top: 1px solid var(--line); }
+}
+
+/* Valeur */
+.sec-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: end; margin-bottom: clamp(36px, 5vw, 56px); }
+.sec-head h2 { font-size: clamp(36px, 5.4vw, 66px); font-weight: 700; }
+.sec-head p { color: var(--muted); max-width: 46ch; }
+@media (max-width: 760px) { .sec-head { grid-template-columns: 1fr; } }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1.5px solid var(--ink); }
+.steps li { padding: 26px 24px 30px 0; border-bottom: 1px solid var(--line); display: grid; gap: 10px; align-content: start; }
+.steps li:not(:nth-child(3n+1)) { padding-left: 24px; border-left: 1px solid var(--line); }
+.step-n { font-family: var(--f-mono); font-size: 13px; color: var(--accent); font-weight: 700; }
+.steps h3 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.steps p { color: var(--muted); font-size: 16px; }
+@media (max-width: 860px) {
+  .steps { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .steps li:not(:nth-child(3n+1)) { padding-left: 0; border-left: 0; }
+  .steps li:nth-child(even) { padding-left: 20px; border-left: 1px solid var(--line); }
+}
+@media (max-width: 560px) {
+  .steps { grid-template-columns: 1fr; }
+  .steps li:nth-child(even) { padding-left: 0; border-left: 0; }
+}
+
+.compare { margin-top: clamp(40px, 6vw, 64px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.compare > div { border-radius: 16px; padding: 28px; display: grid; gap: 14px; align-content: start; }
+.compare .before { border: 1px dashed var(--line); }
+.compare .after { background: var(--surface); border: 1.5px solid var(--accent); }
+.compare h3 { font-size: 22px; }
+.compare ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.compare li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; font-size: 16px; }
+.compare .before li::before { content: "–"; color: var(--muted); font-family: var(--f-mono); }
+.compare .after li::before { content: "→"; color: var(--accent); font-family: var(--f-mono); font-weight: 700; }
+.compare .before li { color: var(--muted); }
+@media (max-width: 700px) { .compare { grid-template-columns: 1fr; } }
+
+/* Preuve / réassurance */
+.band { background: var(--band); color: var(--band-ink); }
+.band .eyebrow, .band .sec-head p { color: var(--band-muted); }
+.logos { display: flex; flex-wrap: wrap; align-items: center; gap: 40px; padding-block: 8px 36px; }
+.logos svg { height: 44px; width: auto; color: var(--band-ink); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 1px solid color-mix(in srgb, var(--band-ink) 25%, transparent); }
+.stats .stat b { font-size: clamp(56px, 9vw, 112px); letter-spacing: -0.03em; }
+.stats .stat span { font-size: 17px; }
+.tick { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 12px !important; letter-spacing: .06em; color: var(--band-muted); }
+.tick i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.stat { padding: 24px 20px 24px 0; display: grid; gap: 6px; }
+.stat + .stat { padding-left: 20px; border-left: 1px solid color-mix(in srgb, var(--band-ink) 18%, transparent); }
+.stat b { font-family: var(--f-display); font-size: clamp(38px, 5vw, 58px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--band-muted); font-size: 15px; }
+@media (max-width: 600px) { .stats { grid-template-columns: 1fr; } .stat + .stat { padding-left: 0; border-left: 0; border-top: 1px solid color-mix(in srgb, var(--band-ink) 18%, transparent); } }
+
+.quotes { margin-top: clamp(40px, 6vw, 64px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.quote { border: 1px solid color-mix(in srgb, var(--band-ink) 20%, transparent); border-radius: 16px; padding: 26px; display: grid; gap: 18px; align-content: space-between; }
+.quote blockquote { margin: 0; font-size: 18px; line-height: 1.5; }
+.quote figcaption { display: grid; gap: 2px; font-size: 14px; }
+.quote figcaption b { font-weight: 600; }
+.quote figcaption span { color: var(--band-muted); }
+.ph { color: var(--band-muted); font-style: italic; }
+@media (max-width: 860px) { .quotes { grid-template-columns: 1fr; } }
+
+.assure { margin-top: clamp(40px, 6vw, 64px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
+.assure div { display: grid; gap: 8px; align-content: start; }
+.assure h3 { font-size: 19px; font-weight: 700; letter-spacing: 0; line-height: 1.2; }
+.assure p { color: var(--band-muted); font-size: 15px; }
+.assure svg { width: 28px; height: 28px; stroke: var(--band-accent); fill: none; stroke-width: 1.8; }
+@media (max-width: 860px) { .assure { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .assure { grid-template-columns: 1fr; } }
+
+/* Module de test */
+.lab { background: var(--surface); border: 1.5px solid var(--ink); border-radius: 22px; overflow: hidden; }
+.lab-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 22px; border-bottom: 1px solid var(--line); font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.live { display: inline-flex; align-items: center; gap: 8px; }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--cold); }
+.live.on i { background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 25%, transparent); }
+.lab-body { padding: clamp(20px, 3vw, 32px); display: grid; gap: 24px; }
+label { font-size: 14px; font-weight: 600; display: block; margin-bottom: 6px; }
+.hint { font-size: 13px; color: var(--muted); font-weight: 400; }
+input, textarea { width: 100%; font: 16px/1.4 var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; }
+textarea { resize: vertical; min-height: 76px; }
+.leads { display: grid; gap: 8px; }
+.lead-row { display: grid; grid-template-columns: 34px minmax(0, 1.1fr) minmax(0, 1.6fr); gap: 8px; align-items: center; }
+.lead-row .n { font-family: var(--f-mono); font-size: 13px; color: var(--muted); text-align: center; }
+.lead-cols { display: grid; grid-template-columns: 34px minmax(0, 1.1fr) minmax(0, 1.6fr); gap: 8px; font-size: 12px; font-family: var(--f-mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+@media (max-width: 640px) {
+  .lead-cols { display: none; }
+  .lead-row { grid-template-columns: 26px minmax(0, 1fr); }
+  .lead-row input:last-child { grid-column: 2; font-size: 15px; }
+  .lead-row { gap: 6px 8px; }
+  .leads { gap: 18px; }
+  .lead-row .n { align-self: start; padding-top: 12px; }
+  #offer { min-height: 120px; }
+  .lab-actions .btn { width: 100%; justify-content: center; }
+}
+.lab-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--hot); }
+
+.results { display: grid; gap: 12px; }
+.results-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--line); }
+.results-head h3 { font-size: 26px; }
+.tag-ex { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.card { border: 1px solid var(--line); border-radius: 14px; background: var(--bg); overflow: hidden; }
+.card summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 16px 18px; }
+.card summary::-webkit-details-marker { display: none; }
+.score { font-family: var(--f-mono); font-weight: 700; font-size: 26px; font-variant-numeric: tabular-nums; line-height: 1; }
+.score small { font-size: 12px; color: var(--muted); font-weight: 500; }
+.c-name { font-weight: 600; font-size: 17px; line-height: 1.3; }
+.c-angle { color: var(--muted); font-size: 14px; line-height: 1.4; }
+.pill { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
+.pill.hot { background: color-mix(in srgb, var(--hot) 16%, transparent); color: var(--hot); }
+.pill.warm { background: color-mix(in srgb, var(--warm) 18%, transparent); color: var(--warm); }
+.pill.cold { background: color-mix(in srgb, var(--cold) 18%, transparent); color: var(--cold); }
+.card .detail { padding: 4px 18px 20px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 20px; border-top: 1px dashed var(--line); padding-top: 18px; }
+.detail h4 { margin: 0 0 6px; font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.detail ul { margin: 0; padding-left: 18px; font-size: 15px; }
+.detail .msg { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-size: 15px; white-space: pre-wrap; }
+.detail .msg b { display: block; margin-bottom: 6px; }
+.detail > div { display: grid; gap: 14px; align-content: start; min-width: 0; }
+@media (max-width: 700px) {
+  .card .detail { grid-template-columns: 1fr; }
+  .card summary { grid-template-columns: 52px minmax(0, 1fr); }
+  .card summary .pill { grid-column: 2; justify-self: start; }
+}
+.lab-note { font-size: 13px; color: var(--muted); }
+
+/* CTA final */
+.final { text-align: left; }
+.final h2 { font-size: clamp(40px, 7vw, 92px); font-weight: 800; max-width: 14ch; }
+.final p { margin-top: 20px; font-size: 19px; color: var(--muted); max-width: 52ch; }
+.final .cta-row { margin-top: 32px; }
+footer { padding-block: 28px 40px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero h1 .strike::after { transform-origin: left; animation: strike .7s .4s cubic-bezier(.6,0,.2,1) both; }
+  @keyframes strike { from { transform: rotate(-3deg) scaleX(0); } to { transform: rotate(-3deg) scaleX(1); } }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo-ryo" viewBox="0 0 105 40" fill="none">
+    <path d="M19.9282 40C30.9342 40 39.8563 31.0457 39.8563 20C39.8563 8.9543 30.9342 0 19.9282 0C8.92214 0 0 8.9543 0 20C0 31.0457 8.92214 40 19.9282 40Z" fill="#D6FF00"/>
+    <path d="M50.6198 29.1977V10.4633H54.5604L54.8081 12.9266C55.2809 12.226 55.8214 11.661 56.4293 11.2768C57.0373 10.8927 57.6903 10.5989 58.3884 10.4407C59.0864 10.2825 59.7845 10.1921 60.505 10.1921H61.2256C61.4508 10.1921 61.6309 10.1921 61.766 10.2373V14.3729H60.6401C59.4017 14.3729 58.3659 14.5989 57.5102 15.0734C56.6545 15.548 56.024 16.226 55.5962 17.1073C55.1684 17.9887 54.9657 19.0734 54.9657 20.339V29.2203H50.6423L50.6198 29.1977Z" fill="currentColor"/>
+    <path d="M73.858 37.7627C72.4169 37.7627 71.0208 37.5593 69.6472 37.1751C68.2962 36.791 67.0352 36.1356 65.8643 35.209L67.418 31.7288C68.2286 32.3616 69.1293 32.8814 70.1201 33.2429C71.1109 33.6045 72.1917 33.7853 73.3852 33.7853C75.2541 33.7853 76.6052 33.3107 77.4834 32.3616C78.3391 31.4124 78.7669 30.1243 78.7669 28.4746V27.096C78.3391 27.6384 77.8212 28.0904 77.2132 28.452C76.6052 28.8136 75.9297 29.0621 75.2316 29.2429C74.5336 29.4011 73.7905 29.4915 73.0699 29.4915C71.246 29.4915 69.8048 29.1073 68.724 28.3616C67.6432 27.6158 66.8776 26.5763 66.4047 25.2655C65.9318 23.9548 65.7066 22.4407 65.7066 20.7684V10.4633H69.985V19.8192C69.985 20.4746 70.03 21.1525 70.1201 21.8531C70.2102 22.5311 70.4128 23.1638 70.683 23.7288C70.9758 24.2938 71.3811 24.7458 71.944 25.1073C72.507 25.4463 73.2275 25.6271 74.1508 25.6271C75.074 25.6271 76.2899 25.3333 76.943 24.7458C77.596 24.1582 78.0688 23.3898 78.3165 22.4407C78.5642 21.4915 78.6993 20.4746 78.6993 19.4124V10.4859H83.0227V27.4576C83.0227 29.0395 82.8651 30.4859 82.5273 31.7514C82.1896 33.0169 81.6717 34.1017 80.9286 35.0056C80.1855 35.9096 79.2398 36.6102 78.0914 37.0847C76.943 37.5593 75.5243 37.8079 73.8355 37.8079L73.858 37.7627Z" fill="currentColor"/>
+    <path d="M95.8803 29.4689C93.9663 29.4689 92.3225 29.0847 90.9264 28.2938C89.5529 27.5028 88.472 26.3955 87.7289 24.9492C86.9858 23.5028 86.603 21.8079 86.603 19.8644C86.603 17.9209 86.9858 16.2034 87.7289 14.7571C88.4945 13.3333 89.5529 12.2034 90.9264 11.3898C92.3 10.5763 93.9438 10.1695 95.8578 10.1695C97.7718 10.1695 99.3706 10.5763 100.744 11.3898C102.118 12.2034 103.176 13.3333 103.897 14.7797C104.64 16.2486 105 17.9435 105 19.9096C105 21.8757 104.64 23.5028 103.919 24.9492C103.199 26.3955 102.163 27.5028 100.789 28.2712C99.4156 29.0621 97.7718 29.4463 95.8578 29.4463L95.8803 29.4689ZM95.8353 25.5141C97.0062 25.5141 97.9745 25.2429 98.695 24.7232C99.4156 24.2034 99.9335 23.5028 100.271 22.6667C100.609 21.8079 100.767 20.8814 100.767 19.887C100.767 18.8927 100.609 17.9435 100.271 17.0847C99.9335 16.2034 99.4156 15.5028 98.695 14.9605C97.9745 14.4181 97.0287 14.1695 95.8353 14.1695C94.6419 14.1695 93.6961 14.4407 92.9756 14.9605C92.2325 15.5028 91.7146 16.2034 91.3768 17.0621C91.039 17.9209 90.8814 18.8701 90.8814 19.887C90.8814 20.904 91.0616 21.8079 91.3993 22.6893C91.7371 23.548 92.2775 24.2486 92.9981 24.7458C93.7186 25.2655 94.6644 25.5141 95.8578 25.5141H95.8353Z" fill="currentColor"/>
+    <path d="M33.5514 24.4746C31.4347 24.113 27.359 23.0056 23.8913 21.0621C22.6753 20.3842 22.3826 19.9548 22.3376 19.8418C22.4952 19.4576 23.576 18.6441 24.2065 18.1695C24.7244 17.7853 25.2423 17.4011 25.7377 16.9718C27.6517 15.322 28.7101 13.0395 28.5074 11.0056C28.3498 9.42373 27.4716 8.11299 26.0079 7.27684C24.139 6.21469 21.7746 6.0113 19.5454 6.71186C17.4962 7.36723 14.614 9.10734 12.2496 13.6497C11.5741 12.226 10.8535 10.8249 10.133 9.46893C9.36736 10.1921 8.69183 10.983 8.08385 11.8418C9.11966 13.8305 9.99785 15.6836 10.7184 17.3333C8.82693 23.2542 9.07463 29.9209 11.5516 31.4802C11.7542 31.6158 12.2271 31.8418 12.8126 31.8418C13.398 31.8418 14.3888 31.5254 15.2895 30.3955C17.2936 27.9096 16.1001 22.7345 13.8259 17.2203C14.006 16.7458 14.2087 16.2938 14.4113 15.8192C16.3929 11.548 18.7798 10.0339 20.4235 9.51413C21.8647 9.06215 23.4184 9.17514 24.5668 9.83051C25.1973 10.1921 25.5351 10.6667 25.6026 11.2994C25.7152 12.3842 25.0172 13.7401 23.8237 14.7571C23.4184 15.1186 22.923 15.4802 22.4501 15.8192C20.8964 16.9944 19.2751 18.1921 19.3877 20.0226C19.5003 21.7627 21.1891 22.8927 22.4501 23.6158C25.8503 25.5141 29.7459 26.6893 32.2904 27.209C32.7858 26.3503 33.2136 25.4237 33.5063 24.4746H33.5514ZM13.0377 28.565C12.9927 28.6102 12.9702 28.6554 12.9252 28.7006C12.4973 27.774 12.2046 25.2881 12.5874 22.3051C13.6232 25.6497 13.6908 27.774 13.0377 28.565Z" fill="#01322D"/>
+  </symbol>
+</svg>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-top">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 12 18 6"/></svg></span>Cockpit'ch</div>
+      <div class="cta-row">
+        <a class="btn ghost-link" href="#test">Tester sur 5 leads</a>
+        <a class="btn login" href="https://claude.ai/artifact/2AQpD8jNiNYdAcePFXyHMZ" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Se connecter</a>
+        <button class="btn primary" type="button" id="open-reg">Inscription</button>
+      </div>
+    </div>
+    <h1>Prospecter <span class="strike">3 heures</span> 10 minutes par jour. <em>Remplir l'agenda quand même.</em></h1>
+    <div class="hero-sub">
+      <p>Cockpit'ch est le cockpit de prospection B2B qui <strong>cible vos prospects, rédige des fiches, écrit les séquences email, LinkedIn et appel, puis classe chaque lead</strong> par priorité. Vous ne gardez que la partie qui compte : parler à des gens intéressés.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#test">Tester gratuitement sur 5 leads</a>
+        <a class="btn" href="#demo">Voir la démo</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="video-sec" id="demo" aria-label="Vidéo de démonstration">
+  <div class="wrap">
+    <div class="video-frame">
+      <video id="demo-video" controls playsinline preload="metadata" src="demo.mp4">Votre navigateur ne lit pas cette vidéo.</video>
+    </div>
+    <div class="video-cap">
+      <span>DÉMO · LE SYSTÈME DE BOUT EN BOUT</span>
+      <span>Activez le son ▸</span>
+    </div>
+    <div class="case">
+      <div class="case-id">
+        <svg viewBox="0 0 105 40" role="img" aria-label="Ryo"><use href="#logo-ryo"></use></svg>
+        <p><span class="eyebrow">Cas client</span><br>Ryo.co, guides audio de voyage</p>
+      </div>
+      <div class="case-res">
+        <div><b>Des centaines</b><span>de prospects contactés chaque semaine, par email, LinkedIn et téléphone</span></div>
+        <div><b>10 RDV</b><span>par semaine, dont 70 % signés</span></div>
+        <div><b>1<sup style="font-size:.5em">er</sup> mois</b><span>pour amortir l'investissement</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="valeur">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Ce que fait Cockpit'ch</p>
+        <h2>Du fichier vide au rendez-vous, en six étapes.</h2>
+      </div>
+      <p>Chaque étape reprend le travail d'un bon commercial : savoir qui viser, comprendre le prospect avant de lui écrire, relancer au bon moment et noter ce qui s'est passé.</p>
+    </div>
+    <ol class="steps">
+      <li><span class="step-n">01 · ICP</span><h3>Ciblage précis</h3><p>Zone géographique, secteur, chiffre d'affaires, taille d'équipe : on définit votre client idéal avant de chercher qui que ce soit.</p></li>
+      <li><span class="step-n">02 · Sourcing</span><h3>Liste de prospects</h3><p>Des entreprises qui collent à l'ICP, avec le bon décideur à contacter et la source de chaque information.</p></li>
+      <li><span class="step-n">03 · Fiches</span><h3>Fiche par prospect</h3><p>Activité, signaux d'achat récents, angle d'approche. Vous savez quoi dire avant le premier message.</p></li>
+      <li><span class="step-n">04 · Séquences</span><h3>Email, LinkedIn, appel</h3><p>Messages personnalisés pour chaque canal, avec les relances. Aucun envoi sans votre validation.</p></li>
+      <li><span class="step-n">05 · Scoring</span><h3>Qualification</h3><p>Chaque lead reçoit un score et une priorité : chaud, tiède ou froid. Vous appelez les bons en premier.</p></li>
+      <li><span class="step-n">06 · Suivi</span><h3>Pipeline vivant</h3><p>Un tableau de suivi à jour, compatible avec votre CRM. Personne ne tombe entre deux relances.</p></li>
+    </ol>
+
+    <div class="compare">
+      <div class="before">
+        <p class="eyebrow">Sans Cockpit'ch</p>
+        <h3>La prospection passe après le reste</h3>
+        <ul>
+          <li>Des listes achetées, peu ciblées, vite périmées</li>
+          <li>Le même message envoyé à tout le monde</li>
+          <li>Des relances oubliées faute de suivi</li>
+          <li>Des heures perdues sur des leads qui n'achèteront jamais</li>
+        </ul>
+      </div>
+      <div class="after">
+        <p class="eyebrow">Avec Cockpit'ch</p>
+        <h3>Une machine qui tourne chaque semaine</h3>
+        <ul>
+          <li>Des prospects choisis selon votre client idéal</li>
+          <li>Un message écrit pour chaque entreprise</li>
+          <li>Des séquences planifiées et suivies automatiquement</li>
+          <li>Votre temps réservé aux leads chauds</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="preuves">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Ils nous font confiance</p>
+        <h2>Des systèmes qui tournent déjà chez nos clients.</h2>
+      </div>
+      <p>Chaque système est installé sur le marché du client, puis tourne chaque semaine pour remplir son agenda.</p>
+    </div>
+    <div class="logos" aria-label="Clients">
+      <svg viewBox="0 0 105 40" role="img" aria-label="Ryo"><use href="#logo-ryo"></use></svg>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>+10</b><span>systèmes déployés depuis août 2026</span></div>
+      <div class="stat"><b>+<span id="rdv-count" style="font:inherit;color:inherit">300</span></b><span>RDV B2B générés pour nos clients</span><span class="tick"><i></i>Compteur mis à jour en continu</span></div>
+    </div>
+
+    <div class="assure">
+      <div>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        <h3>Conforme RGPD</h3>
+        <p>Données professionnelles publiques, intérêt légitime B2B, lien de désinscription dans chaque email.</p>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>
+        <h3>Vous gardez la main</h3>
+        <p>Rien ne part sans votre accord. Vous relisez, ajustez et validez chaque séquence.</p>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+        <h3>Compatible avec vos outils</h3>
+        <p>Tableau de suivi exportable vers votre CRM. Pas de nouvel outil à imposer à l'équipe.</p>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6"/></svg>
+        <h3>Essai sans engagement</h3>
+        <p>Testez sur 5 de vos prospects ci-dessous. Si le résultat ne vous parle pas, on s'arrête là.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="test">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Essai en direct</p>
+        <h2>Donnez-lui 5 leads. Jugez sur pièce.</h2>
+      </div>
+      <p>Entrez ce que vous vendez et cinq entreprises que vous aimeriez signer. Cockpit'ch vous rend un score, une priorité, un angle d'approche et un premier email pour chacune.</p>
+    </div>
+
+    <div class="lab">
+      <div class="lab-head">
+        <span>Cockpit'ch · Test sur 5 leads</span>
+        <span class="live" id="live"><i></i><span id="live-txt">Connexion…</span></span>
+      </div>
+      <form class="lab-body" id="lab-form" novalidate>
+        <div>
+          <label for="offer">Ce que vous vendez <span class="hint">· en une ou deux phrases, et à qui</span></label>
+          <textarea id="offer" rows="2">Logiciel de planification pour les entreprises du BTP de 20 à 200 salariés : chantiers, équipes et matériel au même endroit.</textarea>
+        </div>
+        <div>
+          <div class="lead-cols" aria-hidden="true"><span></span><span>Entreprise</span><span>Ce que vous savez d'elle</span></div>
+          <div class="leads" id="leads"></div>
+        </div>
+        <div class="lab-actions">
+          <button class="btn primary" type="submit" id="run">Analyser mes 5 leads</button>
+          <button class="btn" type="button" id="stop" hidden>Arrêter</button>
+          <span class="status" id="status" role="status" aria-live="polite"></span>
+        </div>
+
+        <div class="results">
+          <div class="results-head">
+            <h3 id="res-title">Exemple de résultat</h3>
+            <span class="tag-ex" id="res-tag">Exemple fictif</span>
+          </div>
+          <div id="cards"></div>
+          <div class="handoff" id="handoff">
+            <div>
+              <b id="handoff-title">Lancez le test dans Cockpit'ch</b>
+              <p id="handoff-txt">Vos 5 leads sont copiés en un clic et Cockpit'ch s'ouvre sur l'import : collez-les (Ctrl+V), puis cliquez sur « Importer ».</p>
+            </div>
+            <a class="btn primary" id="go-app" href="https://claude.ai/artifact/2AQpD8jNiNYdAcePFXyHMZ#importer" target="_blank" rel="noopener">Ouvrir Cockpit'ch →</a>
+          </div>
+          <p class="lab-note">L'analyse s'appuie uniquement sur les informations saisies : les signaux et le score sont des hypothèses à vérifier avant tout envoi. La version complète de Cockpit'ch va chercher les données réelles de chaque entreprise.</p>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="final" id="contact">
+  <div class="wrap">
+    <p class="eyebrow">Prochaine étape</p>
+    <h2>On installe Cockpit'ch sur votre marché.</h2>
+    <p>Vingt minutes pour définir votre client idéal, voir Cockpit'ch tourner sur vos vrais prospects et décider si on y va.</p>
+    <div class="cta-row">
+      <a class="btn primary" id="book" href="#test">Réserver un appel de 20 min</a>
+      <a class="btn" href="#demo">Revoir la démo</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">Cockpit'ch · Le cockpit de prospection B2B</div>
+</footer>
+
+<div class="reg-scrim" id="reg" hidden>
+  <div class="reg" role="dialog" aria-modal="true" aria-labelledby="reg-title">
+    <div class="reg-head">
+      <div><h2 id="reg-title">Inscription</h2><p id="reg-sub">Choisissez votre statut pour accéder au bon formulaire.</p></div>
+      <button class="reg-x" type="button" id="reg-close" aria-label="Fermer">✕</button>
+    </div>
+
+    <div id="reg-step-choice" class="reg-choices">
+      <button class="reg-choice" type="button" data-reg="revendeur">
+        <span class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M3 21c1-3.5 4.5-5.5 9-5.5s8 2 9 5.5"/><path d="M19 4l2 2-2 2M5 4 3 6l2 2"/></svg></span>
+        <span><b>Je suis partenaire revendeur</b><span class="d">Vous revendez Cockpit'ch à vos clients.</span></span>
+        <span class="arr" aria-hidden="true">→</span>
+      </button>
+      <button class="reg-choice" type="button" data-reg="classique">
+        <span class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 12 18 6"/></svg></span>
+        <span><b>J'utilise Cockpit'ch pour ma prospection</b><span class="d">Inscription classique, avec un code affilié si vous en avez un.</span></span>
+        <span class="arr" aria-hidden="true">→</span>
+      </button>
+    </div>
+
+    <div id="reg-step-revendeur" hidden>
+      <div style="display:grid;gap:14px">
+        <p>Le formulaire partenaire prend environ 4 minutes. Il vous demande :</p>
+        <ul>
+          <li>vos coordonnées et celles de votre société (raison sociale, SIRET, forme juridique) ;</li>
+          <li>votre potentiel commercial : clients visés à 6 mois, équipe, expérience en revente SaaS ou IA ;</li>
+          <li>le modèle souhaité : commission, marque blanche, et l'accompagnement attendu.</li>
+        </ul>
+        <span class="reg-aff" data-aff-show hidden>Code affilié : <b data-aff></b></span>
+        <div class="reg-actions">
+          <button class="btn" type="button" data-reg-back>← Retour</button>
+          <a class="btn primary" id="reg-go-revendeur" href="#" target="_blank" rel="noopener">Remplir le formulaire partenaire →</a>
+        </div>
+        <p class="reg-note">Nous revenons vers vous sous 48 h ouvrées.</p>
+      </div>
+    </div>
+
+    <div id="reg-step-classique" hidden>
+      <div style="display:grid;gap:14px">
+        <p>Quelques informations pour préparer votre espace, puis vous accédez directement à l'application.</p>
+        <div id="reg-aff-field">
+          <label for="reg-aff-in">Code affilié <span class="hint">· facultatif, si un partenaire vous a recommandé</span></label>
+          <input id="reg-aff-in" autocomplete="off" placeholder="Ex. : PARTNER-LYON">
+        </div>
+        <span class="reg-aff" data-aff-show hidden>Code affilié : <b data-aff></b></span>
+        <div class="reg-actions">
+          <button class="btn" type="button" data-reg-back>← Retour</button>
+          <a class="btn primary" id="reg-go-classique" href="#" target="_blank" rel="noopener">Continuer mon inscription →</a>
+        </div>
+        <p class="reg-note" id="reg-note-classique">Le formulaire s'ouvre dans un nouvel onglet. À la fin, un lien vous ouvre Cockpit'ch.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Inscription : liens des formulaires Google à renseigner.
+  const FORM_REVENDEUR_URL = "";
+  const FORM_CLASSIQUE_URL = "";
+  const FORM_AFF_ENTRY = ""; // ex. "entry.123456789" : champ « Code affilié » du formulaire classique
+  const DEMO_APP_URL = "https://claude.ai/artifact/2AQpD8jNiNYdAcePFXyHMZ#prospects";
+  const CAL_URL = "https://calendar.app.google/QWaG1gXHXnJtrVgE9";
+
+  const reg = document.getElementById("reg");
+  const steps = { choice: "reg-step-choice", revendeur: "reg-step-revendeur", classique: "reg-step-classique" };
+  const affIn = document.getElementById("reg-aff-in");
+  let affCode = "";
+  // Un partenaire partage la landing avec #aff-SONCODE : le code est repris automatiquement.
+  const m = /^#aff-([A-Za-z0-9._~-]{2,40})$/.exec(location.hash || "");
+  if (m) affCode = m[1].toUpperCase();
+  affIn.value = affCode;
+
+  function formUrl(base, code) {
+    if (!base) return "";
+    if (!code || !FORM_AFF_ENTRY) return base;
+    return base + (base.includes("?") ? "&" : "?") + "usp=pp_url&" + FORM_AFF_ENTRY + "=" + encodeURIComponent(code);
+  }
+  function syncLinks() {
+    const code = (affIn.value || "").trim();
+    document.querySelectorAll("[data-aff]").forEach(e => { e.textContent = affCode; });
+    document.querySelectorAll("[data-aff-show]").forEach(e => { e.hidden = !affCode || (e.closest("#reg-step-classique") && !!FORM_AFF_ENTRY); });
+    const rv = document.getElementById("reg-go-revendeur");
+    rv.href = formUrl(FORM_REVENDEUR_URL, affCode) || CAL_URL;
+    if (!FORM_REVENDEUR_URL) rv.textContent = "Réserver un appel partenaire →";
+    const cl = document.getElementById("reg-go-classique");
+    cl.href = formUrl(FORM_CLASSIQUE_URL, code) || DEMO_APP_URL;
+    if (!FORM_CLASSIQUE_URL) {
+      cl.textContent = "Accéder à Cockpit'ch →";
+      document.getElementById("reg-note-classique").textContent = "Cockpit'ch s'ouvre dans un nouvel onglet.";
+    }
+  }
+  // Sans pré-remplissage, le code affilié se saisit directement dans le formulaire Google.
+  document.getElementById("reg-aff-field").hidden = !FORM_AFF_ENTRY;
+  affIn.addEventListener("input", syncLinks);
+
+  let lastFocus = null;
+  function show(step) {
+    Object.entries(steps).forEach(([k, id]) => { document.getElementById(id).hidden = k !== step; });
+    document.getElementById("reg-sub").textContent = step === "revendeur" ? "Partenaire revendeur" : step === "classique" ? "Inscription classique" : "Choisissez votre statut pour accéder au bon formulaire.";
+    syncLinks();
+    const first = document.getElementById(steps[step]).querySelector("button, a, input");
+    if (first) setTimeout(() => first.focus(), 20);
+  }
+  function openReg() { lastFocus = document.activeElement; reg.hidden = false; show("choice"); }
+  function closeReg() { reg.hidden = true; if (lastFocus) lastFocus.focus(); }
+  document.getElementById("open-reg").addEventListener("click", openReg);
+  document.querySelectorAll("[data-open-reg]").forEach(b => b.addEventListener("click", openReg));
+  document.getElementById("reg-close").addEventListener("click", closeReg);
+  reg.addEventListener("click", e => { if (e.target === reg) closeReg(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !reg.hidden) closeReg(); });
+  document.querySelectorAll("[data-reg]").forEach(b => b.addEventListener("click", () => show(b.dataset.reg)));
+  document.querySelectorAll("[data-reg-back]").forEach(b => b.addEventListener("click", () => show("choice")));
+  if (location.hash === "#inscription") openReg();
+})();
+
+(function () {
+  // Compteur de RDV : 300 au 28/10/2026 10h (Paris), +1 toutes les 3 heures.
+  const RDV_BASE = 300, RDV_START = Date.parse("2026-10-28T10:00:00+01:00"), RDV_STEP = 3 * 3600 * 1000;
+  const rdvEl = document.getElementById("rdv-count");
+  function tickRdv() { rdvEl.textContent = String(RDV_BASE + Math.max(0, Math.floor((Date.now() - RDV_START) / RDV_STEP))); }
+  tickRdv(); setInterval(tickRdv, 60000);
+
+  // Lien de prise de rendez-vous (Calendly, Cal.com…). Laisser vide pour renvoyer vers le test.
+  const BOOKING_URL = "https://calendar.app.google/QWaG1gXHXnJtrVgE9";
+  if (BOOKING_URL) { const b = document.getElementById("book"); b.href = BOOKING_URL; b.target = "_blank"; b.rel = "noopener"; }
+
+  const EXAMPLE_LEADS = [
+    ["Batiloire Construction", "Gros œuvre, Angers, ~120 salariés, recrute 2 conducteurs de travaux"],
+    ["Rénov'Atlantique", "Rénovation énergétique, Nantes, ~45 salariés, vient d'ouvrir une agence à Vannes"],
+    ["Charpentes Morvan", "Charpente bois, Cholet, ~30 salariés, entreprise familiale"],
+    ["Elec Ouest Services", "Électricité tertiaire, La Roche-sur-Yon, ~80 salariés"],
+    ["Paysages du Layon", "Aménagement paysager, ~12 salariés"]
+  ];
+
+  const EXAMPLE_RESULTS = [
+    { entreprise: "Batiloire Construction", score: 86, priorite: "chaud", angle: "Croissance des équipes : la planification à la main ne suit plus.", signaux: ["Recrute 2 conducteurs de travaux", "Taille au cœur de la cible (120 salariés)", "Gros œuvre : beaucoup de matériel à affecter"], decideur: "Directeur travaux ou dirigeant", email_objet: "2 conducteurs de travaux en plus, un seul planning ?", email_corps: "Bonjour,\n\nJ'ai vu que Batiloire recrute deux conducteurs de travaux. Bonne nouvelle, mais c'est souvent à ce moment que le planning Excel commence à craquer : équipes en double, matériel introuvable.\n\nNotre outil réunit chantiers, équipes et matériel sur un seul planning. Des entreprises de votre taille l'utilisent pour préparer la semaine en 20 minutes.\n\nÇa vaut 15 minutes d'échange la semaine prochaine ?" },
+    { entreprise: "Rénov'Atlantique", score: 78, priorite: "chaud", angle: "Deux agences à coordonner depuis l'ouverture de Vannes.", signaux: ["Nouvelle agence à Vannes", "Rénovation : beaucoup de petits chantiers en parallèle"], decideur: "Dirigeant ou responsable d'exploitation", email_objet: "Nantes + Vannes sur le même planning", email_corps: "Bonjour,\n\nFélicitations pour l'agence de Vannes. Avec deux sites, savoir qui est où et avec quel matériel devient vite un casse-tête.\n\nNotre outil donne une vue unique des deux agences, chantier par chantier.\n\nJe vous montre en 15 minutes ?" },
+    { entreprise: "Elec Ouest Services", score: 64, priorite: "tiède", angle: "Taille idéale, mais pas de signal récent : approche par la productivité.", signaux: ["80 salariés, dans la cible", "Aucun déclencheur identifié"], decideur: "Responsable d'exploitation", email_objet: "Combien d'heures par semaine sur le planning ?", email_corps: "Bonjour,\n\nDans l'électricité tertiaire, les conducteurs de travaux passent souvent plusieurs heures par semaine à refaire le planning.\n\nNotre outil centralise équipes et chantiers pour réduire ce temps. Est-ce un sujet chez Elec Ouest ?" },
+    { entreprise: "Charpentes Morvan", score: 47, priorite: "tiède", angle: "Entreprise familiale : insister sur la simplicité de prise en main.", signaux: ["30 salariés, bas de la cible", "Structure familiale, décision rapide mais prudente"], decideur: "Dirigeant", email_objet: "Le planning de l'atelier et des chantiers", email_corps: "Bonjour,\n\nGérer l'atelier et les chantiers en même temps demande un planning clair. Notre outil se prend en main en une matinée, sans formation lourde.\n\nUn court appel pour voir si ça vous concerne ?" },
+    { entreprise: "Paysages du Layon", score: 18, priorite: "froid", angle: "Sous le seuil de 20 salariés : à garder pour plus tard.", signaux: ["12 salariés, hors cible", "Paysagisme : proche du BTP mais besoins plus simples"], decideur: "Gérant", email_objet: "—", email_corps: "Pas d'envoi conseillé pour l'instant : l'entreprise est sous votre seuil de 20 salariés. À recontacter si elle grandit." }
+  ];
+
+  const leadsEl = document.getElementById("leads");
+  EXAMPLE_LEADS.forEach(([name, info], i) => {
+    const row = document.createElement("div");
+    row.className = "lead-row";
+    row.innerHTML = '<span class="n">' + (i + 1) + '</span>' +
+      '<input id="lead-name-' + i + '" aria-label="Entreprise ' + (i + 1) + '" placeholder="Nom de l\'entreprise">' +
+      '<input id="lead-info-' + i + '" aria-label="Informations sur l\'entreprise ' + (i + 1) + '" placeholder="Secteur, ville, taille, actualité…">';
+    row.children[1].value = name;
+    row.children[2].value = info;
+    leadsEl.appendChild(row);
+  });
+
+  const cardsEl = document.getElementById("cards");
+  const PILL = { chaud: ["hot", "Chaud"], "tiède": ["warm", "Tiède"], tiede: ["warm", "Tiède"], froid: ["cold", "Froid"] };
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function render(list) {
+    cardsEl.replaceChildren();
+    const sorted = [...list].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
+    sorted.forEach((r, i) => {
+      const d = el("details", "card");
+      if (i === 0) d.open = true;
+      const s = el("summary");
+      const sc = el("div", "score"); sc.append(String(Math.round(Number(r.score) || 0))); sc.append(el("small", null, "/100"));
+      const mid = el("div"); mid.append(el("div", "c-name", r.entreprise || "—"), el("div", "c-angle", r.angle || ""));
+      const key = String(r.priorite || "").toLowerCase();
+      const p = PILL[key] || PILL.froid;
+      s.append(sc, mid, el("span", "pill " + p[0], p[1]));
+      d.append(s);
+
+      const det = el("div", "detail");
+      const left = el("div");
+      const sig = el("div"); sig.append(el("h4", null, "Signaux repérés"));
+      const ul = el("ul"); (Array.isArray(r.signaux) ? r.signaux : []).forEach(x => ul.append(el("li", null, String(x)))); sig.append(ul);
+      const dec = el("div"); dec.append(el("h4", null, "Décideur à viser"), el("p", null, r.decideur || "—"));
+      left.append(sig, dec);
+      const right = el("div");
+      const mh = el("div"); mh.append(el("h4", null, "Premier email"));
+      const msg = el("div", "msg"); msg.append(el("b", null, r.email_objet || ""), document.createTextNode(r.email_corps || "")); mh.append(msg);
+      right.append(mh);
+      det.append(left, right);
+      d.append(det);
+      cardsEl.append(d);
+    });
+  }
+  render(EXAMPLE_RESULTS);
+
+  const form = document.getElementById("lab-form");
+  const runBtn = document.getElementById("run");
+  const stopBtn = document.getElementById("stop");
+  const status = document.getElementById("status");
+  const live = document.getElementById("live");
+  const liveTxt = document.getElementById("live-txt");
+  const resTitle = document.getElementById("res-title");
+  const resTag = document.getElementById("res-tag");
+
+  function setStatus(t, err) { status.textContent = t; status.classList.toggle("err", !!err); }
+  function disableLive(msg) {
+    live.classList.remove("on"); liveTxt.textContent = "Mode démo";
+    runBtn.textContent = "Lancer le test dans Cockpit'ch →";
+    runBtn.type = "button";
+    runBtn.onclick = () => document.getElementById("go-app").click();
+    if (msg) setStatus(msg);
+  }
+
+  // Passage vers l'app : copie les leads au format JSON reconnu par l'import de Cockpit'ch.
+  const PRIO_APP = { chaud: "A", "tiède": "B", tiede: "B", froid: "C" };
+  let LIVE = null;
+  function appPayload() {
+    if (LIVE) return LIVE.map(r => ({
+      company: r.entreprise, contactRole: r.decideur, status: "À contacter",
+      priority: PRIO_APP[String(r.priorite || "").toLowerCase()] || "C",
+      signals: (Array.isArray(r.signaux) ? r.signaux : []).join(" · "),
+      angle: r.angle, qualification: r.angle,
+      notes: "Score du test : " + r.score + "/100\n\nEmail proposé : " + (r.email_objet || "") + "\n" + (r.email_corps || "")
+    }));
+    const out = [];
+    for (let i = 0; i < 5; i++) {
+      const n = document.getElementById("lead-name-" + i).value.trim();
+      if (n) out.push({ company: n, notes: document.getElementById("lead-info-" + i).value.trim(), status: "À contacter" });
+    }
+    return out;
+  }
+  document.getElementById("go-app").addEventListener("click", () => {
+    const text = JSON.stringify(appPayload(), null, 1);
+    try {
+      navigator.clipboard.writeText(text).then(
+        () => setStatus("Leads copiés. Collez-les dans Cockpit'ch (Ctrl+V), puis « Importer »."),
+        () => setStatus("Copie impossible ici : ajoutez vos leads à la main dans Cockpit'ch.", true));
+    } catch (e) { setStatus("Copie impossible ici : ajoutez vos leads à la main dans Cockpit'ch.", true); }
+  });
+
+  const MSGS = {
+    rate_limited: "Trop de demandes d'un coup. Réessayez dans une minute.",
+    session_expired: "Votre session Claude a expiré. Reconnectez-vous puis relancez.",
+    refused: "L'analyse a été refusée pour ces données. Modifiez les leads et relancez.",
+    empty_completion: "Aucun résultat obtenu. Simplifiez les descriptions et relancez.",
+    invalid_json: "Le résultat est arrivé dans un format illisible. Relancez l'analyse.",
+    upstream_error: "La connexion a été interrompue. Relancez l'analyse."
+  };
+  const HIDE = ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"];
+
+  let sample = null, ctl = null;
+  (window.claude && window.claude.use ? window.claude.use("sample") : Promise.resolve(null)).then(s => {
+    sample = s;
+    if (!s) { disableLive("Voici un exemple de résultat. Lancez le test sur vos propres leads dans Cockpit'ch."); return; }
+    live.classList.add("on"); liveTxt.textContent = "Analyse en direct";
+  }).catch(() => disableLive());
+
+  stopBtn.onclick = () => ctl && ctl.abort();
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!sample) return;
+    const offer = document.getElementById("offer").value.trim();
+    const leads = [];
+    for (let i = 0; i < 5; i++) {
+      const n = document.getElementById("lead-name-" + i).value.trim();
+      const info = document.getElementById("lead-info-" + i).value.trim();
+      if (n) leads.push({ entreprise: n, infos: info });
+    }
+    if (!offer) { setStatus("Décrivez d'abord ce que vous vendez.", true); document.getElementById("offer").focus(); return; }
+    if (!leads.length) { setStatus("Ajoutez au moins une entreprise.", true); return; }
+
+    const prompt =
+      "Tu es un expert en prospection B2B francophone. Analyse chaque prospect au regard de l'offre du vendeur.\n\n" +
+      "OFFRE DU VENDEUR :\n" + offer.slice(0, 1200) + "\n\n" +
+      "PROSPECTS :\n" + leads.map((l, i) => (i + 1) + ". " + l.entreprise.slice(0, 120) + " : " + (l.infos || "aucune information").slice(0, 400)).join("\n") + "\n\n" +
+      "Règles : tu ne peux pas consulter internet ; base-toi seulement sur les informations fournies et sur ta connaissance générale du secteur, sans inventer de faits précis sur l'entreprise. " +
+      "Le score (0-100) mesure l'adéquation avec l'offre et la présence de signaux d'achat. priorite vaut 'chaud' (score >= 70), 'tiède' (40-69) ou 'froid' (< 40). " +
+      "L'email fait 60 à 90 mots, en vouvoiement, sans formule creuse, avec une seule question finale. Si le lead est froid, email_objet vaut '—' et email_corps explique en une phrase pourquoi ne pas l'écrire maintenant.\n\n" +
+      "Réponds uniquement par un tableau JSON, un objet par prospect, au format : " +
+      '[{"entreprise":"…","score":0,"priorite":"chaud","angle":"une phrase","signaux":["…","…"],"decideur":"…","email_objet":"…","email_corps":"…"}]';
+
+    ctl = new AbortController();
+    runBtn.disabled = true; stopBtn.hidden = false;
+    setStatus("Analyse en cours… comptez 20 à 60 secondes.");
+    try {
+      const data = await sample.json(prompt, { signal: ctl.signal });
+      if (!Array.isArray(data) || !data.length) throw { code: "invalid_json" };
+      render(data);
+      LIVE = data;
+      document.getElementById("handoff-title").textContent = "Retrouvez ces leads dans Cockpit'ch";
+      document.getElementById("handoff-txt").textContent = "Scores, angles et premiers emails sont copiés en un clic et Cockpit'ch s'ouvre sur l'import : collez-les (Ctrl+V), puis cliquez sur « Importer ».";
+      resTitle.textContent = "Vos " + data.length + " leads, classés";
+      resTag.textContent = "Analyse en direct";
+      setStatus("Terminé. Cliquez sur un lead pour voir le détail.");
+      document.querySelector(".results").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "cancelled") setStatus("Analyse arrêtée.");
+      else if (HIDE.includes(code)) disableLive("L'analyse en direct n'est pas disponible ici. Lancez le test dans Cockpit'ch.");
+      else setStatus(MSGS[code] || MSGS.upstream_error, true);
+    } finally {
+      runBtn.disabled = false; stopBtn.hidden = true; ctl = null;
+    }
+  });
+})();
+</script>
+
+</body></html>
