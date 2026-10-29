@@ -58,7 +58,8 @@ export async function Overview({ section }: { section: Section }) {
   const ai = new Map(aiByOrg.map((r) => [r.organizationId, { i: r._sum.inputTokens ?? 0, o: r._sum.outputTokens ?? 0 }]));
   const aiTotal = [...ai.values()].reduce((s, v) => s + estimate(v.i, v.o), 0);
   const states = new Map(organizations.map((o) => [o.id, accessState(o)]));
-  const paying = organizations.filter((o) => ["active", "past_due"].includes(states.get(o.id)!.kind));
+  // Les espaces offerts aux revendeurs ne sont ni payants ni en essai.
+  const paying = organizations.filter((o) => !o.isPartner && ["active", "past_due"].includes(states.get(o.id)!.kind));
   const mrr = paying.reduce((s, o) => s + (planById(o.plan)?.price ?? 0), 0);
   const trials = organizations.filter((o) => states.get(o.id)!.kind === "trial").length;
   const statusLabel = (id: string) => {
@@ -87,7 +88,7 @@ export async function Overview({ section }: { section: Section }) {
         <div className="kpi win"><span className="v">{mrr} €</span><span className="k">revenu mensuel récurrent (HT)</span></div>
         <div className="kpi"><span className="v">{paying.length}</span><span className="k">entreprises payantes</span></div>
         <div className="kpi"><span className="v">{trials}</span><span className="k">en essai gratuit</span></div>
-        <div className="kpi"><span className="v">{organizations.length - paying.length - trials}</span><span className="k">essai terminé ou résilié</span></div>
+        <div className="kpi"><span className="v">{organizations.filter((o) => !o.isPartner).length - paying.length - trials}</span><span className="k">essai terminé ou résilié</span></div>
       </div>
       {!resellerId && <div className="kpis">
         <div className="kpi"><span className="v">{demosWeek}</span><span className="k">démos ouvertes (7 jours)</span></div>
