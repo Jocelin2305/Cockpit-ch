@@ -10,6 +10,8 @@ export const EDITOR = {
   vat: "",
 };
 export const UPDATED = "28 octobre 2026";
+// Prise de rendez-vous avec le fondateur (page d'accueil, programme partenaire).
+export const BOOKING_URL = "https://calendar.app.google/QWaG1gXHXnJtrVgE9";
 
 // Sous-traitants techniques (article 28 RGPD).
 export const SUBPROCESSORS = [

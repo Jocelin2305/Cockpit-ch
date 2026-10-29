@@ -36,3 +36,15 @@ Liste des évolutions demandées par le fondateur, avec ce qui est fait dans ce 
 | 1 | Lancer une recherche de prospects depuis l'appli | Fait : registre national des entreprises (gratuit), critères zone / secteur NAF / effectif / CA / mot-clé, 10 à 100 entreprises par lancement, sans doublon |
 | 2 | Fichiers de prospection à jour, contacts prioritaires | Fait : priorité A / B / C calculée, « Actualiser » ajoute les nouvelles entreprises, export trié par priorité avec SIREN |
 | 3 | Apollo pour enrichir les contacts (clé du client) | Fait : dirigeant puis fonction visée, email, LinkedIn, poste, site, standard ; à tester avec un vrai compte Apollo. Téléphones directs Apollo non demandés (8 crédits, livrés en différé) |
+
+## Sprint 10 : commercialisation
+
+| # | Demande | Statut |
+|---|---|---|
+| 1 | Page d'accueil publique (promesse, fonctionnement, tarifs, partenaires, FAQ, démo, prise de rendez-vous) | Fait (`/`) |
+| 2 | Rapport hebdomadaire au gestionnaire | Fait : email chaque lundi (Resend), page `/app/rapport`, envoi à la demande, réglage dans Paramètres |
+| 3 | Relances envoyées automatiquement | Fait : option par utilisateur, chaque matin de semaine (CRON_SECRET) |
+| 4 | Lien de désinscription et liste d'opposition | Fait : lien signé dans chaque email, page `/desinscription`, adresses bloquées |
+| 5 | Démo « Essayez sur votre marché » | Fait : vraie recherche dans le registre, 3 par démo |
+| 6 | Checklist de démarrage en 4 étapes | Fait (Espace de travail, administrateurs) |
+| 7 | Cas client chiffré (Ryo) | En attente des chiffres |

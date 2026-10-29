@@ -30,6 +30,10 @@ model User {
   tourStep     Int?
   // Dernier jour (AAAA-MM-JJ) où le point du jour a été affiché.
   briefingDay  String?
+  // Rapport hebdomadaire par email (administrateurs), envoi automatique des relances dues, checklist de démarrage masquée.
+  weeklyReport Boolean      @default(true)
+  autoSend     Boolean      @default(false)
+  onboardingHidden Boolean  @default(false)
   createdAt    DateTime     @default(now())
   lastLoginAt  DateTime?
   memberships  Membership[]
@@ -67,6 +71,9 @@ model Organization {
   resellerId           String?
   reseller             Reseller? @relation(fields: [resellerId], references: [id], onDelete: SetNull)
   isPartner            Boolean   @default(false)
+  // Dernier rapport hebdomadaire envoyé (évite un double envoi).
+  lastReportAt         DateTime?
+  optOuts              OptOut[]
   createdAt   DateTime     @default(now())
   memberships Membership[]
   invitations Invitation[]
@@ -200,6 +207,10 @@ model Prospect {
   lastCallAt     String?
   qualif         Json?
   sequence       Json?
+  // Jour du passage en RDV et du gain (rapport hebdomadaire) ; désinscription du prospect (plus aucun email).
+  rdvDay         String?
+  wonDay         String?
+  optOutAt       DateTime?
   // Entreprise trouvée par la recherche automatique (SIREN) et contact enrichi par Apollo.
   siren          String?
   source         String       @default("")
@@ -402,4 +413,15 @@ model ResellerVideo {
   title     String
   url       String
   createdAt DateTime @default(now())
+}
+
+// Liste d'opposition : emails qui ont demandé à ne plus être contactés par cette entreprise.
+model OptOut {
+  id             String       @id @default(cuid())
+  organizationId String
+  email          String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
 }

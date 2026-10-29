@@ -8,6 +8,7 @@ import { GenerateAnglesButton } from "@/components/ai-buttons";
 import { LaunchSequenceButton, UpdateCrmButton } from "@/components/mail-buttons";
 import { EnrichButton, LaunchSearchButton } from "@/components/sourcing-buttons";
 import { sourcingQuery } from "@/lib/sourcing";
+import { DemoMarket } from "@/components/demo-market";
 import { CRM_PROVIDERS, type CrmProvider } from "@/lib/crm-providers";
 
 export const metadata: Metadata = { title: "Prospects" };
@@ -66,6 +67,8 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
           {open && f.recherche !== "aucune" && <LaunchSequenceButton searchId={searchId} count={toContact} ready={!!mailbox} />}
         </div>
       </header>
+
+      {membership.organization.isDemo && !open && <DemoMarket />}
 
       <section className="library" aria-label="Bibliothèque de recherches" data-tip="Vos recherches : chaque bibliothèque regroupe une cible, ses prospects et sa séquence. Cliquez pour l'ouvrir.">
         <span className="label">Bibliothèque de recherches</span>

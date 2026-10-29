@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireAdmin, requireMember } from "@/lib/auth";
 import { encrypt } from "@/lib/mail";
 import { ApolloError, enrichSearch, testApollo } from "@/lib/apollo";
 import { runSourcing, SourcingError } from "@/lib/sourcing";
+import { sectionLabel } from "@/lib/sourcing-data";
 import type { FormState } from "@/lib/validation";
 
 type Res = { ok?: string; error?: string };
@@ -69,4 +71,46 @@ export async function disconnectApollo() {
   const { membership } = await requireAdmin();
   await db.organization.update({ where: { id: membership.organizationId }, data: { apolloKeyEnc: null } });
   revalidatePath("/app", "layout");
+}
+
+const DEMO_SEARCHES = 3;
+
+// Démo : le visiteur tape son secteur et son département, et voit tout de suite de vraies entreprises de son marché.
+export async function demoMarketSearch(_: FormState, form: FormData): Promise<FormState> {
+  const { user, membership } = await requireMember();
+  const org = membership.organization;
+  if (!org.isDemo) return { error: "Réservé à la démo." };
+  const section = String(form.get("section") ?? "").trim().toUpperCase().slice(0, 1);
+  const deps = String(form.get("deps") ?? "").trim().slice(0, 40);
+  const keyword = String(form.get("keyword") ?? "").trim().slice(0, 60);
+  const values = { section, deps, keyword };
+  if (!deps) return { error: "Indiquez au moins un département (ex. : 69).", values };
+  if ((await db.search.count({ where: { organizationId: org.id, name: { startsWith: "Votre marché" } } })) >= DEMO_SEARCHES)
+    return { error: `La démo est limitée à ${DEMO_SEARCHES} recherches : créez votre espace pour continuer, c'est gratuit pendant 14 jours.`, values };
+  const template = await db.sequenceTemplate.findFirst({ where: { organizationId: org.id }, orderBy: { createdAt: "asc" }, select: { id: true } });
+  const search = await db.search.create({
+    data: {
+      organizationId: org.id,
+      createdById: user.id,
+      templateId: template?.id,
+      name: `Votre marché · ${[sectionLabel(section), keyword && `« ${keyword} »`, `dép. ${deps}`].filter(Boolean).join(" · ")}`.slice(0, 100),
+      srcSection: section,
+      srcDeps: deps,
+      srcKeyword: keyword,
+      srcEffectifs: "03,11,12,21,22",
+      fonctions: "Dirigeant",
+    },
+  });
+  try {
+    const r = await runSourcing(search, 10);
+    if (!r.added) {
+      await db.search.delete({ where: { id: search.id } });
+      return { error: "Aucune entreprise trouvée : élargissez le secteur ou ajoutez un département.", values };
+    }
+  } catch (e) {
+    await db.search.delete({ where: { id: search.id } });
+    return { error: e instanceof SourcingError ? e.message : "La recherche a échoué. Réessayez dans un instant.", values };
+  }
+  revalidatePath("/app", "layout");
+  redirect(`/app/prospects?recherche=${search.id}`);
 }

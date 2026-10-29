@@ -51,6 +51,7 @@ export default async function DashboardPage() {
       <header className="view-head">
         <div><h1>Tableau de bord</h1><p className="muted">Votre pipeline, de l&apos;identification au rendez-vous.</p></div>
         <div className="row">
+          {membership.role === ROLES.ADMIN && <Link className="btn" href="/app/rapport">Rapport de la semaine</Link>}
           {membership.role === ROLES.ADMIN && <Link className="btn" href="/app/recherches/nouvelle">+ Nouvelle recherche</Link>}
           <Link className="btn primary" href="/app/prospects/nouveau">+ Ajouter un prospect</Link>
         </div>

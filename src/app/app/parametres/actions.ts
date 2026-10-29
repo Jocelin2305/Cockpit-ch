@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { requireAdmin, requireMember } from "@/lib/auth";
+import { requireAdmin, requireMember, ROLES } from "@/lib/auth";
+import { sendWeeklyReport } from "@/lib/weekly-report";
 import { stripe, stripeEnabled } from "@/lib/billing";
 import { firstError, nameField, type FormState } from "@/lib/validation";
 
@@ -43,4 +44,27 @@ export async function deleteOrganization(_: FormState, form: FormData): Promise<
     db.user.deleteMany({ where: { id: { in: orphans } } }),
   ]);
   redirect(orphans.includes(user.id) ? "/connexion?erreur=supprime" : user.isSuperAdmin ? "/super-admin" : "/connexion?erreur=supprime");
+}
+
+// Préférences de l'utilisateur : envoi automatique des relances, rapport hebdomadaire.
+export async function setPreference(form: FormData) {
+  const { user, membership } = await requireMember();
+  const key = String(form.get("key"));
+  const on = form.get("on") === "1";
+  if (key === "autoSend") await db.user.update({ where: { id: user.id }, data: { autoSend: on } });
+  if (key === "weeklyReport" && membership.role === ROLES.ADMIN) await db.user.update({ where: { id: user.id }, data: { weeklyReport: on } });
+  revalidatePath("/app/parametres");
+}
+
+export async function sendReportNow(): Promise<{ ok?: string; error?: string }> {
+  const { user, membership } = await requireAdmin();
+  if (membership.organization.isDemo) return { error: "L'envoi du rapport n'est pas disponible dans la démo." };
+  const sent = await sendWeeklyReport(membership.organizationId, { force: true, onlyUserId: user.id });
+  return sent ? { ok: `Rapport envoyé à ${user.email}.` } : { error: "Envoi impossible : les emails de la plateforme (Resend) ne sont pas encore configurés. Le rapport reste consultable ci-dessous." };
+}
+
+export async function hideOnboarding() {
+  const { user } = await requireMember();
+  await db.user.update({ where: { id: user.id }, data: { onboardingHidden: true } });
+  revalidatePath("/app");
 }

@@ -203,7 +203,10 @@ export const isDue = (p: ProspectLike, today = todayISO()) => canRelance(p) && [
 
 // Champs à mettre à jour quand le statut change : programme automatiquement les relances.
 export function statusPatch(p: ProspectLike, status: string, delays: number[], today = todayISO()) {
-  const patch: { status: string; firstContact?: string; lastContact?: string; nextFollowUp?: string | null; relances?: number } = { status };
+  const patch: { status: string; firstContact?: string; lastContact?: string; nextFollowUp?: string | null; relances?: number; rdvDay?: string; wonDay?: string } = { status };
+  // Jours de passage en RDV et de gain, pour le rapport hebdomadaire.
+  if (status === "RDV planifié" && p.status !== status) patch.rdvDay = today;
+  if (status === "Gagné" && p.status !== status) patch.wonDay = today;
   if (status === "Contacté") {
     patch.firstContact = p.firstContact ?? today;
     patch.lastContact = today;

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { requireMember } from "@/lib/auth";
+import { requireMember, ROLES } from "@/lib/auth";
 import { aiEnabled } from "@/lib/ai";
 import { has, isDue, isEmail, todayISO } from "@/lib/prospecting";
 import { AssistantChat } from "./assistant-chat";
 import { Briefing } from "./briefing";
+import { Onboarding } from "./onboarding";
 
 export const metadata: Metadata = { title: "Espace de travail" };
 
@@ -38,6 +39,7 @@ export default async function WorkspacePage() {
           <h1>Espace de travail</h1>
         </div>
       </header>
+      {membership.role === ROLES.ADMIN && !membership.organization.isDemo && !user.onboardingHidden && <Onboarding userId={user.id} organizationId={orgId} />}
       <AssistantChat suggestions={suggestions} aiReady={aiEnabled()} intro={<Briefing user={user} membership={membership} />} />
     </div>
   );

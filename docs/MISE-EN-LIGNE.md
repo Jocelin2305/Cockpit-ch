@@ -54,6 +54,7 @@ Chaque variable s'ajoute dans Vercel (Settings → Environment Variables), puis 
 | Paiement | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_SOLO`, `STRIPE_PRICE_EQUIPE` | avant les premiers clients payants |
 | Gmail / Outlook | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | quand on branche la messagerie |
 | Emails de la plateforme (invitations, mot de passe oublié) | `RESEND_API_KEY`, `EMAIL_FROM` (compte resend.com + domaine vérifié) | avant la bêta |
+| Relances automatiques et rapport du lundi | `CRON_SECRET` (une longue valeur aléatoire ; les tâches sont déclarées dans `vercel.json`) | à la mise en ligne |
 | Nom de domaine | dans Vercel : Settings → Domains (par exemple `app.cockpitch.fr`), puis mettre à jour `APP_URL` | quand vous voulez |
 
 ## Avant le lancement commercial
