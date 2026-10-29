@@ -265,6 +265,41 @@ footer { padding-block: 28px 40px; border-top: 1px solid var(--line); font-size:
   .hero h1 .strike::after { transform-origin: left; animation: strike .7s .4s cubic-bezier(.6,0,.2,1) both; }
   @keyframes strike { from { transform: rotate(-3deg) scaleX(0); } to { transform: rotate(-3deg) scaleX(1); } }
 }
+
+/* Refonte du héros : lecture en « virgule » — logo et menu en haut, promesse et boutons à gauche, vidéo à droite, preuves dessous */
+.topbar { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.topbar-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+.topbar .brand { text-decoration: none; color: inherit; }
+.topbar-links { display: flex; gap: 22px; font-size: 15px; }
+.topbar-links a { color: var(--muted); text-decoration: none; }
+.topbar-links a:hover { color: var(--ink); }
+.topbar .btn { padding: 10px 16px; font-size: 15px; }
+@media (max-width: 900px) { .topbar-links { display: none; } }
+@media (max-width: 480px) { .topbar .btn.login { display: none; } }
+.hero { padding-block: clamp(32px, 5vw, 64px) clamp(24px, 3vw, 40px); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(28px, 4vw, 56px); align-items: center; }
+.hero h1 { font-size: clamp(34px, 4.4vw, 58px); font-weight: 800; max-width: 16ch; line-height: 1.05; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-copy { display: grid; gap: 18px; }
+.hero-lead { font-size: clamp(17px, 1.6vw, 19px); color: var(--muted); max-width: 52ch; }
+.hero-lead strong { color: var(--ink); font-weight: 600; }
+.hero-proof { font-size: 16px; display: inline-flex; gap: 8px; align-items: center; justify-self: start; background: var(--accent-soft); border-radius: 999px; padding: 6px 14px; }
+.hero-proof b { color: var(--accent); }
+.hero-note { font-size: 14px; color: var(--muted); }
+.hero-media .video-frame { box-shadow: 0 30px 60px -30px rgba(0,0,0,.45); }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+.proof-sec { padding-block: 0 clamp(48px, 7vw, 88px); }
+.proof-sec .case { margin-top: 0; }
+.partners { background: var(--band); color: var(--band-ink); }
+.partners-in { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+.partners h2 { font-size: clamp(30px, 4vw, 48px); font-weight: 700; margin: 8px 0 14px; }
+.partners .eyebrow, .partners p { color: var(--band-muted); }
+.partners-list { margin: 18px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.partners-cta { background: color-mix(in srgb, var(--band-ink) 8%, transparent); border: 1px solid color-mix(in srgb, var(--band-ink) 20%, transparent); border-radius: 18px; padding: 26px; display: grid; gap: 12px; }
+.partners-cta b { font-family: var(--f-display); font-size: 24px; }
+.partners-cta .btn { justify-self: start; }
+@media (max-width: 800px) { .partners-in { grid-template-columns: 1fr; } }
+
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -277,36 +312,49 @@ footer { padding-block: 28px 40px; border-top: 1px solid var(--line); font-size:
   </symbol>
 </svg>
 
-<header class="hero">
-  <div class="wrap">
-    <div class="hero-top">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 12 18 6"/></svg></span>Cockpit'ch</div>
-      <div class="cta-row">
-        <a class="btn ghost-link" href="#test">Tester sur 5 leads</a>
-        <a class="btn login" href="https://claude.ai/artifact/2AQpD8jNiNYdAcePFXyHMZ" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Se connecter</a>
-        <button class="btn primary" type="button" id="open-reg">Inscription</button>
-      </div>
+<nav class="topbar" aria-label="Menu principal">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 12 18 6"/></svg></span>Cockpit'ch</a>
+    <div class="topbar-links">
+      <a href="#valeur">Fonctionnement</a>
+      <a href="#preuves">Résultats</a>
+      <a href="#test">Tester</a>
+      <a href="#partenaires">Partenaires</a>
     </div>
-    <h1>Prospecter <span class="strike">3 heures</span> 10 minutes par jour. <em>Remplir l'agenda quand même.</em></h1>
-    <div class="hero-sub">
-      <p>Cockpit'ch est le cockpit de prospection B2B qui <strong>cible vos prospects, rédige des fiches, écrit les séquences email, LinkedIn et appel, puis classe chaque lead</strong> par priorité. Vous ne gardez que la partie qui compte : parler à des gens intéressés.</p>
+    <div class="cta-row">
+      <a class="btn login" href="/connexion"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Se connecter</a>
+      <button class="btn primary" type="button" id="open-reg">Inscription</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">Cockpit de prospection B2B</p>
+      <h1>Vos commerciaux ne font plus que <em>prospecter et vendre.</em></h1>
+      <p class="hero-lead">Cockpit'ch trouve les entreprises, rédige les messages, relance au bon moment et prépare chaque appel. Vos équipes gardent le cœur du métier : <strong>parler aux prospects et soigner la relation client.</strong></p>
+      <p class="hero-proof"><b>10 RDV par semaine</b> chez Ryo, dont 70 % signés.</p>
       <div class="cta-row">
-        <a class="btn primary" href="#test">Tester gratuitement sur 5 leads</a>
-        <a class="btn" href="#demo">Voir la démo</a>
+        <a class="btn primary" href="/inscription">Essai gratuit · 14 jours</a>
+        <a class="btn" href="#test">Tester sur 5 leads</a>
+      </div>
+      <p class="hero-note">Sans carte bancaire · vos emails partent de votre propre boîte</p>
+    </div>
+    <div class="hero-media" id="demo">
+      <div class="video-frame">
+        <video id="demo-video" controls playsinline preload="metadata" src="/demo.mp4">Votre navigateur ne lit pas cette vidéo.</video>
+      </div>
+      <div class="video-cap">
+        <span>DÉMO · LE SYSTÈME DE BOUT EN BOUT</span>
+        <span>Activez le son ▸</span>
       </div>
     </div>
   </div>
 </header>
 
-<section class="video-sec" id="demo" aria-label="Vidéo de démonstration">
+<section class="proof-sec" aria-label="Cas client">
   <div class="wrap">
-    <div class="video-frame">
-      <video id="demo-video" controls playsinline preload="metadata" src="demo.mp4">Votre navigateur ne lit pas cette vidéo.</video>
-    </div>
-    <div class="video-cap">
-      <span>DÉMO · LE SYSTÈME DE BOUT EN BOUT</span>
-      <span>Activez le son ▸</span>
-    </div>
     <div class="case">
       <div class="case-id">
         <svg viewBox="0 0 105 40" role="img" aria-label="Ryo"><use href="#logo-ryo"></use></svg>
@@ -464,6 +512,27 @@ footer { padding-block: 28px 40px; border-top: 1px solid var(--line); font-size:
     <div class="cta-row">
       <a class="btn primary" id="book" href="#test">Réserver un appel de 20 min</a>
       <a class="btn" href="#demo">Revoir la démo</a>
+    </div>
+  </div>
+</section>
+
+<section class="partners" id="partenaires">
+  <div class="wrap partners-in">
+    <div>
+      <p class="eyebrow">Partenaires revendeurs</p>
+      <h2>Vous accompagnez des entreprises ? Revendez Cockpit'ch.</h2>
+      <p>Consultants, agences, formateurs, intégrateurs : proposez Cockpit'ch à vos clients, au prix que vous fixez, et même sous votre propre marque.</p>
+      <ul class="partners-list">
+        <li>Trois formules à partir de 39 € HT par mois, engagement 1 an</li>
+        <li>Votre espace partenaire : vos clients, leurs abonnements, vos relevés</li>
+        <li>Marque blanche : votre nom, votre logo, vos couleurs</li>
+        <li>Centre de vidéos de vente et support dédié</li>
+      </ul>
+    </div>
+    <div class="partners-cta">
+      <b>Parlons de votre projet</b>
+      <p>Trente minutes avec Jocelin, le fondateur, pour voir si le partenariat a du sens pour vous.</p>
+      <a class="btn primary" href="https://calendar.app.google/QWaG1gXHXnJtrVgE9" target="_blank" rel="noopener">Prendre rendez-vous</a>
     </div>
   </div>
 </section>

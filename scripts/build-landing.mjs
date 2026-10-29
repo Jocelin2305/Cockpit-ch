@@ -12,8 +12,6 @@ const rep = (a, b) => {
 rep("<title>Cockpit'ch</title>", `<title>Cockpit'ch · le cockpit de prospection B2B</title>
 <meta name="description" content="Cockpit'ch cible vos prospects, rédige les fiches et les séquences email, LinkedIn et appel, puis classe chaque lead par priorité.">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">`);
-rep(`href="https://claude.ai/artifact/2AQpD8jNiNYdAcePFXyHMZ" target="_blank" rel="noopener"><svg`, `href="/connexion"><svg`);
-rep(`src="demo.mp4"`, `src="/demo.mp4"`);
 rep(`href="https://claude.ai/artifact/2AQpD8jNiNYdAcePFXyHMZ#importer" target="_blank" rel="noopener">Ouvrir Cockpit'ch →</a>`, `href="/inscription">Créer mon espace →</a>`);
 rep(`<b id="handoff-title">Lancez le test dans Cockpit'ch</b>`, `<b id="handoff-title">Passez à la version complète</b>`);
 rep(`Vos 5 leads sont copiés en un clic et Cockpit'ch s'ouvre sur l'import : collez-les (Ctrl+V), puis cliquez sur « Importer ».`, `Créez votre espace (14 jours gratuits) : vos 5 leads sont copiés en un clic, collez-les dans Prospects → Importer, ou lancez la recherche automatique sur votre marché.`);
