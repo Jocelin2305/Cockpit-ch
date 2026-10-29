@@ -1,7 +1,9 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getSession, ROLE_LABEL } from "@/lib/auth";
-import { AI_MODEL, FALLBACK, SYSTEM_PROMPT, aiClient, aiErrorMessage, aiReady, logUsage } from "@/lib/ai";
+import { SYSTEM_PROMPT, aiClient, aiErrorMessage, aiReady, fallbackFor, logUsage, modelFor } from "@/lib/ai";
+
+const MODEL = modelFor("assistant");
 import { ASSISTANT_RULES, assistantContext, assistantTools } from "@/lib/assistant";
 
 export const maxDuration = 300;
@@ -41,11 +43,11 @@ export async function POST(request: Request) {
         const messages: Anthropic.Beta.BetaMessageParam[] = recent.map((m, i) => ({ role: m.role, content: m.role === "assistant" && i < recent.length - 2 ? m.content.slice(0, 2000) : m.content }));
         const runner = client.beta.messages.toolRunner(
           {
-            model: AI_MODEL,
+            model: MODEL,
             max_tokens: 16000,
             stream: true,
             max_iterations: 10,
-            ...FALLBACK,
+            ...fallbackFor(MODEL),
             system: [
               { type: "text", text: SYSTEM_PROMPT + ASSISTANT_RULES, cache_control: { type: "ephemeral" } },
               { type: "text", text: context },
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
       } catch (e) {
         if (!request.signal.aborted) send({ type: "error", message: aiErrorMessage(e) });
       } finally {
-        if (usage.input_tokens || usage.output_tokens) await logUsage(ctx, "assistant", usage);
+        if (usage.input_tokens || usage.output_tokens) await logUsage(ctx, "assistant", usage, MODEL);
         controller.close();
       }
     },

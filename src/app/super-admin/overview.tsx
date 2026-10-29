@@ -38,20 +38,30 @@ async function loadOverview(resellerId: string | null) {
     db.user.count({ where: { ...real, createdAt: { gte: weekAgo } } }),
     db.user.count({ where: { ...real, lastLoginAt: { gte: weekAgo } } }),
     db.user.findMany({ where: real, orderBy: { createdAt: "desc" }, take: 10, include: { memberships: { include: { organization: true } } } }),
-    resellerId ? [] : db.aiUsage.groupBy({ by: ["organizationId"], where: { createdAt: { gte: sinceMonth } }, _sum: { inputTokens: true, outputTokens: true } }),
+    resellerId ? [] : db.aiUsage.groupBy({ by: ["organizationId", "model"], where: { createdAt: { gte: sinceMonth } }, _sum: { inputTokens: true, outputTokens: true } }),
   ]);
 }
 
-// Estimation au tarif public de Claude Opus 5.5 (4 $ / 20 $ par million de jetons), hors réductions du cache.
-const estimate = (input: number, output: number) => (input * 4 + output * 20) / 1_000_000;
+// Tarifs publics par million de jetons (entrée / sortie), hors réductions du cache.
+const PRICES: [RegExp, number, number][] = [[/haiku/, 0.1, 0.5], [/sonnet/, 2, 10], [/opus/, 4, 20]];
+const estimate = (model: string, input: number, output: number) => {
+  const [, i, o] = PRICES.find(([re]) => re.test(model)) ?? [null, 4, 20];
+  return (input * i + output * o) / 1_000_000;
+};
 const fmtTokens = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} M` : n >= 1000 ? `${Math.round(n / 1000)} k` : String(n));
 
 // Espace super admin, une rubrique par page du menu.
 export async function Overview({ section }: { section: Section }) {
   const { user: me, resellerId } = await requireAdminSpace();
   const [organizations, userCount, newUsers, activeUsers, recentUsers, aiByOrg] = await loadOverview(resellerId);
-  const ai = new Map(aiByOrg.map((r) => [r.organizationId, { i: r._sum.inputTokens ?? 0, o: r._sum.outputTokens ?? 0 }]));
-  const aiTotal = [...ai.values()].reduce((s, v) => s + estimate(v.i, v.o), 0);
+  // Jetons et coût estimé par entreprise, chaque appel au tarif de son modèle.
+  const ai = new Map<string, { t: number; cost: number }>();
+  for (const r of aiByOrg) {
+    const cur = ai.get(r.organizationId) ?? { t: 0, cost: 0 };
+    const i = r._sum.inputTokens ?? 0, o = r._sum.outputTokens ?? 0;
+    ai.set(r.organizationId, { t: cur.t + i + o, cost: cur.cost + estimate(r.model, i, o) });
+  }
+  const aiTotal = [...ai.values()].reduce((s, v) => s + v.cost, 0);
   const states = new Map(organizations.map((o) => [o.id, accessState(o)]));
   // Les espaces offerts aux revendeurs ne sont ni payants ni en essai.
   const paying = organizations.filter((o) => !o.isPartner && ["active", "past_due"].includes(states.get(o.id)!.kind));
@@ -94,7 +104,7 @@ export async function Overview({ section }: { section: Section }) {
         <div className="kpi"><span className="v">{opened.length ? Math.round((converted / opened.length) * 100) : 0} %</span><span className="k">taux de conversion</span></div>
         <div className="kpi"><span className="v">{organizations.filter((o) => o.resellerId).length}</span><span className="k">clients apportés par des revendeurs</span></div>
       </div>
-      {!resellerId && <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarif public Claude Opus 5.5, hors réductions du cache).</p>}
+      {!resellerId && <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarifs publics de chaque modèle utilisé, hors réductions du cache).</p>}
       </>}
 
       {section === "clients" && <>
@@ -122,7 +132,7 @@ export async function Overview({ section }: { section: Section }) {
                   <td className="num">{o._count.memberships}</td>
                   <td><span className={`chip ${["active", "past_due"].includes(states.get(o.id)!.kind) ? "ok" : states.get(o.id)!.kind === "blocked" ? "late" : ""}`}>{statusLabel(o.id)}</span></td>
                   {!resellerId && <td>{o.isPartner ? <span className="chip">espace offert</span> : o.reseller ? o.reseller.companyName || o.reseller.email : <span className="muted">direct</span>}</td>}
-                  {!resellerId && <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.i + u.o)} jetons · ≈ ${estimate(u.i, u.o).toFixed(2)} $` : <span className="muted">—</span>; })()}</td>}
+                  {!resellerId && <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.t)} jetons · ≈ ${u.cost.toFixed(2)} $` : <span className="muted">—</span>; })()}</td>}
                   {resellerId && (
                     <td>
                       <form action={setClientSubscription} className="inline">

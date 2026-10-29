@@ -10,6 +10,11 @@ export const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
 // Tâches simples (compte rendu d'appel, test des 5 leads) : Claude Haiku 5.5, bien moins cher ; modifiable via ANTHROPIC_MODEL_LIGHT.
 export const AI_MODEL_LIGHT = process.env.ANTHROPIC_MODEL_LIGHT || "claude-haiku-5-5";
 
+// Modèle par fonction : Haiku 5.5 pour tout ce qu'il fait bien ; Opus 5.5 garde la rédaction des séquences.
+// Pour revenir à Opus sur une fonction, retirez-la de cette liste.
+const LIGHT_FEATURES = new Set(["angles", "appel", "ciblage", "analyse", "assistant", "essai"]);
+export const modelFor = (feature: string) => (LIGHT_FEATURES.has(feature) ? AI_MODEL_LIGHT : AI_MODEL);
+
 // En cas de refus par les filtres de sécurité, Anthropic relance automatiquement la demande sur un modèle adapté.
 export const FALLBACK = {
   betas: ["server-side-fallback-2026-07-01"] as Anthropic.Beta.AnthropicBeta[],
@@ -82,7 +87,7 @@ export async function logUsage(ctx: AiContext, feature: string, usage: { input_t
 }
 
 // Réponse JSON validée par un schéma Zod.
-export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature: string, schema: S, prompt: string, effort: Effort = "medium", model = AI_MODEL): Promise<z.infer<S>> {
+export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature: string, schema: S, prompt: string, effort: Effort = "medium", model = modelFor(feature)): Promise<z.infer<S>> {
   const res = await (await aiClient(ctx.organizationId)).beta.messages.parse({
     model,
     max_tokens: 16000,
@@ -99,17 +104,17 @@ export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature:
 }
 
 // Réponse en texte (Markdown), en streaming côté serveur pour éviter les délais d'attente.
-export async function generateText(ctx: AiContext, feature: string, prompt: string, effort: Effort = "medium") {
+export async function generateText(ctx: AiContext, feature: string, prompt: string, effort: Effort = "medium", model = modelFor(feature)) {
   const stream = (await aiClient(ctx.organizationId)).beta.messages.stream({
-    model: AI_MODEL,
+    model,
     max_tokens: 32000,
-    ...FALLBACK,
+    ...fallbackFor(model),
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     output_config: { effort },
     messages: [{ role: "user", content: prompt }],
   });
   const msg = await stream.finalMessage();
-  await logUsage(ctx, feature, msg.usage);
+  await logUsage(ctx, feature, msg.usage, model);
   if (msg.stop_reason === "refusal") throw new AiError("L'IA a refusé cette demande. Reformulez et réessayez.");
   return msg.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("\n").trim();
 }
