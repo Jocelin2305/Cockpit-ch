@@ -399,3 +399,7 @@ td.notes { min-width: 200px; }
 .dl dt { font-size: 0.8rem; color: var(--muted); } .dl dd { margin: 0; }
 .rail-cta { display: block; text-align: center; margin: 4px 0 10px; }
 .library-hint { padding: 28px; text-align: center; border: 1px dashed var(--line); border-radius: 10px; }
+.chips-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-pick { border: 1px solid var(--line); background: var(--surface); border-radius: 20px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; color: inherit; }
+.chip-pick[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.sourcing { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }

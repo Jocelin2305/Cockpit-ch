@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createSearch, updateSearch, type SearchInput } from "./actions";
+import { ciblageLabel, codes, EFFECTIFS, REGIONS, SECTIONS } from "@/lib/sourcing-data";
 
 export type Preset = { id: string; label: string; name: string; data: Record<string, string>; templateId: string | null };
 export type TemplateOption = { id: string; name: string; delays: number[]; usedBy: string[] };
@@ -19,8 +20,10 @@ const EXTRAS = [
   ["prix", "Prix / panier moyen"], ["diff", "Différenciation"], ["fonctions", "Fonctions à viser"],
   ["volume", "Prospects dans la première liste"], ["ton", "Ton et langue des messages"],
 ] as const;
-const FLOW = ["depart", ...QUESTIONS.map((q) => q.k), "sequence", "recap"];
-const KEYS = ["geo", "secteur", "ca", "salaries", "motifs", "activite", "prix", "diff", "fonctions", "volume", "ton", "notes"];
+const FLOW = ["depart", ...QUESTIONS.map((q) => q.k), "ciblage", "sequence", "recap"];
+const SRC_KEYS = ["srcRegion", "srcDeps", "srcSection", "srcNaf", "srcKeyword", "srcEffectifs", "srcCaMin", "srcCaMax"];
+const KEYS = ["geo", "secteur", "ca", "salaries", "motifs", "activite", "prix", "diff", "fonctions", "volume", "ton", "notes", ...SRC_KEYS];
+
 
 const suggestName = (d: Record<string, string>) =>
   [d.secteur, d.geo].filter((s) => s?.trim()).map((s) => s.split(/[,;]/)[0].trim()).join(" — ").slice(0, 60);
@@ -84,7 +87,7 @@ export function SearchWizard({
             ))}
             <button type="button" className="preset choice" onClick={() => setStep(1)}>
               <b>Partir de zéro</b>
-              <span className="muted small">Répondre aux 6 questions pour cette recherche.</span>
+              <span className="muted small">Répondre aux 6 questions et choisir les critères de la recherche automatique.</span>
             </button>
           </div>
         </div>
@@ -109,6 +112,70 @@ export function SearchWizard({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {key === "ciblage" && (
+        <div className="stack">
+          <h2>Recherche automatique de prospects</h2>
+          <p className="muted">Ces critères servent à trouver de vraies entreprises dans le registre national, puis leurs contacts avec Apollo si vous l&apos;avez connecté. Indiquez au moins une zone ou un secteur.</p>
+          <div className="grid2">
+            <label className="field">
+              <span className="label-text">Région</span>
+              <select className="input" value={data.srcRegion ?? ""} onChange={(e) => set("srcRegion", e.target.value)}>
+                <option value="">Toutes (ou départements ci-contre)</option>
+                {REGIONS.map(([c, l]) => <option key={c} value={c}>{l}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span className="label-text">Départements</span>
+              <input className="input" value={data.srcDeps ?? ""} onChange={(e) => set("srcDeps", e.target.value)} placeholder="Ex. : 69, 38, 01" />
+            </label>
+            <label className="field">
+              <span className="label-text">Secteur (grande famille)</span>
+              <select className="input" value={data.srcSection ?? ""} onChange={(e) => set("srcSection", e.target.value)}>
+                <option value="">Tous secteurs</option>
+                {SECTIONS.map(([c, l]) => <option key={c} value={c}>{l}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span className="label-text">Codes NAF précis (facultatif)</span>
+              <input className="input" value={data.srcNaf ?? ""} onChange={(e) => set("srcNaf", e.target.value)} placeholder="Ex. : 86.10Z, 55.10Z" />
+              <span className="hint">Le code APE figure sur l&apos;avis de situation INSEE ou sur annuaire-entreprises.data.gouv.fr.</span>
+            </label>
+            <label className="field">
+              <span className="label-text">Mot-clé dans le nom (facultatif)</span>
+              <input className="input" value={data.srcKeyword ?? ""} onChange={(e) => set("srcKeyword", e.target.value)} placeholder="Ex. : clinique" />
+            </label>
+            <div className="grid2">
+              <label className="field">
+                <span className="label-text">CA minimum (€)</span>
+                <input className="input" inputMode="numeric" value={data.srcCaMin ?? ""} onChange={(e) => set("srcCaMin", e.target.value)} placeholder="2000000" />
+              </label>
+              <label className="field">
+                <span className="label-text">CA maximum (€)</span>
+                <input className="input" inputMode="numeric" value={data.srcCaMax ?? ""} onChange={(e) => set("srcCaMax", e.target.value)} placeholder="50000000" />
+              </label>
+            </div>
+          </div>
+          <div className="field">
+            <span className="label-text">Effectif salarié</span>
+            <div className="chips-pick">
+              {EFFECTIFS.map(([c, l]) => {
+                const on = codes(data.srcEffectifs ?? "").includes(c);
+                return (
+                  <button key={c} type="button" className="chip-pick" aria-pressed={on}
+                    onClick={() => setData((d) => {
+                      const cur = codes(d.srcEffectifs ?? "");
+                      return { ...d, srcEffectifs: (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]).join(",") };
+                    })}>
+                    {l}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="hint">Les contacts sont cherchés selon les « Fonctions à viser » de l&apos;étape 6 (ex. : directeur commercial, DRH). Sans fonction, c&apos;est le dirigeant.</p>
         </div>
       )}
 
@@ -151,6 +218,7 @@ export function SearchWizard({
               <div key={x.k}><dt>{x.t}</dt><dd>{data[x.k]?.trim() || <span className="enrich">non renseigné</span>}</dd></div>
             ))}
             <div><dt>Fonctions visées</dt><dd>{data.fonctions || "—"}</dd></div>
+            <div><dt>Recherche automatique</dt><dd>{ciblageLabel(data) || <span className="enrich">non renseignée</span>}{" "}<button type="button" className="btn sm ghost" onClick={() => setStep(FLOW.indexOf("ciblage"))}>Changer</button></dd></div>
             <div>
               <dt>Séquence</dt>
               <dd>

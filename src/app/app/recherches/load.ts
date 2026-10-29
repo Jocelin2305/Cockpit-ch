@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { tplDelays } from "@/lib/prospecting";
 import type { Preset, TemplateOption } from "./search-wizard";
 
-const KEYS = ["geo", "secteur", "ca", "salaries", "motifs", "activite", "prix", "diff", "fonctions", "volume", "ton"] as const;
+const KEYS = ["geo", "secteur", "ca", "salaries", "motifs", "activite", "prix", "diff", "fonctions", "volume", "ton", "srcRegion", "srcDeps", "srcSection", "srcNaf", "srcKeyword", "srcEffectifs", "srcCaMin", "srcCaMax"] as const;
 
 export async function wizardOptions(organizationId: string) {
   const [templates, searches] = await Promise.all([

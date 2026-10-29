@@ -15,7 +15,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
       <header className="view-head">
         <div>
           <h1>Importer des prospects</h1>
-          <p className="muted">Un fichier CSV (séparateur point-virgule ou virgule) avec une ligne d&apos;en-têtes. Les colonnes reconnues : {CSV_COLS.map((c) => CSV_HEAD[c]).join(", ")}.</p>
+          <p className="muted">Un fichier CSV (séparateur point-virgule ou virgule) avec une ligne d&apos;en-têtes. Les colonnes reconnues : {CSV_COLS.filter((c) => c !== "siren").map((c) => CSV_HEAD[c]).join(", ")}.</p>
         </div>
       </header>
       <ImportForm searches={searches} defaultSearch={recherche ?? ""} />

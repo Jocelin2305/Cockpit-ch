@@ -61,6 +61,8 @@ model Organization {
   // CRM connecté (hubspot, pipedrive) et son jeton d'accès chiffré.
   crmProvider          String?
   crmTokenEnc          String?
+  // Clé API Apollo du client (chiffrée), pour enrichir les contacts.
+  apolloKeyEnc         String?
   // Revendeur qui a apporté ce client (commission), et espace propre d'un revendeur (accès offert).
   resellerId           String?
   reseller             Reseller? @relation(fields: [resellerId], references: [id], onDelete: SetNull)
@@ -120,6 +122,19 @@ model Search {
   volume         String            @default("")
   ton            String            @default("")
   notes          String            @default("")
+  // Critères de la recherche automatique (registre des entreprises) : codes région, départements, section et codes NAF,
+  // mot-clé, tranches d'effectif (codes INSEE), CA min et max en euros.
+  srcRegion      String            @default("")
+  srcDeps        String            @default("")
+  srcSection     String            @default("")
+  srcNaf         String            @default("")
+  srcKeyword     String            @default("")
+  srcEffectifs   String            @default("")
+  srcCaMin       String            @default("")
+  srcCaMax       String            @default("")
+  // Dernière page du registre parcourue, pour que chaque lancement apporte de nouvelles entreprises.
+  sourcedPage    Int               @default(0)
+  sourcedAt      DateTime?
   templateId     String?
   createdById    String?
   createdAt      DateTime          @default(now())
@@ -185,6 +200,11 @@ model Prospect {
   lastCallAt     String?
   qualif         Json?
   sequence       Json?
+  // Entreprise trouvée par la recherche automatique (SIREN) et contact enrichi par Apollo.
+  siren          String?
+  source         String       @default("")
+  apolloId       String?
+  enrichedAt     DateTime?
   // Fiche correspondante dans le CRM connecté.
   crmId          String?
   crmSyncedAt    DateTime?
@@ -201,6 +221,7 @@ model Prospect {
 
   @@index([organizationId, status])
   @@index([organizationId, searchId])
+  @@unique([organizationId, siren])
 }
 
 model Call {

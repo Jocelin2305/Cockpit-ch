@@ -19,5 +19,6 @@ export const SUBPROCESSORS = [
   { name: "Stripe", role: "Paiement et facturation", where: "Union européenne et États-Unis (clauses contractuelles types)" },
   { name: "Resend", role: "Emails de la plateforme (invitations, mot de passe)", where: "États-Unis (clauses contractuelles types)" },
   { name: "Google / Microsoft", role: "Boîte mail connectée par l'utilisateur (si activée)", where: "Selon le fournisseur choisi" },
+  { name: "Apollo.io", role: "Enrichissement des contacts, avec le compte du client (si connecté)", where: "États-Unis (clauses contractuelles types)" },
   { name: "Opérateur de téléphonie du client", role: "Appels, enregistrements, transcriptions (si connecté)", where: "Selon l'opérateur choisi" },
 ];

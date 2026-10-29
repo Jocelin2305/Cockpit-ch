@@ -16,7 +16,7 @@ export default async function EditSearchPage({ params }: { params: Promise<{ id:
   if (!search) notFound();
   const { templateOptions } = await wizardOptions(membership.organizationId);
   const initial = Object.fromEntries(
-    (["name", "geo", "secteur", "ca", "salaries", "motifs", "activite", "prix", "diff", "fonctions", "volume", "ton", "notes"] as const).map((k) => [k, search[k]]),
+    (["name", "geo", "secteur", "ca", "salaries", "motifs", "activite", "prix", "diff", "fonctions", "volume", "ton", "notes", "srcRegion", "srcDeps", "srcSection", "srcNaf", "srcKeyword", "srcEffectifs", "srcCaMin", "srcCaMax"] as const).map((k) => [k, search[k]]),
   );
   return (
     <div className="view narrow">

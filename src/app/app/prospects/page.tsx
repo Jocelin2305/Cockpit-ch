@@ -6,6 +6,8 @@ import { isDue, PRIO, STATUSES, todayISO } from "@/lib/prospecting";
 import { ProspectTable, sortRows } from "@/components/prospect-table";
 import { GenerateAnglesButton } from "@/components/ai-buttons";
 import { LaunchSequenceButton, UpdateCrmButton } from "@/components/mail-buttons";
+import { EnrichButton, LaunchSearchButton } from "@/components/sourcing-buttons";
+import { sourcingQuery } from "@/lib/sourcing";
 import { CRM_PROVIDERS, type CrmProvider } from "@/lib/crm-providers";
 
 export const metadata: Metadata = { title: "Prospects" };
@@ -33,7 +35,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
       include: { search: { select: { name: true } } },
       take: 1000,
     }),
-    db.search.findMany({ where: { organizationId: orgId }, select: { id: true, name: true, _count: { select: { prospects: true } } }, orderBy: { createdAt: "asc" } }),
+    db.search.findMany({ where: { organizationId: orgId }, include: { _count: { select: { prospects: true } } }, orderBy: { createdAt: "asc" } }),
     db.mailAccount.findUnique({ where: { userId: user.id }, select: { id: true } }),
   ]);
   const toContact = prospects.filter((p) => p.status === "À contacter" && p.email.includes("@") && p.searchId).length;
@@ -54,6 +56,8 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
           <p className="muted">{open ? "Statuts, relances, complétude des fiches et qualification se mettent à jour à chaque action." : "Ouvrez une bibliothèque pour voir ses prospects et lancer sa séquence."}</p>
         </div>
         <div className="row">
+          {current && sourcingQuery(current) && <LaunchSearchButton searchId={current.id} first={!current.sourcedAt} />}
+          {open && membership.organization.apolloKeyEnc && <EnrichButton searchId={searchId} />}
           {open && <GenerateAnglesButton label="Angles manquants" />}
           {open && crm && CRM_PROVIDERS[crm] && <UpdateCrmButton searchId={searchId} crm={CRM_PROVIDERS[crm]} />}
           <Link className="btn" href={`/app/prospects/importer${searchId ? `?recherche=${searchId}` : ""}`}>Importer</Link>

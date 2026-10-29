@@ -28,3 +28,11 @@ Liste des évolutions demandées par le fondateur, avec ce qui est fait dans ce 
 | 5 | Prospects : rien n'est affiché avant d'ouvrir une bibliothèque | Fait |
 | 6 | « Mettre à jour mon CRM », visible seulement avec un CRM connecté (HubSpot, Pipedrive) | Fait, à tester avec un vrai compte CRM |
 | 7 | Lancer la séquence email en un clic depuis Prospects | Fait (email J0 à tous les prospects à contacter de la bibliothèque) |
+
+## Sprint 9 : recherche automatique de prospects
+
+| # | Demande | Statut |
+|---|---|---|
+| 1 | Lancer une recherche de prospects depuis l'appli | Fait : registre national des entreprises (gratuit), critères zone / secteur NAF / effectif / CA / mot-clé, 10 à 100 entreprises par lancement, sans doublon |
+| 2 | Fichiers de prospection à jour, contacts prioritaires | Fait : priorité A / B / C calculée, « Actualiser » ajoute les nouvelles entreprises, export trié par priorité avec SIREN |
+| 3 | Apollo pour enrichir les contacts (clé du client) | Fait : dirigeant puis fonction visée, email, LinkedIn, poste, site, standard ; à tester avec un vrai compte Apollo. Téléphones directs Apollo non demandés (8 crédits, livrés en différé) |

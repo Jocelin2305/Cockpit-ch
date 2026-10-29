@@ -8,7 +8,8 @@ export async function GET(request: Request) {
   const searchId = new URL(request.url).searchParams.get("recherche");
   const rows = await db.prospect.findMany({
     where: { organizationId: session.membership.organizationId, ...(searchId ? { searchId } : {}) },
-    orderBy: { createdAt: "asc" },
+    // Contacts prioritaires en tête du fichier.
+    orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
   });
   return new Response(toCSV(rows), {
     headers: {

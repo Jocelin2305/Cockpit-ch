@@ -7,6 +7,7 @@ import { MailPanel } from "./mail-panel";
 import { PhonePanel } from "./phone-panel";
 import { DataPanel } from "./data-panel";
 import { CrmPanel } from "./crm-panel";
+import { ApolloPanel } from "./apollo-panel";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
@@ -31,6 +32,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       {isAdmin && (
         <>
           <PhonePanel provider={membership.organization.phoneProvider} token={membership.organization.phoneWebhookToken} />
+          <ApolloPanel connected={!!membership.organization.apolloKeyEnc} />
           <CrmPanel provider={membership.organization.crmProvider} />
           <section className="panel">
             <h2>Entreprise</h2>

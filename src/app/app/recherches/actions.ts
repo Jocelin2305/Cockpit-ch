@@ -15,6 +15,7 @@ const searchSchema = z.object({
   name: z.string().trim().min(2, { error: "Donnez un nom à la recherche (2 caractères minimum)." }).max(100),
   geo: text(), secteur: text(), ca: text(), salaries: text(), motifs: text(), activite: text(),
   prix: text(), diff: text(), fonctions: text(), volume: text(200), ton: text(), notes: text(),
+  srcRegion: text(100), srcDeps: text(200), srcSection: text(60), srcNaf: text(300), srcKeyword: text(100), srcEffectifs: text(100), srcCaMin: text(20), srcCaMax: text(20),
 });
 export type SearchInput = z.input<typeof searchSchema>;
 

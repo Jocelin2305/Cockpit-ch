@@ -268,12 +268,12 @@ export function callQueue<T extends ProspectLike>(list: T[], today = todayISO())
 }
 
 // ---------- Import / export CSV ----------
-export const CSV_COLS: (ProspectTextKey | "priority" | "status" | "nextFollowUp")[] = [
-  "company", "sector", "city", "size", "contactName", "contactRole", "phone", "email", "linkedin", "website",
+export const CSV_COLS: (ProspectTextKey | "siren" | "priority" | "status" | "nextFollowUp")[] = [
+  "company", "siren", "sector", "city", "size", "contactName", "contactRole", "phone", "email", "linkedin", "website",
   "qualification", "priority", "status", "nextFollowUp", "signals", "angle", "angleDetail", "canal", "actualite", "notes",
 ];
 export const CSV_HEAD: Record<string, string> = {
-  company: "Entreprise", sector: "Secteur", city: "Ville", size: "Taille", contactName: "Interlocuteur", contactRole: "Fonction",
+  company: "Entreprise", siren: "SIREN", sector: "Secteur", city: "Ville", size: "Taille", contactName: "Interlocuteur", contactRole: "Fonction",
   phone: "Téléphone direct", email: "Email", linkedin: "LinkedIn", website: "Site web", qualification: "Phrase de qualification",
   priority: "Priorité", status: "Statut", nextFollowUp: "Prochaine relance", signals: "Signaux d'achat", angle: "Angle commercial",
   canal: "Canal", actualite: "Actualité", notes: "Notes",
