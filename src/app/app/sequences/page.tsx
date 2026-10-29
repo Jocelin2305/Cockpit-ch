@@ -31,7 +31,7 @@ export default async function SequencesPage() {
           </form>
         )}
       </header>
-      <div className="cards">
+      <div className="cards" data-tour="sequences">
         {templates.map((t) => (
           <Link key={t.id} href={`/app/sequences/${t.id}`} className="card" data-menu="template" data-id={t.id} data-name={t.name}>
             <b>{t.name}</b>

@@ -9,13 +9,11 @@
   --r: 10px;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e1417; --surface: #162025; --sunk: #111a1e; --ink: #e4ebe9; --muted: #93a4a9; --line: #25333a;
-    --accent: #5bc2b4; --accent-ink: #06201d; --accent-soft: #163a36;
-    --signal: #e5a24c; --signal-soft: #3a2a14; --good: #62c08a; --good-soft: #173123; --bad: #e57d67; --bad-soft: #3b1e18;
-    color-scheme: dark;
-  }
+:root[data-theme="dark"] {
+  --bg: #0e1417; --surface: #162025; --sunk: #111a1e; --ink: #e4ebe9; --muted: #93a4a9; --line: #25333a;
+  --accent: #5bc2b4; --accent-ink: #06201d; --accent-soft: #163a36;
+  --signal: #e5a24c; --signal-soft: #3a2a14; --good: #62c08a; --good-soft: #173123; --bad: #e57d67; --bad-soft: #3b1e18;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -67,7 +65,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* Marque */
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
-.brand-mark { font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; line-height: 1; padding-left: 2px; }
+.brand-mark svg { width: 20px; height: 20px; }
 .brand b { font-family: var(--f-display); font-size: 1.05rem; display: block; line-height: 1.1; }
 .brand-sub { font-size: 0.75rem; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
 
@@ -344,11 +342,20 @@ td.notes { min-width: 200px; }
 .legal .auth-foot { max-width: none; }
 
 /* Visite guidée */
-.tour { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 24px 60px -18px rgba(8, 24, 28, 0.55); z-index: 50; }
-.tour .row { margin-top: 4px; }
-.tour-target { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(8, 24, 28, 0.35); z-index: 45; }
-.tour-target:not(.fab) { position: relative; }
-@media (min-width: 861px) { .tour { left: calc(50% + 118px); } }
+/* Guide de prise en main : projecteur sur l'élément + bulle (repris du prototype Cockpit'ch App) */
+.tour-catch { position: fixed; inset: 0; z-index: 69; }
+.tour-hole { position: fixed; z-index: 70; border-radius: 10px; box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(8, 18, 22, 0.58); pointer-events: none; transition: all 0.25s ease; }
+.tour-hole.center { width: 0 !important; height: 0 !important; box-shadow: 0 0 0 9999px rgba(8, 18, 22, 0.58); }
+.tour-tip { position: fixed; z-index: 71; width: min(340px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 20px 50px -18px rgba(0, 0, 0, 0.5); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; transition: top 0.25s ease, left 0.25s ease; }
+.tour-tip h3 { font-size: 1.05rem; }
+.tour-tip p { font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+.tour-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.tour-n { font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); }
+.tour-bar { height: 3px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+.tour-bar i { display: block; height: 100%; background: var(--accent); transition: width 0.25s ease; }
+.guide-btn { all: unset; cursor: pointer; padding: 7px 10px; border-radius: 8px; color: var(--accent); font-weight: 600; font-size: 0.88rem; }
+.guide-btn:hover { background: var(--sunk); }
+@media (prefers-reduced-motion: reduce) { .tour-hole, .tour-tip { transition: none; } }
 
 /* Cellules du tableau de suivi */
 .coords button { all: unset; cursor: pointer; font-family: var(--f-mono); font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; background: var(--sunk); color: var(--muted); }

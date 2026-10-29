@@ -49,6 +49,8 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
       passwordHash: await hashPassword(password),
       isSuperAdmin: isSuperAdminEmail(email),
       termsAcceptedAt: new Date(),
+      // Le guide de prise en main démarre à la première connexion.
+      tourStep: 0,
       lastLoginAt: new Date(),
       memberships: {
         create: { role: ROLES.ADMIN, organization: { create: { name: company, trialEndsAt: new Date(Date.now() + trialDays * 86_400_000), resellerId: reseller?.id ?? null } } },

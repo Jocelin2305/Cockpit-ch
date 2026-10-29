@@ -1,6 +1,7 @@
 import { Brand } from "@/components/brand";
 import { NavLinks, type NavItem } from "@/components/shell";
 import { requireAdminSpace } from "@/lib/auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { logout } from "../(auth)/actions";
 
 export default async function SuperAdminLayout({ children }: { children: React.ReactNode }) {
@@ -44,9 +45,12 @@ export default async function SuperAdminLayout({ children }: { children: React.R
             <b>{user.name}</b>
             <span className="muted small">{role} · {resellerId ? "vos clients" : "toutes les entreprises"}</span>
           </div>
-          <form action={logout}>
-            <button className="btn sm ghost" type="submit">Se déconnecter</button>
-          </form>
+          <div className="inline">
+            <ThemeToggle />
+            <form action={logout}>
+              <button className="btn sm ghost" type="submit">Se déconnecter</button>
+            </form>
+          </div>
         </div>
       </aside>
       <main className="main">{children}</main>

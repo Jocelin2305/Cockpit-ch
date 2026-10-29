@@ -28,6 +28,7 @@ export async function acceptAsNewUser(_: FormState, form: FormData): Promise<For
       passwordHash: await hashPassword(parsed.data.password),
       isSuperAdmin: isSuperAdminEmail(invitation.email),
       termsAcceptedAt: new Date(),
+      tourStep: 0,
       lastLoginAt: new Date(),
       memberships: { create: { role: invitation.role, organizationId: invitation.organizationId } },
     },

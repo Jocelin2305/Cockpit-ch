@@ -3,8 +3,9 @@ import { Brand } from "@/components/brand";
 import { NavLinks, NavMenu, type NavItem } from "@/components/shell";
 import { CallDock } from "@/components/call-dock";
 import { Guide } from "@/components/guide";
-import { Tour } from "@/components/tour";
+import { GuideButton, Tour } from "@/components/tour";
 import { ContextMenus } from "@/components/context-menus";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { db } from "@/lib/db";
 import { requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
@@ -49,7 +50,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="shell">
       <aside className="rail">
         <Brand sub={membership.organization.name} />
-        <Link className="btn primary rail-cta" href={membership.role === ROLES.ADMIN ? "/app/recherches/nouvelle" : "/app/prospects"} data-tip="Lancez une nouvelle recherche : questionnaire de ciblage, prospects, séquence.">
+        <Link className="btn primary rail-cta" data-tour="search" href={membership.role === ROLES.ADMIN ? "/app/recherches/nouvelle" : "/app/prospects"} data-tip="Lancez une nouvelle recherche : questionnaire de ciblage, prospects, séquence.">
           Rechercher des prospects
         </Link>
         <div className="navsec hl">
@@ -57,14 +58,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLinks items={tools} />
         </div>
         <NavMenu label="Compte" items={account} />
+        <GuideButton />
         <div className="rail-foot">
           <div>
             <b>{user.name}</b>
             <span className="muted small">{onboarding ? "Super admin" : ROLE_LABEL[membership.role]}</span>
           </div>
-          <form action={logout}>
-            <button className="btn sm ghost" type="submit">Se déconnecter</button>
-          </form>
+          <div className="inline">
+            <ThemeToggle />
+            <form action={logout}>
+              <button className="btn sm ghost" type="submit">Se déconnecter</button>
+            </form>
+          </div>
         </div>
       </aside>
       <main className="main">

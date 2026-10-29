@@ -67,7 +67,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         </div>
       </header>
 
-      <section className="library" aria-label="Bibliothèque de recherches" data-tip="Vos recherches : chaque bibliothèque regroupe une cible, ses prospects et sa séquence. Cliquez pour l'ouvrir.">
+      <section className="library" data-tour="library" aria-label="Bibliothèque de recherches" data-tip="Vos recherches : chaque bibliothèque regroupe une cible, ses prospects et sa séquence. Cliquez pour l'ouvrir.">
         <span className="label">Bibliothèque de recherches</span>
         <div className="library-list">
           <Link className={`lib-card${f.recherche === "tous" ? " on" : ""}`} href="/app/prospects?recherche=tous"><b>Tous les prospects</b><span className="muted small">{searches.reduce((n, s) => n + s._count.prospects, 0)}</span></Link>
