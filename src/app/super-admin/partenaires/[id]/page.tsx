@@ -39,7 +39,7 @@ export default async function ResellerDetail({ params }: { params: Promise<{ id:
     <div className="view">
       <header className="view-head">
         <div>
-          <Link href="/super-admin/partenaires" className="small">← Partenaires revendeurs</Link>
+          <Link href="/super-admin/partenaires" className="small">← Mes partenaires revendeurs</Link>
           <h1>{r.companyName || r.email}</h1>
           <p className="muted">Formule <span className="chip">{offer.name} · {Math.round(offer.rate * 100)} %</span> · depuis le {fmt(r.createdAt)} · {r.active ? "actif" : "suspendu"}</p>
         </div>

@@ -24,7 +24,7 @@ export async function leaveOrganization() {
   const { sessionId, user } = await requireUser();
   const own = await db.membership.findFirst({ where: { userId: user.id }, orderBy: { createdAt: "asc" } });
   await db.session.update({ where: { id: sessionId }, data: { organizationId: own?.organizationId ?? null } });
-  redirect("/super-admin");
+  redirect("/super-admin/clients");
 }
 
 const clientSchema = z.object({ company: nameField, email: z.string().trim().toLowerCase().email("Email de l'administrateur invalide.") });
@@ -47,7 +47,7 @@ export async function createClient(_: FormState, form: FormData): Promise<FormSt
       },
     },
   });
-  revalidatePath("/super-admin");
+  revalidatePath("/super-admin", "layout");
   const link = `${appUrl()}/invitation/${token}`;
   // L'email part tout de suite : préparez l'espace avant, ou transmettez le lien vous-même plus tard.
   const mail = inviteEmail(org.name, "administrateur", link, INVITE_DAYS);

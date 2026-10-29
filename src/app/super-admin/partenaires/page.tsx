@@ -3,22 +3,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireSuperAdmin } from "@/lib/auth";
-import { dossierComplete, euros, offerById, OFFERS, resellerStats, VIDEO_CATEGORIES } from "@/lib/resellers";
-import { deleteVideo, updateReseller } from "./actions";
-import { MessageForm, ResellerForm, VideoForm } from "./forms";
+import { dossierComplete, euros, offerById, OFFERS, resellerStats } from "@/lib/resellers";
+import { updateReseller } from "./actions";
+import { ResellerForm } from "./forms";
 
-export const metadata: Metadata = { title: "Partenaires revendeurs" };
+export const metadata: Metadata = { title: "Mes partenaires revendeurs" };
 
 const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
 export default async function PartnersPage() {
   const { user } = await requireSuperAdmin();
   if (!user.isFounder) redirect("/super-admin");
-  const [resellers, messages, videos] = await Promise.all([
-    db.reseller.findMany({ orderBy: { createdAt: "desc" }, include: { organizations: { where: { isDemo: false } } } }),
-    db.resellerMessage.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
-    db.resellerVideo.findMany({ orderBy: { createdAt: "asc" } }),
-  ]);
+  const resellers = await db.reseller.findMany({ orderBy: { createdAt: "desc" }, include: { organizations: { where: { isDemo: false } } } });
   const rows = resellers.map((r) => ({ r, s: resellerStats(r.organizations, r.offer) }));
   const total = rows.reduce((t, { r, s }) => ({ active: t.active + (r.active ? 1 : 0), clients: t.clients + s.active, ca: t.ca + s.ca, commission: t.commission + s.commission }), { active: 0, clients: 0, ca: 0, commission: 0 });
   // Abonnements des revendeurs eux-mêmes (20 € / mois chacun).
@@ -29,7 +25,7 @@ export default async function PartnersPage() {
       <header className="view-head">
         <div>
           <span className="label">Fondateur</span>
-          <h1>Partenaires revendeurs</h1>
+          <h1>Mes partenaires revendeurs</h1>
           <p className="muted">Vos revendeurs, les clients qu&apos;ils apportent et les commissions à leur verser. Chaque revendeur a son propre espace super admin, limité à ses clients.</p>
         </div>
       </header>
@@ -99,40 +95,6 @@ export default async function PartnersPage() {
         </div>
       </section>
 
-      <div className="grid2">
-        <section className="panel">
-          <h2>Communication aux revendeurs</h2>
-          <p className="muted small">Votre message s&apos;affiche dans l&apos;Espace affilié de tous les revendeurs actifs, et part par email si la case est cochée.</p>
-          <MessageForm />
-          {messages.length > 0 && (
-            <ul className="list">
-              {messages.map((m) => <li key={m.id}><b>{m.subject}</b> <span className="muted small">· {fmt(m.createdAt)}{m.emailed ? ` · ${m.emailed} email${m.emailed > 1 ? "s" : ""}` : ""}</span></li>)}
-            </ul>
-          )}
-        </section>
-
-        <section className="panel">
-          <h2>Vidéos du centre d&apos;aide affilié</h2>
-          <p className="muted small">Liens YouTube (non répertoriés de préférence) classés en démonstration, vente et onboarding.</p>
-          <VideoForm />
-          {VIDEO_CATEGORIES.map((c) => {
-            const list = videos.filter((v) => v.category === c.id);
-            return list.length ? (
-              <div key={c.id}>
-                <span className="label">{c.label}</span>
-                <ul className="list">
-                  {list.map((v) => (
-                    <li key={v.id} className="row between">
-                      <a href={v.url} target="_blank" rel="noreferrer">{v.title}</a>
-                      <form action={deleteVideo}><input type="hidden" name="id" value={v.id} /><button className="btn sm ghost" type="submit">Retirer</button></form>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null;
-          })}
-        </section>
-      </div>
     </div>
   );
 }

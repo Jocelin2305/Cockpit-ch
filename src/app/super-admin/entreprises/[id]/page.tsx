@@ -28,7 +28,7 @@ export default async function OrganizationDetail({ params }: { params: Promise<{
     <div className="view">
       <header className="view-head">
         <div>
-          <Link href="/super-admin" className="small">← Vue d&apos;ensemble</Link>
+          <Link href="/super-admin/clients" className="small">← Entreprises clientes</Link>
           <h1>{org.name}</h1>
           <p className="muted">Créée le {fmt(org.createdAt)} · formule <span className="chip">{org.plan}</span></p>
         </div>

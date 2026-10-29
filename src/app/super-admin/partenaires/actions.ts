@@ -35,7 +35,7 @@ export async function createReseller(_: FormState, form: FormData): Promise<Form
   if (await db.reseller.findUnique({ where: { email } })) return { error: "Ce revendeur existe déjà.", values };
 
   await db.reseller.create({ data: { email, offer, companyName: company, managerEmail: email, code: newResellerCode() } });
-  revalidatePath(PATH);
+  revalidatePath(PATH, "layout");
   if (await db.user.findUnique({ where: { email } })) return { ok: `${company} est revendeur : son accès apparaît à sa prochaine connexion.` };
 
   const token = newToken();
@@ -95,7 +95,7 @@ export async function sendResellerMessage(_: FormState, form: FormData): Promise
   if (form.get("email") === "1")
     for (const r of resellers) if (await sendPlatformEmail(r.email, parsed.data.subject, `${parsed.data.body}\n\n— Cockpit'ch, espace partenaires : ${appUrl()}/super-admin/affilie`)) emailed++;
   await db.resellerMessage.create({ data: { ...parsed.data, emailed } });
-  revalidatePath(PATH);
+  revalidatePath(PATH, "layout");
   return { ok: `Publié dans l'Espace affilié de ${resellers.length} revendeur${resellers.length > 1 ? "s" : ""}${form.get("email") === "1" ? ` · ${emailed} email${emailed > 1 ? "s" : ""} envoyé${emailed > 1 ? "s" : ""}` : ""}.` };
 }
 
@@ -111,12 +111,12 @@ export async function addVideo(_: FormState, form: FormData): Promise<FormState>
   const parsed = videoSchema.safeParse(values);
   if (!parsed.success) return { error: firstError(parsed.error), values };
   await db.resellerVideo.create({ data: parsed.data });
-  revalidatePath(PATH);
+  revalidatePath(PATH, "layout");
   return { ok: "Vidéo ajoutée au centre d'aide affilié." };
 }
 
 export async function deleteVideo(form: FormData) {
   await requireFounder();
   await db.resellerVideo.deleteMany({ where: { id: String(form.get("id")) } });
-  revalidatePath(PATH);
+  revalidatePath(PATH, "layout");
 }
