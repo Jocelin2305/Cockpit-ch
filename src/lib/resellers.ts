@@ -1,31 +1,32 @@
-// Partenaires revendeurs : formules, commissions et contrôles du dossier (SIRET, IBAN).
+// Distributeurs : commission prélevée sur les abonnements de leurs clients, contrôles du dossier (SIRET, IBAN).
 import { randomBytes } from "node:crypto";
 import { accessState } from "./billing";
-import { planById, PLANS } from "./plans";
-import { offerById } from "./reseller-offers";
+import { MIN_COMMISSION_PER_ACTIVE_CLIENT, offerById } from "./reseller-offers";
 
 export * from "./reseller-offers";
 
 export const newResellerCode = () => randomBytes(5).toString("hex");
 
-type Org = Parameters<typeof accessState>[0] & { id: string; name: string; plan: string };
+type Org = Parameters<typeof accessState>[0] & { id: string; name: string; plan: string; resellerPrice: number | null; resellerBilling: string | null };
 
-// CA mensuel (HT) des clients payants apportés et commission du revendeur.
+// Montant mensuel HT facturé par le distributeur à un client (prix annuel ramené au mois).
+export const monthlyResale = (o: { resellerPrice: number | null; resellerBilling: string | null }) =>
+  !o.resellerPrice ? 0 : o.resellerBilling === "annuel" ? o.resellerPrice / 12 : o.resellerPrice;
+
+// Clients du distributeur : CA mensuel déclaré (abonnements actifs) et commission due à Cockpit'ch selon son offre.
+// Les frais de mise en place ne sont pas commissionnés ; un minimum par client actif est possible (désactivé).
 export function resellerStats<T extends Org>(orgs: T[], offerId: string) {
   const rate = offerById(offerId).rate;
   const rows = orgs.map((o) => {
     const st = accessState(o);
     const paying = st.kind === "active" || st.kind === "past_due";
-    const ca = paying ? planById(o.plan)?.price ?? 0 : 0;
-    return { org: o, state: st, paying, ca, commission: ca * rate };
+    const ca = paying ? monthlyResale(o) : 0;
+    return { org: o, state: st, paying, ca, commission: paying ? Math.max(ca * rate, MIN_COMMISSION_PER_ACTIVE_CLIENT) : 0 };
   });
   const active = rows.filter((r) => r.paying).length;
   const ca = rows.reduce((s, r) => s + r.ca, 0);
-  return { rows, active, trials: rows.filter((r) => r.state.kind === "trial").length, ca, commission: ca * rate, rate };
+  return { rows, active, trials: rows.filter((r) => r.state.kind === "trial").length, ca, commission: rows.reduce((s, r) => s + r.commission, 0), rate };
 }
-
-// Prix moyen d'un client, pour projeter les paliers : celui des clients actuels, sinon l'offre d'entrée.
-export const avgClientPrice = (active: number, ca: number) => (active ? ca / active : PLANS[0].price);
 
 
 // SIRET : 14 chiffres, clé de Luhn (La Poste fait exception).
@@ -52,5 +53,5 @@ export function validIban(v: string) {
   return rest === 1;
 }
 
-export const dossierComplete = (r: { companyName: string; siret: string; address: string; managerName: string; managerEmail: string; managerPhone: string; ibanLast4: string }) =>
-  [r.companyName, r.siret, r.address, r.managerName, r.managerEmail, r.managerPhone, r.ibanLast4].every((v) => v.trim());
+export const dossierComplete = (r: { companyName: string; siret: string; address: string; managerName: string; managerEmail: string; managerPhone: string }) =>
+  [r.companyName, r.siret, r.address, r.managerName, r.managerEmail, r.managerPhone].every((v) => v.trim());

@@ -71,6 +71,9 @@ model Organization {
   resellerId           String?
   reseller             Reseller? @relation(fields: [resellerId], references: [id], onDelete: SetNull)
   isPartner            Boolean   @default(false)
+  // Client d'un distributeur : prix HT qu'il lui facture (base de la commission), et sa périodicité.
+  resellerPrice        Float?
+  resellerBilling      String?
   // Dernier rapport hebdomadaire envoyé (évite un double envoi).
   lastReportAt         DateTime?
   optOuts              OptOut[]
@@ -372,8 +375,23 @@ model Reseller {
   email         String         @unique
   // Code du lien d'inscription parrainé (/inscription?partenaire=CODE).
   code          String         @unique
-  // Formule (src/lib/resellers.ts) : zero_risque ou onboarding.
+  // Offre distributeur (src/lib/reseller-offers.ts) : A, B ou C ; facturation mensuelle ou annuelle (2 mois offerts).
   offer         String
+  billing       String         @default("mensuel")
+  // Options des offres A et B : marque blanche (997 €, en 1 ou 3 fois) et support prioritaire (+15 € / mois).
+  upsellWhiteLabel   Boolean   @default(false)
+  whiteLabelInstallments Int   @default(1)
+  upsellPriority     Boolean   @default(false)
+  // Offre choisie par le distributeur, en attente du paiement, puis activée.
+  offerStatus   String         @default("en_attente")
+  offerChosenAt DateTime?
+  // Marque blanche débloquée par le fondateur, et pack de marque (nom, logo, couleurs, typographie).
+  whiteLabel    Boolean        @default(false)
+  brandName     String         @default("")
+  brandLogo     String         @default("")
+  brandColor    String         @default("")
+  brandColor2   String         @default("")
+  brandFont     String         @default("")
   active        Boolean        @default(true)
   companyName   String         @default("")
   siret         String         @default("")
@@ -387,6 +405,39 @@ model Reseller {
   bic           String         @default("")
   createdAt     DateTime       @default(now())
   organizations Organization[]
+  tickets       SupportTicket[]
+  features      FeatureRequest[]
+}
+
+// Demande de support d'un distributeur : priorité et délai selon son offre.
+model SupportTicket {
+  id         String   @id @default(cuid())
+  resellerId String
+  subject    String
+  body       String
+  priority   String   @default("standard")
+  status     String   @default("ouvert")
+  answer     String   @default("")
+  dueAt      DateTime
+  createdAt  DateTime @default(now())
+  reseller   Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+
+  @@index([status, dueAt])
+}
+
+// Demande de fonctionnalité (offre C, une par trimestre) : réponse sous 10 jours ouvrés.
+model FeatureRequest {
+  id         String   @id @default(cuid())
+  resellerId String
+  title      String
+  body       String
+  status     String   @default("reçue")
+  answer     String   @default("")
+  dueAt      DateTime
+  createdAt  DateTime @default(now())
+  reseller   Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+
+  @@index([resellerId, createdAt])
 }
 
 // Communication du fondateur à tous les revendeurs, affichée dans leur Espace affilié.

@@ -5,6 +5,7 @@ import { accessState } from "@/lib/billing";
 import { planById } from "@/lib/plans";
 import { enterOrganization, setSuperAdmin } from "./actions";
 import { ClientForm } from "./client-form";
+import { setClientSubscription } from "./affilie/actions";
 
 export type Section = "pilotage" | "clients" | "utilisateurs";
 
@@ -108,11 +109,11 @@ export async function Overview({ section }: { section: Section }) {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Abonnement</th>{!resellerId && <th>Revendeur</th>}{!resellerId && <th>IA (30 jours)</th>}<th>Créée le</th><th aria-label="Actions" /></tr>
+              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Abonnement</th>{resellerId && <th>Prix que vous facturez (HT)</th>}{!resellerId && <th>Revendeur</th>}{!resellerId && <th>IA (30 jours)</th>}<th>Créée le</th><th aria-label="Actions" /></tr>
             </thead>
             <tbody>
               {organizations.length === 0 && (
-                <tr><td colSpan={8} className="muted">Aucune entreprise pour l&apos;instant.</td></tr>
+                <tr><td colSpan={9} className="muted">Aucune entreprise pour l&apos;instant.</td></tr>
               )}
               {organizations.map((o) => (
                 <tr key={o.id}>
@@ -122,6 +123,17 @@ export async function Overview({ section }: { section: Section }) {
                   <td><span className={`chip ${["active", "past_due"].includes(states.get(o.id)!.kind) ? "ok" : states.get(o.id)!.kind === "blocked" ? "late" : ""}`}>{statusLabel(o.id)}</span></td>
                   {!resellerId && <td>{o.isPartner ? <span className="chip">espace offert</span> : o.reseller ? o.reseller.companyName || o.reseller.email : <span className="muted">direct</span>}</td>}
                   {!resellerId && <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.i + u.o)} jetons · ≈ ${estimate(u.i, u.o).toFixed(2)} $` : <span className="muted">—</span>; })()}</td>}
+                  {resellerId && (
+                    <td>
+                      <form action={setClientSubscription} className="inline">
+                        <input type="hidden" name="orgId" value={o.id} />
+                        <input className="input sm" name="price" inputMode="decimal" defaultValue={o.resellerPrice ?? ""} placeholder="Prix" aria-label="Prix facturé HT" style={{ width: 80 }} />
+                        <select className="input sm" name="billing" defaultValue={o.resellerBilling ?? "mensuel"} aria-label="Périodicité"><option value="mensuel">/ mois</option><option value="annuel">/ an</option></select>
+                        <button className="btn sm primary" type="submit" name="on" value="1">{states.get(o.id)!.kind === "active" ? "Mettre à jour" : "Activer"}</button>
+                        {states.get(o.id)!.kind === "active" && <button className="btn sm ghost" type="submit" name="on" value="0">Suspendre</button>}
+                      </form>
+                    </td>
+                  )}
                   <td className="muted">{fmt(o.createdAt)}</td>
                   <td><div className="inline"><form action={enterOrganization}><input type="hidden" name="id" value={o.id} /><button className="btn sm primary" type="submit">Paramétrer</button></form><Link className="btn sm" href={`/super-admin/entreprises/${o.id}`}>Détail</Link></div></td>
                 </tr>

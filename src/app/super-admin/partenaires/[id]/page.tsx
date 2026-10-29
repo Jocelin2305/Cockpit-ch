@@ -4,13 +4,13 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { appUrl, requireSuperAdmin } from "@/lib/auth";
 import { decrypt } from "@/lib/mail";
-import { dossierComplete, euros, offerById, resellerStats } from "@/lib/resellers";
+import { dossierComplete, euros, offerById, resellerStats, resellerMonthlyFee } from "@/lib/resellers";
 
 export const metadata: Metadata = { title: "Revendeur" };
 
 const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
-// IBAN complet, lisible par le fondateur seul pour verser les commissions.
+// IBAN complet, lisible par le fondateur seul (remboursements).
 function readIban(enc: string) {
   if (!enc) return "";
   try { return decrypt(enc).replace(/(.{4})/g, "$1 ").trim(); } catch { return "illisible (clé de chiffrement changée)"; }
@@ -41,15 +41,16 @@ export default async function ResellerDetail({ params }: { params: Promise<{ id:
         <div>
           <Link href="/super-admin/partenaires" className="small">← Mes partenaires revendeurs</Link>
           <h1>{r.companyName || r.email}</h1>
-          <p className="muted">Formule <span className="chip">{offer.name} · {Math.round(offer.rate * 100)} %</span> · depuis le {fmt(r.createdAt)} · {r.active ? "actif" : "suspendu"}</p>
+          <p className="muted"><span className="chip">{offer.name} · {r.billing}</span> {r.offerStatus === "actif" ? <span className="chip ok">active</span> : <span className="chip late">en attente du paiement</span>} · commission {Math.round(offer.rate * 100)} % · depuis le {fmt(r.createdAt)} · {r.active ? "actif" : "suspendu"}</p>
+          <p className="muted small">Options : {[r.offer !== "C" && r.upsellWhiteLabel && `marque blanche (${r.whiteLabelInstallments === 3 ? "en 3 fois" : "en 1 fois"})`, r.offer !== "C" && r.upsellPriority && "support prioritaire"].filter(Boolean).join(", ") || "aucune"} · abonnement {euros(Math.round(resellerMonthlyFee(r) * 100) / 100)} HT / mois{r.whiteLabel && <> · <Link href={`/super-admin/partenaires/${r.id}/marque`}>Personnalisation de l&apos;APP</Link></>}</p>
         </div>
       </header>
 
       <div className="kpis">
         <div className="kpi"><span className="v">{s.active}</span><span className="k">clients actifs</span></div>
         <div className="kpi"><span className="v">{s.trials}</span><span className="k">en essai</span></div>
-        <div className="kpi"><span className="v">{euros(s.ca)}</span><span className="k">CA mensuel généré (HT)</span></div>
-        <div className="kpi win"><span className="v">{euros(s.commission)}</span><span className="k">commission du mois</span></div>
+        <div className="kpi"><span className="v">{euros(s.ca)}</span><span className="k">abonnements facturés / mois (HT)</span></div>
+        <div className="kpi win"><span className="v">{euros(s.commission)}</span><span className="k">commission due / mois</span></div>
       </div>
 
       <section className="panel">

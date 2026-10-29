@@ -26,12 +26,12 @@ export function DossierForm({ d }: { d: Dossier }) {
       </div>
       <div className="grid2">
         <label className="field">
-          <span className="label-text">IBAN (RIB){d.ibanLast4 ? ` · enregistré, se termine par ${d.ibanLast4}` : ""}</span>
-          <input className="input mono" name="iban" autoComplete="off" required={!d.ibanLast4} placeholder={d.ibanLast4 ? "Laisser vide pour conserver l'IBAN enregistré" : "FR76 …"} />
+          <span className="label-text">IBAN (facultatif, pour les remboursements){d.ibanLast4 ? ` · enregistré, se termine par ${d.ibanLast4}` : ""}</span>
+          <input className="input mono" name="iban" autoComplete="off" placeholder={d.ibanLast4 ? "Laisser vide pour conserver l'IBAN enregistré" : "FR76 …"} />
         </label>
         {field("bic", "BIC", { required: false, placeholder: "8 ou 11 caractères" })}
       </div>
-      <p className="muted small">Votre IBAN est chiffré : seul le fondateur peut le lire, pour vous verser vos commissions.</p>
+      <p className="muted small">Votre IBAN est chiffré : seul le fondateur peut le lire.</p>
       <SubmitButton pending="Enregistrement…">Enregistrer mon dossier</SubmitButton>
       <FormMessage error={state?.error} ok={state?.ok} />
     </form>

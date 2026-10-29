@@ -8,6 +8,7 @@ import { appUrl, hashToken, newToken, requireSuperAdmin, ROLES } from "@/lib/aut
 import { inviteEmail, sendPlatformEmail } from "@/lib/email";
 import { newResellerCode, OFFERS, VIDEO_CATEGORIES } from "@/lib/resellers";
 import { emailField, firstError, nameField, type FormState } from "@/lib/validation";
+import { saveBrand } from "@/lib/brand-save";
 
 const INVITE_DAYS = 14;
 const PATH = "/super-admin/partenaires";
@@ -118,5 +119,41 @@ export async function addVideo(_: FormState, form: FormData): Promise<FormState>
 export async function deleteVideo(form: FormData) {
   await requireFounder();
   await db.resellerVideo.deleteMany({ where: { id: String(form.get("id")) } });
+  revalidatePath(PATH, "layout");
+}
+
+// ---------- Offres, marque blanche, support ----------
+
+// Paiement reçu : l'offre du distributeur devient active (avec ses options).
+export async function activateOffer(form: FormData) {
+  await requireFounder();
+  const on = form.get("on") === "1";
+  await db.reseller.update({ where: { id: String(form.get("id")) }, data: { offerStatus: on ? "actif" : "en_attente" } });
+  revalidatePath(PATH, "layout");
+}
+
+// Le fondateur débloque (ou retire) la marque blanche et l'onglet « Personnalisation » du distributeur.
+export async function setWhiteLabel(form: FormData) {
+  await requireFounder();
+  await db.reseller.update({ where: { id: String(form.get("id")) }, data: { whiteLabel: form.get("on") === "1" } });
+  revalidatePath("/", "layout");
+}
+
+export async function saveResellerBrand(_: FormState, form: FormData): Promise<FormState> {
+  await requireFounder();
+  return saveBrand(String(form.get("resellerId")), form);
+}
+
+export async function answerTicket(form: FormData) {
+  await requireFounder();
+  const status = String(form.get("status") ?? "répondu");
+  await db.supportTicket.update({ where: { id: String(form.get("id")) }, data: { answer: String(form.get("answer") ?? "").slice(0, 5000), status: ["ouvert", "répondu", "clos"].includes(status) ? status : "répondu" } });
+  revalidatePath(PATH, "layout");
+}
+
+export async function answerFeature(form: FormData) {
+  await requireFounder();
+  const status = String(form.get("status") ?? "");
+  await db.featureRequest.update({ where: { id: String(form.get("id")) }, data: { answer: String(form.get("answer") ?? "").slice(0, 5000), ...(["reçue", "acceptée", "refusée", "chiffrée"].includes(status) ? { status } : {}) } });
   revalidatePath(PATH, "layout");
 }

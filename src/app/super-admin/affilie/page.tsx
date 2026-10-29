@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { appUrl, requireReseller } from "@/lib/auth";
-import { EDITOR } from "@/lib/legal";
-import { avgClientPrice, dossierComplete, euros, MILESTONES, offerById, OFFERS, resellerStats, VIDEO_CATEGORIES, youtubeId } from "@/lib/resellers";
+import { BOOKING_URL } from "@/lib/legal";
+import {
+  dossierComplete, euros, offerById, PRIORITY_SUPPORT_HOURS, prioritySupport, resellerMonthlyFee, resellerStats, VIDEO_CATEGORIES, whiteLabelEligible, youtubeId,
+} from "@/lib/resellers";
 import { DossierForm } from "./dossier-form";
+import { OfferPicker } from "./offer-picker";
+import { FeatureForm, TicketForm } from "./support-forms";
 
 export const metadata: Metadata = { title: "Espace affilié" };
 
@@ -11,71 +16,91 @@ const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: 
 
 export default async function AffiliatePage() {
   const { reseller: r } = await requireReseller();
-  const [orgs, messages, videos] = await Promise.all([
+  const [orgs, messages, videos, tickets, features] = await Promise.all([
     db.organization.findMany({ where: { resellerId: r.id } }),
     db.resellerMessage.findMany({ where: { createdAt: { gte: r.createdAt } }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.resellerVideo.findMany({ orderBy: { createdAt: "asc" } }),
+    db.supportTicket.findMany({ where: { resellerId: r.id }, orderBy: { createdAt: "desc" }, take: 20 }),
+    db.featureRequest.findMany({ where: { resellerId: r.id }, orderBy: { createdAt: "desc" }, take: 8 }),
   ]);
   const offer = offerById(r.offer);
   const s = resellerStats(orgs, r.offer);
-  const price = avgClientPrice(s.active, s.ca);
-  const next = MILESTONES.find((m) => m > s.active);
+  const active = r.offerStatus === "actif";
+  const priority = prioritySupport(r);
   const referral = `${appUrl()}/inscription?partenaire=${r.code}`;
-  const visio = `mailto:${EDITOR.email}?subject=${encodeURIComponent(`[Cockpit'ch partenaire] Visio mensuelle · ${r.companyName || r.email}`)}`;
 
   return (
     <div className="view wide">
       <header className="view-head">
         <div>
           <span className="label">Espace affilié</span>
-          <h1>{r.companyName || "Mon espace partenaire"}</h1>
-          <p className="muted">Formule <b>{offer.name}</b> · {Math.round(offer.rate * 100)} % de commission sur le CA généré par vos clients · partenaire depuis le {fmt(r.createdAt)}</p>
+          <h1>{r.companyName || "Mon espace distributeur"}</h1>
+          <p className="muted">{offer.name} · {r.billing === "annuel" ? "facturation annuelle" : "facturation mensuelle"} · {active ? <span className="chip ok">active</span> : <span className="chip late">en attente du paiement</span>} · distributeur depuis le {fmt(r.createdAt)}</p>
         </div>
       </header>
 
-      {!dossierComplete(r) && <p className="alert banner">Complétez votre dossier (RIB, SIRET, adresse, gérant) pour recevoir vos commissions.</p>}
+      {!dossierComplete(r) && <p className="alert banner">Complétez votre dossier (SIRET, adresse, gérant) en bas de page.</p>}
 
       <div className="kpis">
         <div className="kpi"><span className="v">{s.active}</span><span className="k">clients actifs</span></div>
         <div className="kpi"><span className="v">{s.trials}</span><span className="k">clients en essai</span></div>
-        <div className="kpi"><span className="v">{euros(s.ca)}</span><span className="k">CA mensuel généré (HT)</span></div>
-        <div className="kpi win"><span className="v">{euros(s.commission)}</span><span className="k">ma commission ce mois</span></div>
+        <div className="kpi win"><span className="v">{euros(Math.round(s.ca))}</span><span className="k">vos abonnements facturés / mois (HT)</span></div>
+        <div className="kpi"><span className="v">{euros(Math.round(s.commission * 100) / 100)}</span><span className="k">commission Cockpit&apos;ch ({Math.round(s.rate * 100)} %)</span></div>
       </div>
+      <p className="muted small">Votre offre : {euros(Math.round(resellerMonthlyFee(r) * 100) / 100)} HT / mois. Déclarez le prix de chaque client dans <Link href="/super-admin/clients">Mes clients</Link> · <a href="/super-admin/affilie/export">Exporter le relevé du mois (CSV)</a></p>
 
       <section className="panel">
-        <div className="panel-head"><h2>Mes paliers de commission</h2>{next && <span className="label">prochain palier : {next} client{next > 1 ? "s" : ""}, encore {next - s.active}</span>}</div>
-        <p className="muted small">Commission projetée selon le nombre de clients actifs, au prix moyen de {euros(price)} HT par client et par mois.</p>
-        <div className="milestones">
-          {MILESTONES.map((m) => (
-            <div key={m} className={`milestone${s.active >= m ? " on" : m === next ? " next" : ""}`}>
-              <span className="muted small">{m} client{m > 1 ? "s" : ""}</span>
-              <b>{euros(Math.round(m * price * offer.rate))}</b>
-              <span className="muted small">/ mois · {euros(Math.round(m * price * offer.rate * 12))} / an</span>
-            </div>
-          ))}
-        </div>
-        <div className="offers">
-          {OFFERS.map((o) => (
-            <div key={o.id} className={`offer-card${o.id === offer.id ? " on" : ""}`}>
-              <div className="row between"><b>{o.name}</b>{o.id === offer.id && <span className="chip ok">ma formule</span>}</div>
-              <span className="big">{Math.round(o.rate * 100)} %</span>
-              <span className="muted small">{o.entry ? `${euros(o.entry)} à l'entrée` : "Aucun coût d'entrée"} · {euros(o.monthly)} / mois{o.commitment ? ` · ${o.commitment}` : ""}</span>
-              <ul>{o.perks.map((p) => <li key={p}>{p}</li>)}</ul>
-            </div>
-          ))}
-        </div>
+        <h2>{active ? "Changer d'offre" : "Choisir mon offre"}</h2>
+        <p className="muted small">Engagement 1 an. Le paiement annuel offre 2 mois. Votre offre s&apos;active à la réception du paiement.</p>
+        <OfferPicker current={{ offer: r.offer, billing: r.billing, upsellWhiteLabel: r.upsellWhiteLabel, whiteLabelInstallments: r.whiteLabelInstallments, upsellPriority: r.upsellPriority }} />
+      </section>
+
+      <section className="panel">
+        <div className="panel-head"><h2>Marque blanche</h2>{r.whiteLabel ? <span className="chip ok">débloquée</span> : <span className="chip">non débloquée</span>}</div>
+        {r.whiteLabel ? (
+          <p>Votre plateforme porte votre nom, votre logo et vos couleurs pour vos clients. <Link className="btn sm primary" href="/super-admin/affilie/marque">Personnaliser l&apos;application</Link></p>
+        ) : (
+          <p className="muted">{whiteLabelEligible(r) ? "Elle sera débloquée par Cockpit'ch dès réception du paiement." : "Incluse dans l'offre C, ou en option (997 € HT) avec les offres A et B."}</p>
+        )}
       </section>
 
       <section className="panel">
         <h2>Apporter un client</h2>
-        <p className="muted small">Partagez votre lien ou votre code : chaque entreprise qui s&apos;inscrit avec l&apos;un d&apos;eux vous est rattachée et profite de son premier mois offert. Vous pouvez aussi créer et paramétrer son compte vous-même dans « Mes clients ».</p>
+        <p className="muted small">Chaque entreprise qui s&apos;inscrit avec votre lien ou votre code vous est rattachée, profite d&apos;un mois offert{r.whiteLabel ? " et arrive sur votre plateforme à votre marque" : ""}.</p>
         <input className="input mono" readOnly value={referral} aria-label="Lien d'inscription parrainé" />
-        <p className="muted small">Votre code partenaire, à saisir à l&apos;inscription : <b className="mono">{r.code}</b></p>
+        <p className="muted small">Votre code partenaire : <b className="mono">{r.code}</b></p>
       </section>
+
+      <div className="grid2">
+        <section className="panel">
+          <div className="panel-head"><h2>Support</h2><span className={`chip${priority ? " ok" : ""}`}>{priority ? `prioritaire · ${PRIORITY_SUPPORT_HOURS} h` : `standard · ${offer.supportHours} h`}</span></div>
+          <p className="muted small">{priority ? "File prioritaire." : offer.support}{r.offer === "B" && <> · <a href={BOOKING_URL} target="_blank" rel="noreferrer">Réserver une visio avec notre équipe</a></>}</p>
+          <TicketForm hours={priority ? PRIORITY_SUPPORT_HOURS : offer.supportHours} />
+          {tickets.length > 0 && (
+            <ul className="list">
+              {tickets.map((t) => <li key={t.id}><b>{t.subject}</b> <span className="chip">{t.status}</span>{t.answer && <p className="muted small pre">{t.answer}</p>}</li>)}
+            </ul>
+          )}
+        </section>
+        <section className="panel">
+          <h2>Demande de fonctionnalité</h2>
+          {r.offer === "C" && active ? (
+            <>
+              <p className="muted small">Une demande par trimestre, acceptée si elle sert à plusieurs clients et reste réalisable en un temps borné. Réponse sous 10 jours ouvrés : acceptée, refusée ou chiffrée.</p>
+              <FeatureForm />
+            </>
+          ) : <p className="muted small">Incluse dans l&apos;offre C : une demande de fonctionnalité par trimestre.</p>}
+          {features.length > 0 && (
+            <ul className="list">
+              {features.map((f) => <li key={f.id}><b>{f.title}</b> <span className="chip">{f.status}</span> <span className="muted small">réponse avant le {fmt(f.dueAt)}</span>{f.answer && <p className="muted small pre">{f.answer}</p>}</li>)}
+            </ul>
+          )}
+        </section>
+      </div>
 
       {messages.length > 0 && (
         <section className="panel">
-          <h2>Messages du fondateur</h2>
+          <h2>Messages de Cockpit&apos;ch</h2>
           <div className="stack">
             {messages.map((m) => (
               <article key={m.id} className="message">
@@ -88,8 +113,7 @@ export default async function AffiliatePage() {
       )}
 
       <section className="panel">
-        <div className="panel-head"><h2>Centre d&apos;aide affilié</h2><a className="btn sm" href={visio}>Réserver ma visio mensuelle (30 min)</a></div>
-        <p className="muted small">Les vidéos de démonstration, de vente et d&apos;onboarding pour présenter Cockpit&apos;ch et installer vos clients.</p>
+        <h2>Centre de vidéos de vente</h2>
         {VIDEO_CATEGORIES.map((c) => {
           const list = videos.filter((v) => v.category === c.id);
           return (
@@ -115,7 +139,7 @@ export default async function AffiliatePage() {
       </section>
 
       <section className="panel">
-        <h2>Mon dossier partenaire</h2>
+        <h2>Mon dossier distributeur</h2>
         <DossierForm d={{ companyName: r.companyName, siret: r.siret, address: r.address, managerName: r.managerName, managerEmail: r.managerEmail, managerPhone: r.managerPhone, bic: r.bic, ibanLast4: r.ibanLast4 }} />
       </section>
     </div>

@@ -2,13 +2,16 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { BackButton } from "@/components/back-button";
 import { Brand } from "@/components/brand";
+import { BrandStyle } from "@/components/brand-style";
+import { brandForOrg } from "@/lib/branding";
 import { NavLinks, NavMenu, type NavItem } from "@/components/shell";
 import { CallDock } from "@/components/call-dock";
 import { GuideButton, Tour } from "@/components/tour";
 import { ContextMenus } from "@/components/context-menus";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { db } from "@/lib/db";
-import { requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
+import type { Metadata } from "next";
+import { getSession, requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
 import { accessState } from "@/lib/billing";
 import { aiReady } from "@/lib/ai";
@@ -16,6 +19,12 @@ import { isDue, todayISO } from "@/lib/prospecting";
 import { logout } from "../(auth)/actions";
 import { leaveOrganization } from "../super-admin/actions";
 
+
+export async function generateMetadata(): Promise<Metadata> {
+  const session = await getSession();
+  const brand = session?.membership ? await brandForOrg(session.membership.organization) : null;
+  return brand?.name ? { title: { default: brand.name, template: `%s · ${brand.name}` } } : {};
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, membership, onboarding, reseller } = await requireMember();
@@ -31,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
   const due = followUps.filter((p) => isDue(p, today)).length;
   const billing = accessState(membership.organization);
+  const brand = await brandForOrg(membership.organization);
   const todo = due + callBacks;
 
   const tools: NavItem[] = [
@@ -49,8 +59,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="shell">
+      <BrandStyle brand={brand} />
       <aside className="rail">
-        <Brand sub={membership.organization.name} />
+        <Brand sub={membership.organization.name} brand={brand} />
         <Link className="btn primary rail-cta" data-tour="search" href={membership.role === ROLES.ADMIN ? "/app/recherches/nouvelle" : "/app/prospects"} data-tip="Lancez une nouvelle recherche : questionnaire de ciblage, prospects, séquence.">
           Rechercher des prospects
         </Link>

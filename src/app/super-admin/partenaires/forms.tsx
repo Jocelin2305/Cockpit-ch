@@ -15,7 +15,7 @@ export function ResellerForm() {
         <label className="field grow"><span className="label-text">Email du gérant (son identifiant)</span><input className="input" name="email" type="email" required defaultValue={v?.email} /></label>
         <label className="field"><span className="label-text">Formule</span>
           <select className="input" name="offer" defaultValue={v?.offer ?? OFFERS[0].id}>
-            {OFFERS.map((o) => <option key={o.id} value={o.id}>{o.name} · {Math.round(o.rate * 100)} %</option>)}
+            {OFFERS.map((o) => <option key={o.id} value={o.id}>{o.name} · {o.monthly} € / mois · commission {Math.round(o.rate * 100)} %</option>)}
           </select>
         </label>
         <label className="check"><input type="checkbox" name="send" value="1" /> Envoyer l&apos;invitation</label>
