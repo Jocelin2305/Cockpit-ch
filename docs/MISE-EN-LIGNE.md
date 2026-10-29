@@ -60,5 +60,5 @@ Chaque variable s'ajoute dans Vercel (Settings → Environment Variables), puis 
 
 - [ ] Prix définitifs des offres (`src/lib/plans.ts`).
 - [ ] Compléter l'identité de la société dans `src/lib/legal.ts` (raison sociale, SIREN, adresse, TVA), puis faire relire les pages Mentions légales, CGU/CGV et Confidentialité par un juriste ; préparer le contrat de sous-traitance (DPA) pour les clients.
-- [ ] Vérification de l'application par Google, nécessaire pour lire les emails Gmail des clients (plusieurs semaines).
+- [x] Validation Google (Gmail) : pas nécessaire pour le lancement (clients onboardés, Outlook sans audit, Gmail en mode test ou via l'administrateur Workspace). À réaborder seulement si besoin.
 - [ ] Programme revendeurs : rédiger le contrat partenaire (formules, engagement 1 an « Zéro risque », commission sur le CA HT encaissé, modalités et date de versement, auto-facturation ou facture du revendeur). Créer dans Stripe l'abonnement partenaire 20 € / mois et le paiement unique de 497 € (onboarding complet) : aujourd'hui l'appli suit les revendeurs et calcule les commissions, mais ne les facture pas encore. Les commissions se versent par virement, à partir de l'IBAN visible dans la fiche du revendeur.
