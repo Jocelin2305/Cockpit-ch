@@ -10,7 +10,6 @@ export function SignupForm({ partner }: { partner?: string }) {
   const v = state?.values ?? {};
   return (
     <form action={action} className="stack">
-      {partner && <input type="hidden" name="partner" value={partner} />}
       <FormMessage error={state?.error} />
       <label className="field">
         <span className="label-text">Votre nom</span>
@@ -28,6 +27,11 @@ export function SignupForm({ partner }: { partner?: string }) {
         <span className="label-text">Mot de passe</span>
         <input className="input" name="password" type="password" autoComplete="new-password" minLength={10} required />
         <span className="hint">10 caractères minimum.</span>
+      </label>
+      <label className="field">
+        <span className="label-text">Code partenaire (facultatif)</span>
+        <input className="input mono" name="partner" autoComplete="off" maxLength={20} defaultValue={v.partner ?? partner} placeholder="Donné par votre revendeur" />
+        <span className="hint">Avec un code partenaire, votre premier mois est offert.</span>
       </label>
       <TermsCheck />
       <SubmitButton pending="Création de l'espace…">Créer mon espace</SubmitButton>

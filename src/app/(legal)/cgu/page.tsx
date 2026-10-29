@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EDITOR, UPDATED } from "@/lib/legal";
-import { PLANS, TRIAL_DAYS } from "@/lib/plans";
+import { PARTNER_TRIAL_DAYS, PLANS, TRIAL_DAYS } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "Conditions d'utilisation" };
 
@@ -18,7 +18,7 @@ export default function Terms() {
       <p>Le Client crée un espace et en devient administrateur. Il invite ses utilisateurs et répond de leur usage. Les identifiants sont personnels et confidentiels. L&apos;éditeur peut accéder à l&apos;espace du Client pour le support, le paramétrage demandé ou la sécurité du service.</p>
 
       <h2>3. Essai, abonnement et paiement</h2>
-      <p>Un essai gratuit de {TRIAL_DAYS} jours est proposé, sans carte bancaire. Au-delà, l&apos;accès nécessite un abonnement mensuel ({PLANS.map((p) => `${p.name} : ${p.price} € HT`).join(", ")}), payé par carte via Stripe et renouvelé automatiquement. Le Client peut résilier à tout moment depuis son espace ; l&apos;accès reste ouvert jusqu&apos;à la fin de la période payée. Sans paiement, l&apos;accès est suspendu et les données conservées 90 jours avant suppression.</p>
+      <p>Un essai gratuit de {TRIAL_DAYS} jours est proposé, sans carte bancaire, porté à un mois ({PARTNER_TRIAL_DAYS} jours) pour une inscription avec le lien ou le code d&apos;un partenaire revendeur. Au-delà, l&apos;accès nécessite un abonnement mensuel ({PLANS.map((p) => `${p.name} : ${p.price} € HT`).join(", ")}), payé par carte via Stripe et renouvelé automatiquement. Le Client peut résilier à tout moment depuis son espace ; l&apos;accès reste ouvert jusqu&apos;à la fin de la période payée. Sans paiement, l&apos;accès est suspendu et les données conservées 90 jours avant suppression.</p>
 
       <h2>4. Obligations du Client</h2>
       <p>Le Client utilise le service dans le respect des lois applicables, notamment le RGPD et les règles de prospection commerciale : information des personnes démarchées, droit d&apos;opposition à chaque message, et conditions d&apos;utilisation des plateformes tierces (LinkedIn, messageries, téléphonie). Il est seul responsable des prospects qu&apos;il importe et des messages qu&apos;il envoie. Il s&apos;interdit tout envoi massif non sollicité, tout contenu illicite et toute atteinte à la sécurité du service.</p>

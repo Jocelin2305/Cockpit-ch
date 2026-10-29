@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { appUrl, hashToken, isSuperAdminEmail, newToken, requireAdminSpace, requireSuperAdmin, requireUser, ROLES } from "@/lib/auth";
-import { TRIAL_DAYS } from "@/lib/plans";
+import { PARTNER_TRIAL_DAYS, TRIAL_DAYS } from "@/lib/plans";
 import { inviteEmail, sendPlatformEmail } from "@/lib/email";
 import { firstError, nameField, type FormState } from "@/lib/validation";
 
@@ -40,7 +40,7 @@ export async function createClient(_: FormState, form: FormData): Promise<FormSt
   const org = await db.organization.create({
     data: {
       name: parsed.data.company,
-      trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000),
+      trialEndsAt: new Date(Date.now() + (resellerId ? PARTNER_TRIAL_DAYS : TRIAL_DAYS) * 86_400_000),
       resellerId,
       invitations: {
         create: { email: parsed.data.email, role: ROLES.ADMIN, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + INVITE_DAYS * 86_400_000), invitedById: user.id },

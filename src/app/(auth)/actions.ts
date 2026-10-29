@@ -17,13 +17,14 @@ import {
 } from "@/lib/auth";
 import { firstError, passwordField, signupSchema, type FormState } from "@/lib/validation";
 import { resetEmail, sendPlatformEmail } from "@/lib/email";
-import { TRIAL_DAYS } from "@/lib/plans";
+import { PARTNER_TRIAL_DAYS, TRIAL_DAYS } from "@/lib/plans";
 
 export async function signup(_: FormState, form: FormData): Promise<FormState> {
   const values = {
     name: String(form.get("name") ?? ""),
     email: String(form.get("email") ?? ""),
     company: String(form.get("company") ?? ""),
+    partner: String(form.get("partner") ?? "").trim(),
   };
   const parsed = signupSchema.safeParse({ ...values, password: form.get("password") });
   if (form.get("terms") !== "on") return { error: "Acceptez les conditions d'utilisation pour continuer.", values };
@@ -35,10 +36,13 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
   // Visiteur venu de la démo : la conversion est comptée dans le super admin.
   const demoOrgId = (await getSession())?.membership?.organization.isDemo ? (await getSession())?.membership?.organizationId : null;
 
-  // Inscription via le lien d'un revendeur (ou depuis une démo ouverte avec son code) : le client lui est rattaché.
+  // Lien ou code d'un revendeur (ou démo ouverte avec son code) : le client lui est rattaché et son premier mois est offert.
   const visit = demoOrgId ? await db.demoVisit.findUnique({ where: { organizationId: demoOrgId }, select: { source: true } }) : null;
-  const partner = String(form.get("partner") ?? "") || visit?.source || "";
+  const typed = values.partner.toLowerCase();
+  const partner = typed || visit?.source || "";
   const reseller = partner ? await db.reseller.findFirst({ where: { code: partner, active: true }, select: { id: true } }) : null;
+  if (typed && !reseller) return { error: "Code partenaire inconnu : vérifiez-le auprès de votre revendeur, ou laissez le champ vide.", values };
+  const trialDays = reseller ? PARTNER_TRIAL_DAYS : TRIAL_DAYS;
 
   const user = await db.user.create({
     data: {
@@ -49,7 +53,7 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
       termsAcceptedAt: new Date(),
       lastLoginAt: new Date(),
       memberships: {
-        create: { role: ROLES.ADMIN, organization: { create: { name: company, trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000), resellerId: reseller?.id ?? null } } },
+        create: { role: ROLES.ADMIN, organization: { create: { name: company, trialEndsAt: new Date(Date.now() + trialDays * 86_400_000), resellerId: reseller?.id ?? null } } },
       },
     },
     include: { memberships: true },

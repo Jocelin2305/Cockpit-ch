@@ -66,7 +66,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         {st.kind === "past_due" && <p className="alert error">Le dernier paiement a échoué. Stripe va le retenter : mettez à jour votre carte pour éviter la coupure.</p>}
         {st.kind === "blocked" && (
           <p className="alert error">
-            {st.reason === "trial_over" ? `Votre essai gratuit de ${TRIAL_DAYS} jours est terminé.` : st.reason === "unpaid" ? "Votre abonnement est suspendu pour impayé." : "Votre abonnement est résilié."}{" "}
+            {st.reason === "trial_over" ? "Votre essai gratuit est terminé." : st.reason === "unpaid" ? "Votre abonnement est suspendu pour impayé." : "Votre abonnement est résilié."}{" "}
             Vos données sont conservées : choisissez une offre pour retrouver l&apos;accès.
           </p>
         )}

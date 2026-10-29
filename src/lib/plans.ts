@@ -26,6 +26,8 @@ export const PLANS: Plan[] = [
 ];
 
 export const TRIAL_DAYS = 14;
+// Essai d'une entreprise apportée par un partenaire revendeur (lien ou code affilié) : un mois offert.
+export const PARTNER_TRIAL_DAYS = 30;
 // Pendant l'essai, l'entreprise a accès aux fonctions du plan le plus complet.
 export const TRIAL_SEATS = 5;
 

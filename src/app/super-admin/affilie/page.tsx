@@ -68,8 +68,9 @@ export default async function AffiliatePage() {
 
       <section className="panel">
         <h2>Apporter un client</h2>
-        <p className="muted small">Partagez votre lien : chaque entreprise qui s&apos;inscrit avec lui vous est rattachée. Vous pouvez aussi créer et paramétrer son compte vous-même dans « Mes clients ».</p>
+        <p className="muted small">Partagez votre lien ou votre code : chaque entreprise qui s&apos;inscrit avec l&apos;un d&apos;eux vous est rattachée et profite de son premier mois offert. Vous pouvez aussi créer et paramétrer son compte vous-même dans « Mes clients ».</p>
         <input className="input mono" readOnly value={referral} aria-label="Lien d'inscription parrainé" />
+        <p className="muted small">Votre code partenaire, à saisir à l&apos;inscription : <b className="mono">{r.code}</b></p>
         <p className="muted small">Lien de démonstration à envoyer à un prospect : <span className="mono">{appUrl()}/demo?source={r.code}</span></p>
       </section>
 
