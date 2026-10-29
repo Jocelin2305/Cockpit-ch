@@ -35,7 +35,10 @@ export async function POST(request: Request) {
         }
         const client = await aiClient(membership.organizationId);
         const context = await assistantContext(ctx, membership.organization.name, user.name, ROLE_LABEL[membership.role]);
-        const messages: Anthropic.Beta.BetaMessageParam[] = parsed.data.messages.map((m) => ({ role: m.role, content: m.content }));
+        // Seuls les 12 derniers échanges repartent à l'IA (les plus anciens coûtaient sans servir).
+        const recent = parsed.data.messages.slice(-12);
+        while (recent[0]?.role !== "user") recent.shift();
+        const messages: Anthropic.Beta.BetaMessageParam[] = recent.map((m, i) => ({ role: m.role, content: m.role === "assistant" && i < recent.length - 2 ? m.content.slice(0, 2000) : m.content }));
         const runner = client.beta.messages.toolRunner(
           {
             model: AI_MODEL,

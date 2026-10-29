@@ -55,6 +55,7 @@ Chaque variable s'ajoute dans Vercel (Settings → Environment Variables), puis 
 | Gmail / Outlook | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | quand on branche la messagerie |
 | Emails de la plateforme (invitations, mot de passe oublié) | `RESEND_API_KEY`, `EMAIL_FROM` (compte resend.com + domaine vérifié) | avant la bêta |
 | Relances automatiques et rapport du lundi | `CRON_SECRET` (une longue valeur aléatoire ; les tâches sont déclarées dans `vercel.json`) | à la mise en ligne |
+| Modèle IA moins cher pour les tâches simples (facultatif) | `ANTHROPIC_MODEL_LIGHT` (ex. `claude-haiku-5-5`) | quand vous voulez |
 | Nom de domaine | dans Vercel : Settings → Domains (par exemple `app.cockpitch.fr`), puis mettre à jour `APP_URL` | quand vous voulez |
 
 ## Avant le lancement commercial
@@ -63,3 +64,4 @@ Chaque variable s'ajoute dans Vercel (Settings → Environment Variables), puis 
 - [ ] Compléter l'identité de la société dans `src/lib/legal.ts` (raison sociale, SIREN, adresse, TVA), puis faire relire les pages Mentions légales, CGU/CGV et Confidentialité par un juriste ; préparer le contrat de sous-traitance (DPA) pour les clients.
 - [x] Validation Google (Gmail) : pas nécessaire pour le lancement (clients onboardés, Outlook sans audit, Gmail en mode test ou via l'administrateur Workspace). À réaborder seulement si besoin.
 - [ ] Programme revendeurs : rédiger le contrat partenaire (formules, engagement 1 an « Zéro risque », commission sur le CA HT encaissé, modalités et date de versement, auto-facturation ou facture du revendeur). Créer dans Stripe l'abonnement partenaire 20 € / mois et le paiement unique de 497 € (onboarding complet) : aujourd'hui l'appli suit les revendeurs et calcule les commissions, mais ne les facture pas encore. Les commissions se versent par virement, à partir de l'IBAN visible dans la fiche du revendeur.
+- [ ] Stripe pour les distributeurs : abonnements des offres A, B, C (mensuel et annuel), option support prioritaire (+15 €/mois), marque blanche 997 € (en 1 ou 3 fois). Aujourd'hui le choix est enregistré et le fondateur active l'offre à réception du paiement.

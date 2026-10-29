@@ -58,3 +58,18 @@ Liste des évolutions demandées par le fondateur, avec ce qui est fait dans ce 
 | 3 | Guide pas à pas de l'appli au style de la page d'accueil | Fait (checklist de démarrage en cartes numérotées) |
 | 4 | Supprimer l'espace démo : l'essai se fait sur Cockpit'ch classique | Fait : `/demo` supprimé, liens de la page d'accueil vers l'essai gratuit, statistiques d'essais dans le super admin |
 | 5 | L'essai devient abonnement sur le même compte | Déjà le cas : le paiement démarre sur l'espace d'essai, rien n'est recréé |
+
+## Sprint 12 : tableau, Paramètres, recherche, offres distributeurs, marque blanche, coût de l'IA
+
+| # | Demande | Statut |
+|---|---|---|
+| 1 | Supprimer « Guide interactif » du Centre d'aide | Fait (infobulles retirées, Guide d'utilisation partout) |
+| 2 | Soleil / lune en haut à droite | Fait, tous les comptes |
+| 3 | Paramètres : signature, entreprise, abonnement en cours, vignettes de connecteurs Obligatoire / Facultatif | Fait. Branchés : Claude (clé par entreprise), Apollo, Gmail, Outlook, HubSpot, Pipedrive, Ringover, Aircall. Bientôt : ChatGPT, Gemini, Lemlist, Lusha, NetHunt, Brevo |
+| 4 | Formulaire de recherche sans doublons, listes déroulantes, sans étape « séquence » | Fait (5 étapes) |
+| 5 | Tableau : ordre stable, barre de tri, email / téléphone / LinkedIn affichés, Enrichir, email cliquable (séquence), téléphone cliquable (appel), Dernière interaction, note sous l'entreprise | Fait |
+| 6 | Réduire les jetons IA | Fait : fiches plafonnées, historique du Copilote limité, résultats d'outils allégés, modèle léger réglable (ANTHROPIC_MODEL_LIGHT) |
+| 7 | Offres distributeurs A / B / C, options, commissions 15 / 5 / 0 %, support, demandes de fonctionnalité | Fait ; paiement Stripe à brancher |
+| 8 | Marque blanche : onglet Personnalisation débloqué par le fondateur, roue chromatique, logo, nom, typographie ; lien affilié brandé ; support = email du distributeur | Fait |
+
+Décisions ouvertes (spécification distributeurs) : essai de 14 jours ou garantie 30 jours ; commission maintenue avec l'option marque blanche (oui par défaut) ; plafond de tickets de l'offre A ; minimum de commission par client actif (désactivé).

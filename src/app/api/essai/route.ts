@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { z } from "zod";
-import { AI_MODEL, aiEnabled, anthropic, FALLBACK } from "@/lib/ai";
+import { AI_MODEL_LIGHT, aiEnabled, anthropic, fallbackFor } from "@/lib/ai";
 
 export const maxDuration = 120;
 
@@ -40,9 +40,9 @@ export async function POST(request: Request) {
     '[{"entreprise":"…","score":0,"priorite":"chaud","angle":"une phrase","signaux":["…","…"],"decideur":"…","email_objet":"…","email_corps":"…"}]';
   try {
     const msg = await anthropic().beta.messages.create({
-      model: AI_MODEL,
+      model: AI_MODEL_LIGHT,
       max_tokens: 8000,
-      ...FALLBACK,
+      ...fallbackFor(AI_MODEL_LIGHT),
       output_config: { effort: "low" },
       messages: [{ role: "user", content: prompt }],
     });

@@ -38,7 +38,7 @@ export function ColorWheel({ label, value, onChange }: { label: string; value: s
     <div className="color-pick">
       <span className="label-text">{label}</span>
       <div className="row">
-        <div ref={wheel} className="wheel" onPointerDown={pick} onPointerMove={pick} role="slider" aria-label={`${label} : teinte et saturation`} aria-valuetext={value}>
+        <div ref={wheel} className="wheel" onPointerDown={pick} onPointerMove={pick} role="slider" aria-label={`${label} : teinte et saturation`} aria-valuemin={0} aria-valuemax={360} aria-valuenow={h} aria-valuetext={value}>
           <i style={{ left: `${50 + rad * Math.sin((h * Math.PI) / 180)}%`, top: `${50 - rad * Math.cos((h * Math.PI) / 180)}%`, background: value }} />
         </div>
         <div className="stack">

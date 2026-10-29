@@ -4,7 +4,7 @@ import { db } from "./db";
 import { delaysFor, ownedSearchId } from "./cockpit";
 import { generateAnglesFor } from "./ai-features";
 import {
-  canRelance, completeness, FIELDS, has, isDue, SEQ_STEPS, STATUSES, stats, statusPatch, stepText, todayISO,
+  canRelance, FIELDS, has, isDue, SEQ_STEPS, STATUSES, stats, statusPatch, stepText, todayISO,
 } from "./prospecting";
 
 export const ASSISTANT_RULES = `
@@ -67,13 +67,16 @@ export function assistantTools(ctx: AssistantCtx, onAction: (label: string) => v
           },
           take: 500,
         });
-        const list = rows.filter((p) => !i.relancesDues || isDue(p, today)).slice(0, 80);
-        return JSON.stringify(
-          list.map((p) => ({
-            id: p.id, entreprise: p.company, fonction: p.contactRole, priorite: p.priority, statut: p.status,
-            relance: p.nextFollowUp, relancesFaites: p.relances, angle: p.angle || null, fiche: `${completeness(p)} %`,
+        const all = rows.filter((p) => !i.relancesDues || isDue(p, today));
+        const list = all.slice(0, 30);
+        return JSON.stringify({
+          total: all.length,
+          ...(all.length > list.length ? { note: "30 premiers affichés : précisez un filtre pour voir les autres." } : {}),
+          prospects: list.map((p) => ({
+            id: p.id, entreprise: p.company, fonction: p.contactRole || undefined, priorite: p.priority, statut: p.status,
+            relance: p.nextFollowUp || undefined, relancesFaites: p.relances || undefined, angle: p.angle || undefined,
           })),
-        );
+        });
       },
     }),
     betaZodTool({
@@ -86,7 +89,7 @@ export function assistantTools(ctx: AssistantCtx, onAction: (label: string) => v
         const step = SEQ_STEPS.find((s) => s.k === key);
         const next = step ? stepText(step.k, step.subj, p, p.search?.template?.steps, ctx.signature) : null;
         return JSON.stringify({
-          ...Object.fromEntries(FIELDS.map((f) => [f.key, p[f.key]])),
+          ...Object.fromEntries(FIELDS.filter((f) => has(p[f.key])).map((f) => [f.key, String(p[f.key]).slice(0, 1500)])),
           priorite: p.priority, statut: p.status, relancesFaites: p.relances, prochaineRelance: p.nextFollowUp,
           recherche: p.search?.name ?? null,
           prochaineEtape: step && next ? { etape: step.t, objet: next.subject, message: next.body } : "séquence email terminée",

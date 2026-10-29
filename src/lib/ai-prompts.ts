@@ -18,5 +18,5 @@ export function searchBrief(s: SearchLike | null | undefined) {
 
 // Fiche prospect réduite aux champs renseignés.
 export function prospectBrief(p: ProspectLike) {
-  return FIELDS.filter((f) => has(p[f.key])).map((f) => `${f.label} : ${p[f.key]}`).join(" ; ") || "fiche presque vide";
+  return FIELDS.filter((f) => has(p[f.key])).map((f) => `${f.label} : ${String(p[f.key]).trim().slice(0, 300)}`).join(" ; ") || "fiche presque vide";
 }

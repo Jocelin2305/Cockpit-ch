@@ -7,12 +7,16 @@ import { decrypt } from "./mail";
 
 // Modèle par défaut : Claude Opus 5.5. Modifiable sans toucher au code via ANTHROPIC_MODEL.
 export const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
+// Tâches simples (compte rendu d'appel, test public) : modèle moins cher si ANTHROPIC_MODEL_LIGHT est renseigné.
+export const AI_MODEL_LIGHT = process.env.ANTHROPIC_MODEL_LIGHT || AI_MODEL;
 
 // En cas de refus par les filtres de sécurité, Anthropic relance automatiquement la demande sur un modèle adapté.
 export const FALLBACK = {
   betas: ["server-side-fallback-2026-07-01"] as Anthropic.Beta.AnthropicBeta[],
   fallbacks: "default" as const,
 };
+// Les modèles Haiku n'ont pas de relance côté serveur.
+export const fallbackFor = (model: string) => (model.includes("haiku") ? {} : FALLBACK);
 
 // Clé de la plateforme (variable d'environnement), utilisée quand l'entreprise n'a pas connecté la sienne.
 export const aiEnabled = () => !!process.env.ANTHROPIC_API_KEY;
@@ -62,14 +66,14 @@ export const HONESTY = `Règles strictes d'honnêteté : n'invente jamais un nom
 export const SYSTEM_PROMPT = `Tu es un Head of Sales B2B expérimenté (prospection outbound, account-based marketing, qualification, CRM), intégré à l'outil de prospection Cockpit'ch. Tu privilégies la qualité des prospects sur le volume, la personnalisation sur l'automatisation et la valeur apportée sur le discours commercial. Pas de conseil générique : appuie-toi sur les données. Réponds en français.
 ${HONESTY}`;
 
-export async function logUsage(ctx: AiContext, feature: string, usage: { input_tokens?: number | null; output_tokens?: number | null }) {
+export async function logUsage(ctx: AiContext, feature: string, usage: { input_tokens?: number | null; output_tokens?: number | null }, model = AI_MODEL) {
   await db.aiUsage
     .create({
       data: {
         organizationId: ctx.organizationId,
         userId: ctx.userId,
         feature,
-        model: AI_MODEL,
+        model,
         inputTokens: usage.input_tokens ?? 0,
         outputTokens: usage.output_tokens ?? 0,
       },
@@ -78,16 +82,16 @@ export async function logUsage(ctx: AiContext, feature: string, usage: { input_t
 }
 
 // Réponse JSON validée par un schéma Zod.
-export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature: string, schema: S, prompt: string, effort: Effort = "medium"): Promise<z.infer<S>> {
+export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature: string, schema: S, prompt: string, effort: Effort = "medium", model = AI_MODEL): Promise<z.infer<S>> {
   const res = await (await aiClient(ctx.organizationId)).beta.messages.parse({
-    model: AI_MODEL,
+    model,
     max_tokens: 16000,
-    ...FALLBACK,
+    ...fallbackFor(model),
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     output_config: { format: betaZodOutputFormat(schema), effort },
     messages: [{ role: "user", content: prompt }],
   });
-  await logUsage(ctx, feature, res.usage);
+  await logUsage(ctx, feature, res.usage, model);
   if (res.stop_reason === "refusal") throw new AiError("L'IA a refusé cette demande. Reformulez les informations et réessayez.");
   if (res.stop_reason === "max_tokens") throw new AiError("La réponse était trop longue : réessayez sur moins d'éléments.");
   if (!res.parsed_output) throw new AiError("La réponse de l'IA était illisible. Réessayez.");

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "./db";
-import { generateJSON, generateText, type AiContext } from "./ai";
+import { AI_MODEL_LIGHT, generateJSON, generateText, type AiContext } from "./ai";
 import { prospectBrief, searchBrief } from "./ai-prompts";
 import { has, isDue, seqSteps, stats, tplDelays, todayISO } from "./prospecting";
 
@@ -114,6 +114,7 @@ Consignes :
 - qualification : pour chacun de ces critères (${framework.join(", ")}), niveau 0 inconnu, 1 partiel, 2 validé, d'après l'appel.
 - infos : seulement ce qui est dit explicitement, sinon null.`,
     "low",
+    AI_MODEL_LIGHT,
   );
 }
 

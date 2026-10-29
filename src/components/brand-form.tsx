@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- logos en data URL, non optimisables par next/image */
 
 import { useActionState, useState } from "react";
 import { FormMessage, SubmitButton } from "@/components/forms";
