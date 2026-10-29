@@ -17,7 +17,7 @@ const STEPS: Step[] = [
   { path: "/app/prospects", target: "fab", title: "6. Noter un appel", text: "Ce bouton sert à noter un appel passé depuis votre portable : choisissez le prospect, tapez vos notes, la fiche se met à jour." },
   { path: "/app/sequences", target: "sequences", title: "7. Vos séquences", text: "Préparez ici vos emails (J0 puis relances espacées automatiquement) et vos messages LinkedIn. Vous les lancez ensuite depuis Prospects." },
   { path: "/app/tableau-de-bord", target: "stats", title: "8. Vos résultats", text: "Taux de réponse, rendez-vous, temps passé au téléphone. Le manager voit aussi les chiffres de chaque commercial, et reçoit le rapport du lundi." },
-  { target: "guide", title: "C'est parti !", text: "Vous pouvez relancer ce guide à tout moment avec « ? Guide », dans le menu." },
+  { target: "guide", title: "C'est parti !", text: "Vous pouvez relancer ce guide à tout moment avec « Guide d'utilisation », en bas du menu." },
 ];
 
 const M = 16;
@@ -128,7 +128,7 @@ export function Tour({ initialStep }: { initialStep: number | null }) {
   );
 }
 
-// « ? Guide » dans le menu : relance le guide depuis n'importe quelle page.
+// « Guide d'utilisation », en bas du menu : relance le guide depuis n'importe quelle page.
 export function GuideButton() {
-  return <button type="button" className="guide-btn" data-tour="guide" onClick={startTour}>? Guide</button>;
+  return <button type="button" className="guide-btn" data-tour="guide" onClick={startTour}>Guide d&apos;utilisation</button>;
 }

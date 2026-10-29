@@ -18,7 +18,7 @@ async function context() {
 export async function disconnectMail() {
   const { user } = await requireMember();
   await db.mailAccount.deleteMany({ where: { userId: user.id } });
-  revalidatePath("/app/parametres");
+  revalidatePath("/app/parametres", "layout");
 }
 
 // Envoie l'étape email suivante d'un prospect depuis la boîte connectée.

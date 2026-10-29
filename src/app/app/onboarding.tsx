@@ -11,7 +11,7 @@ export async function Onboarding({ userId, organizationId }: { userId: string; o
     db.mailMessage.count({ where: { organizationId, direction: "out" } }),
   ]);
   const steps = [
-    { done: !!mailbox, t: "Connecter ma boîte mail", d: "Gmail ou Outlook : vos emails partent de votre adresse.", href: "/app/parametres", cta: "Connecter" },
+    { done: !!mailbox, t: "Connecter ma boîte mail", d: "Gmail ou Outlook : vos emails partent de votre adresse.", href: "/app/parametres/connecteurs/mailing", cta: "Connecter" },
     { done: !!search, t: "Créer ma première recherche", d: "Votre cible en 2 minutes : zone, secteur, taille, fonctions visées.", href: "/app/recherches/nouvelle", cta: "Créer" },
     { done: prospects > 0, t: "Trouver mes prospects", d: "« Lancer la recherche de prospects » remplit votre bibliothèque avec de vraies entreprises.", href: search ? `/app/recherches/${search.id}` : "/app/recherches/nouvelle", cta: "Trouver" },
     { done: sent > 0, t: "Lancer ma séquence", d: "Un clic envoie l'email J0 à tous vos prospects ; les relances suivent.", href: search ? `/app/prospects?recherche=${search.id}` : "/app/prospects", cta: "Lancer" },

@@ -10,13 +10,13 @@ export async function connectPhone(form: FormData) {
   const provider = String(form.get("provider"));
   if (!isPhoneProvider(provider)) return;
   await db.organization.update({ where: { id: membership.organizationId }, data: { phoneProvider: provider, phoneWebhookToken: newToken() } });
-  revalidatePath("/app/parametres");
+  revalidatePath("/app/parametres", "layout");
 }
 
 export async function disconnectPhone() {
   const { membership } = await requireAdmin();
   await db.organization.update({ where: { id: membership.organizationId }, data: { phoneProvider: null, phoneWebhookToken: null } });
-  revalidatePath("/app/parametres");
+  revalidatePath("/app/parametres", "layout");
 }
 
 // Appel manqué ou message vocal traité : il disparaît du Point du jour.

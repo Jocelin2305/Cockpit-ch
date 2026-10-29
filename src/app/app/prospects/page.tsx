@@ -108,7 +108,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         showSearch
         empty={prospects.length ? "Aucun prospect ne correspond à ces filtres." : "Aucun prospect pour l'instant. Ajoutez-en un ou importez une liste."}
       />
-      <p className="hint">Coordonnées : cliquez sur T (numéro direct), E (email) ou L (LinkedIn) pour les afficher. Une valeur « À enrichir » compte comme manquante. Clic droit sur une ligne ou une bibliothèque : stopper ou reprendre la séquence, supprimer.{!mailbox && <> Pour lancer une séquence, <Link href="/app/parametres">connectez votre boîte mail</Link>.</>}</p>
+      <p className="hint">Coordonnées : cliquez sur T (numéro direct), E (email) ou L (LinkedIn) pour les afficher. Une valeur « À enrichir » compte comme manquante. Clic droit sur une ligne ou une bibliothèque : stopper ou reprendre la séquence, supprimer.{!mailbox && <> Pour lancer une séquence, <Link href="/app/parametres/connecteurs/mailing">connectez votre boîte mail</Link>.</>}</p>
       </>)}
     </div>
   );

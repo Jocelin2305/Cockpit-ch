@@ -11,7 +11,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   const expected = jar.get("cp_mail_state")?.value;
   jar.delete("cp_mail_state");
   const code = url.searchParams.get("code");
-  if (!isProvider(provider) || !code || expected !== `${provider}:${url.searchParams.get("state")}`) redirect("/app/parametres?mail=refuse");
+  if (!isProvider(provider) || !code || expected !== `${provider}:${url.searchParams.get("state")}`) redirect("/app/parametres/connecteurs/mailing?mail=refuse");
   let ok = true;
   try {
     await connectAccount(provider, code, user.id);
@@ -19,5 +19,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     if (!(e instanceof MailError)) console.error(e);
     ok = false;
   }
-  redirect(`/app/parametres?mail=${ok ? "ok" : "erreur"}`);
+  redirect(`/app/parametres/connecteurs/mailing?mail=${ok ? "ok" : "erreur"}`);
 }

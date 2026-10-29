@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { Brand } from "@/components/brand";
+import { BackButton } from "@/components/back-button";
 import { NavLinks, type NavItem } from "@/components/shell";
 import { requireAdminSpace } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -28,7 +30,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
         }]
       : []),
     ...(reseller ? [{ label: "Partenaire", items: [{ href: "/super-admin/affilie", label: "Espace affilié" }] }] : []),
-    ...(membership ? [{ label: "Mon entreprise", items: [{ href: "/app", label: "Mon espace de travail" }] }] : []),
+    ...(membership ? [{ label: "Mon entreprise", items: [{ href: "/app", label: "Copilote IA (mon espace)" }] }] : []),
   ];
   return (
     <div className="shell">
@@ -53,7 +55,10 @@ export default async function SuperAdminLayout({ children }: { children: React.R
           </div>
         </div>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main">
+        <Suspense fallback={null}><BackButton /></Suspense>
+        {children}
+      </main>
     </div>
   );
 }

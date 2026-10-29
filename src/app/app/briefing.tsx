@@ -11,7 +11,7 @@ const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 
 type Viewer = { user: { id: string; name: string; signature: string }; membership: { organizationId: string; organization: { phoneProvider: string | null } } };
 
-// Point du jour : la première réponse de l'agent dans l'Espace de travail, à chaque ouverture.
+// Point du jour : la première réponse de l'agent dans le Copilote IA, à chaque ouverture.
 export async function Briefing({ user, membership }: Viewer) {
   const orgId = membership.organizationId;
   const today = todayISO();
@@ -94,7 +94,7 @@ export async function Briefing({ user, membership }: Viewer) {
             ))}
           </div>
         ) : (
-          <p className="muted">Connectez votre boîte Gmail ou Outlook dans <Link href="/app/parametres">Paramètres</Link> : chaque matin, ce point lira les réponses de vos prospects et vous enverrez vos relances en un clic.</p>
+          <p className="muted">Connectez votre boîte Gmail ou Outlook dans <Link href="/app/parametres/connecteurs/mailing">Paramètres → Connecteurs</Link> : chaque matin, ce point lira les réponses de vos prospects et vous enverrez vos relances en un clic.</p>
         )}
         {missed.length > 0 && (
           <div className="list">

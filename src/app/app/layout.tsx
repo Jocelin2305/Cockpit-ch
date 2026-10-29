@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { BackButton } from "@/components/back-button";
 import { Brand } from "@/components/brand";
 import { NavLinks, NavMenu, type NavItem } from "@/components/shell";
 import { CallDock } from "@/components/call-dock";
@@ -33,14 +35,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const todo = due + callBacks;
 
   const tools: NavItem[] = [
-    { href: "/app", label: "Espace de travail", count: todo || undefined, alert: todo > 0, tip: "Votre agent IA : il ouvre chaque journée avec votre point du jour, puis répond à toutes vos demandes." },
+    { href: "/app", label: "Copilote IA", count: todo || undefined, alert: todo > 0, tip: "Votre agent IA : il ouvre chaque journée avec votre point du jour, puis répond à toutes vos demandes." },
     { href: "/app/prospects", label: "Prospects", tip: "Vos bibliothèques de recherches et le tableau de suivi : cliquez sur T, E ou L pour voir les coordonnées, notez vos infos sur chaque ligne." },
     { href: "/app/sequences", label: "Séquences messages", tip: "Préparez vos modèles d'emails et de messages LinkedIn ; lancez-les depuis Prospects." },
     { href: "/app/tableau-de-bord", label: "Tableau de bord", tip: "Votre pipeline, vos stats d'appels et, pour le manager, celles de l'équipe." },
   ];
   const account: NavItem[] = [
     { href: "/app/equipe", label: "Équipe" },
-    { href: "/app/parametres", label: "Paramètres", tip: "Signature des emails, entreprise et abonnement." },
+    { href: "/app/parametres", label: "Paramètres", tip: "Signature, automatisations, entreprise, abonnement et connecteurs (mailing, CRM, téléphonie, IA, enrichissement)." },
     { href: "/app/aide", label: "Centre d'aide", tip: "Activez ou désactivez ce guide, retrouvez les réponses rapides et le support." },
     ...(reseller ? [{ href: "/super-admin/affilie", label: "Espace affilié" }] : []),
     ...(user.isSuperAdmin ? [{ href: "/super-admin", label: "Super admin" }] : reseller ? [{ href: "/super-admin", label: "Super admin revendeur" }] : []),
@@ -58,8 +60,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLinks items={tools} />
         </div>
         <NavMenu label="Compte" items={account} />
-        <GuideButton />
         <div className="rail-foot">
+          <GuideButton />
           <div>
             <b>{user.name}</b>
             <span className="muted small">{onboarding ? "Super admin" : ROLE_LABEL[membership.role]}</span>
@@ -73,6 +75,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <main className="main">
+        <Suspense fallback={null}><BackButton /></Suspense>
         {onboarding && (
           <form action={leaveOrganization} className="alert banner row between">
             <span>Vous paramétrez l&apos;espace de <b>{membership.organization.name}</b> en tant que super admin. Tout ce que vous créez ici appartient au client.</span>

@@ -7,7 +7,7 @@ import { AssistantChat } from "./assistant-chat";
 import { Briefing } from "./briefing";
 import { Onboarding } from "./onboarding";
 
-export const metadata: Metadata = { title: "Espace de travail" };
+export const metadata: Metadata = { title: "Copilote IA" };
 
 export default async function WorkspacePage() {
   const { user, membership } = await requireMember();
@@ -36,7 +36,7 @@ export default async function WorkspacePage() {
       <header className="view-head">
         <div>
           <span className="label">{membership.organization.name} · {searchCount} recherche{searchCount > 1 ? "s" : ""} · {prospects.length} prospects</span>
-          <h1>Espace de travail</h1>
+          <h1>Copilote IA</h1>
         </div>
       </header>
       {membership.role === ROLES.ADMIN && !user.onboardingHidden && <Onboarding userId={user.id} organizationId={orgId} />}
