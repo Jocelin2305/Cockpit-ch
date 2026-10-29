@@ -6,6 +6,7 @@ import { SignatureForm } from "./signature-form";
 import { MailPanel } from "./mail-panel";
 import { PhonePanel } from "./phone-panel";
 import { DataPanel } from "./data-panel";
+import { CrmPanel } from "./crm-panel";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
@@ -30,6 +31,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       {isAdmin && (
         <>
           <PhonePanel provider={membership.organization.phoneProvider} token={membership.organization.phoneWebhookToken} />
+          <CrmPanel provider={membership.organization.crmProvider} />
           <section className="panel">
             <h2>Entreprise</h2>
             <OrgForm name={membership.organization.name} />

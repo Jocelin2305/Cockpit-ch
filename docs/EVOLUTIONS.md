@@ -16,3 +16,15 @@ Liste des évolutions demandées par le fondateur, avec ce qui est fait dans ce 
 | 10 | Compte fondateur = super admin ; lui seul peut donner l'accès super admin | Sprint 4 |
 | 11 | Le super admin pré-paramètre les comptes clients pour les onboarder en direct | Sprint 4 (créer l'entreprise et ses utilisateurs, ouvrir son espace pour le configurer) |
 | 12 | À chaque connexion / chaque matin : point complet du quotidien (emails, messagerie vocale, appels manqués, emails à faire / relancer) | Sprint 4 : briefing à partir des données de l'outil. Emails, messagerie et appels manqués : arrivent avec les connecteurs (Gmail / Outlook, téléphonie) |
+
+## Sprint 8 : revendeurs, CRM, lancement des séquences
+
+| # | Demande | Statut |
+|---|---|---|
+| 1 | Super admin revendeur : même appli, mêmes droits que le fondateur mais limités à ses clients (onboarding, paramétrage) | Fait |
+| 2 | Fondateur : module « Partenaires revendeurs » (revendeurs, comptes actifs, CA, commission par revendeur, communication à tous) | Fait |
+| 3 | Espace affilié : paliers de commission, formules Zéro risque (65 %) et Onboarding complet (85 %), dossier RIB / SIRET / entreprise / adresse / gérant, centre d'aide vidéos (démo, vente, onboarding) | Fait ; facturation Stripe des abonnements partenaires à venir |
+| 4 | Bouton « Rechercher des prospects » au-dessus des outils | Fait |
+| 5 | Prospects : rien n'est affiché avant d'ouvrir une bibliothèque | Fait |
+| 6 | « Mettre à jour mon CRM », visible seulement avec un CRM connecté (HubSpot, Pipedrive) | Fait, à tester avec un vrai compte CRM |
+| 7 | Lancer la séquence email en un clic depuis Prospects | Fait (email J0 à tous les prospects à contacter de la bibliothèque) |

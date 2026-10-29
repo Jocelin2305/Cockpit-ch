@@ -378,3 +378,24 @@ td.notes { min-width: 200px; }
 .msg.briefing-msg { max-width: 100%; width: 100%; }
 .briefing { display: flex; flex-direction: column; gap: 14px; }
 .briefing .panel { padding: 14px; }
+
+/* Revendeurs : formules, paliers, vidéos */
+.offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
+.offer-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); }
+.offer-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.offer-card .big { font-family: var(--f-mono); font-size: 1.8rem; font-weight: 500; }
+.offer-card ul { margin: 6px 0 0; padding-left: 18px; font-size: 0.85rem; }
+.milestones { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 10px 0; }
+.milestone { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.milestone b { font-family: var(--f-mono); font-size: 1.15rem; }
+.milestone.on { background: var(--good-soft); border-color: transparent; }
+.milestone.next { border-color: var(--accent); border-style: dashed; }
+.videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.video { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; }
+.video img, .video-ph { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: var(--sunk); display: grid; place-items: center; font-size: 1.6rem; color: var(--muted); }
+.message { border-left: 3px solid var(--accent); padding: 4px 12px; }
+.pre { white-space: pre-wrap; margin: 6px 0 0; }
+.dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 20px; margin: 10px 0; }
+.dl dt { font-size: 0.8rem; color: var(--muted); } .dl dd { margin: 0; }
+.rail-cta { display: block; text-align: center; margin: 4px 0 10px; }
+.library-hint { padding: 28px; text-align: center; border: 1px dashed var(--line); border-radius: 10px; }

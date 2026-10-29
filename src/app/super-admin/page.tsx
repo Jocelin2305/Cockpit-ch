@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { isSuperAdminEmail, requireSuperAdmin, ROLES } from "@/lib/auth";
+import { isSuperAdminEmail, requireAdminSpace, ROLES } from "@/lib/auth";
 import { accessState } from "@/lib/billing";
 import { planById } from "@/lib/plans";
 import { enterOrganization, setSuperAdmin } from "./actions";
@@ -13,29 +13,28 @@ export const metadata: Metadata = { title: "Super admin" };
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 const fmt = (d: Date | null) => (d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "jamais");
 
-async function loadOverview() {
+// Revendeur (resellerId) : uniquement ses clients ; ni démos ni coûts IA.
+async function loadOverview(resellerId: string | null) {
   const weekAgo = new Date(Date.now() - 7 * 86_400_000);
   // Les visiteurs de la démo ne comptent pas comme utilisateurs.
-  const real = { NOT: { email: { endsWith: `@${DEMO_DOMAIN}` } } };
+  const real = { NOT: { email: { endsWith: `@${DEMO_DOMAIN}` } }, ...(resellerId ? { memberships: { some: { organization: { resellerId } } } } : {}) };
+  const sinceMonth = new Date(Date.now() - 30 * 86_400_000);
   return Promise.all([
     db.organization.findMany({
-      where: { isDemo: false },
+      where: { isDemo: false, ...(resellerId ? { resellerId } : {}) },
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { memberships: true } },
         memberships: { where: { role: ROLES.ADMIN }, include: { user: true }, orderBy: { createdAt: "asc" }, take: 1 },
+        reseller: { select: { companyName: true, email: true } },
       },
     }),
     db.user.count({ where: real }),
     db.user.count({ where: { ...real, createdAt: { gte: weekAgo } } }),
     db.user.count({ where: { ...real, lastLoginAt: { gte: weekAgo } } }),
     db.user.findMany({ where: real, orderBy: { createdAt: "desc" }, take: 10, include: { memberships: { include: { organization: true } } } }),
-    db.demoVisit.findMany({ where: { createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } }, select: { createdAt: true, convertedAt: true, source: true } }),
-    db.aiUsage.groupBy({
-      by: ["organizationId"],
-      where: { createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } },
-      _sum: { inputTokens: true, outputTokens: true },
-    }),
+    resellerId ? [] : db.demoVisit.findMany({ where: { createdAt: { gte: sinceMonth } }, select: { createdAt: true, convertedAt: true, source: true } }),
+    resellerId ? [] : db.aiUsage.groupBy({ by: ["organizationId"], where: { createdAt: { gte: sinceMonth } }, _sum: { inputTokens: true, outputTokens: true } }),
   ]);
 }
 
@@ -44,9 +43,9 @@ const estimate = (input: number, output: number) => (input * 4 + output * 20) / 
 const fmtTokens = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} M` : n >= 1000 ? `${Math.round(n / 1000)} k` : String(n));
 
 export default async function SuperAdminPage() {
-  const { user: me } = await requireSuperAdmin();
-  await cleanupDemos().catch(() => 0);
-  const [organizations, userCount, newUsers, activeUsers, recentUsers, demos, aiByOrg] = await loadOverview();
+  const { user: me, resellerId } = await requireAdminSpace();
+  if (!resellerId) await cleanupDemos().catch(() => 0);
+  const [organizations, userCount, newUsers, activeUsers, recentUsers, demos, aiByOrg] = await loadOverview(resellerId);
   const demosWeek = demos.filter((d) => d.createdAt > daysAgo(7)).length;
   const converted = demos.filter((d) => d.convertedAt).length;
   const sources = Object.entries(demos.reduce<Record<string, number>>((acc, d) => ({ ...acc, [d.source || "lien direct"]: (acc[d.source || "lien direct"] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1]);
@@ -65,9 +64,9 @@ export default async function SuperAdminPage() {
     <div className="view">
       <header className="view-head">
         <div>
-          <span className="label">Fondateur</span>
-          <h1>Vue d&apos;ensemble</h1>
-          <p className="muted">Toutes les entreprises clientes et leurs utilisateurs.</p>
+          <span className="label">{resellerId ? "Super admin revendeur" : me.isFounder ? "Fondateur" : "Super admin"}</span>
+          <h1>{resellerId ? "Mes clients" : "Vue d'ensemble"}</h1>
+          <p className="muted">{resellerId ? "Les entreprises que vous avez apportées : onboardez-les, paramétrez leur espace, suivez leur abonnement." : "Toutes les entreprises clientes et leurs utilisateurs."}</p>
         </div>
       </header>
 
@@ -83,14 +82,14 @@ export default async function SuperAdminPage() {
         <div className="kpi"><span className="v">{trials}</span><span className="k">en essai gratuit</span></div>
         <div className="kpi"><span className="v">{organizations.length - paying.length - trials}</span><span className="k">essai terminé ou résilié</span></div>
       </div>
-      <div className="kpis">
+      {!resellerId && <div className="kpis">
         <div className="kpi"><span className="v">{demosWeek}</span><span className="k">démos ouvertes (7 jours)</span></div>
         <div className="kpi"><span className="v">{demos.length}</span><span className="k">démos ouvertes (30 jours)</span></div>
         <div className="kpi win"><span className="v">{converted}</span><span className="k">démos converties en espace (30 jours)</span></div>
         <div className="kpi"><span className="v">{demos.length ? Math.round((converted / demos.length) * 100) : 0} %</span><span className="k">taux de conversion</span></div>
-      </div>
+      </div>}
       {sources.length > 0 && <p className="muted small">Provenance des démos (30 jours) : {sources.map(([s, n]) => `${s} (${n})`).join(" · ")}.</p>}
-      <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarif public Claude Opus 5.5, hors réductions du cache).</p>
+      {!resellerId && <p className="muted small">Coût IA estimé sur 30 jours, toutes entreprises : ≈ {aiTotal.toFixed(2)} $ (tarif public Claude Opus 5.5, hors réductions du cache).</p>}
 
       <section className="panel">
         <h2>Onboarder un nouveau client</h2>
@@ -103,11 +102,11 @@ export default async function SuperAdminPage() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Abonnement</th><th>IA (30 jours)</th><th>Créée le</th><th aria-label="Actions" /></tr>
+              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Abonnement</th>{!resellerId && <th>Revendeur</th>}{!resellerId && <th>IA (30 jours)</th>}<th>Créée le</th><th aria-label="Actions" /></tr>
             </thead>
             <tbody>
               {organizations.length === 0 && (
-                <tr><td colSpan={7} className="muted">Aucune entreprise pour l&apos;instant.</td></tr>
+                <tr><td colSpan={8} className="muted">Aucune entreprise pour l&apos;instant.</td></tr>
               )}
               {organizations.map((o) => (
                 <tr key={o.id}>
@@ -115,7 +114,8 @@ export default async function SuperAdminPage() {
                   <td>{o.memberships[0]?.user.email ?? <span className="muted">aucun</span>}</td>
                   <td className="num">{o._count.memberships}</td>
                   <td><span className={`chip ${["active", "past_due"].includes(states.get(o.id)!.kind) ? "ok" : states.get(o.id)!.kind === "blocked" ? "late" : ""}`}>{statusLabel(o.id)}</span></td>
-                  <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.i + u.o)} jetons · ≈ ${estimate(u.i, u.o).toFixed(2)} $` : <span className="muted">—</span>; })()}</td>
+                  {!resellerId && <td>{o.isPartner ? <span className="chip">espace partenaire</span> : o.reseller ? o.reseller.companyName || o.reseller.email : <span className="muted">direct</span>}</td>}
+                  {!resellerId && <td className="num">{(() => { const u = ai.get(o.id); return u ? `${fmtTokens(u.i + u.o)} jetons · ≈ ${estimate(u.i, u.o).toFixed(2)} $` : <span className="muted">—</span>; })()}</td>}
                   <td className="muted">{fmt(o.createdAt)}</td>
                   <td><div className="inline"><form action={enterOrganization}><input type="hidden" name="id" value={o.id} /><button className="btn sm primary" type="submit">Paramétrer</button></form><Link className="btn sm" href={`/super-admin/entreprises/${o.id}`}>Détail</Link></div></td>
                 </tr>

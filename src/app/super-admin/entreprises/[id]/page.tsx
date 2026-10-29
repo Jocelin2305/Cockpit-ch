@@ -2,14 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { requireSuperAdmin, ROLE_LABEL } from "@/lib/auth";
+import { requireAdminSpace, ROLE_LABEL } from "@/lib/auth";
+import { assignReseller } from "../../partenaires/actions";
 
 export const metadata: Metadata = { title: "Entreprise" };
 
 const fmt = (d: Date | null) => (d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "jamais");
 
 export default async function OrganizationDetail({ params }: { params: Promise<{ id: string }> }) {
-  await requireSuperAdmin();
+  const { user, resellerId } = await requireAdminSpace();
   const { id } = await params;
   const org = await db.organization.findUnique({
     where: { id },
@@ -20,7 +21,8 @@ export default async function OrganizationDetail({ params }: { params: Promise<{
       _count: { select: { prospects: true, templates: true } },
     },
   });
-  if (!org) notFound();
+  if (!org || (resellerId && org.resellerId !== resellerId)) notFound();
+  const resellers = user.isFounder ? await db.reseller.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true, email: true } }) : [];
 
   return (
     <div className="view">
@@ -30,6 +32,16 @@ export default async function OrganizationDetail({ params }: { params: Promise<{
           <h1>{org.name}</h1>
           <p className="muted">Créée le {fmt(org.createdAt)} · formule <span className="chip">{org.plan}</span></p>
         </div>
+        {user.isFounder && !org.isPartner && (
+          <form action={assignReseller} className="inline">
+            <input type="hidden" name="orgId" value={org.id} />
+            <select className="input" name="resellerId" defaultValue={org.resellerId ?? ""} aria-label="Revendeur">
+              <option value="">Client direct (sans revendeur)</option>
+              {resellers.map((r) => <option key={r.id} value={r.id}>{r.companyName || r.email}</option>)}
+            </select>
+            <button className="btn sm" type="submit">Attribuer</button>
+          </form>
+        )}
       </header>
 
       <section className="panel flush">

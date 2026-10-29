@@ -58,6 +58,13 @@ model Organization {
   // Téléphonie connectée (aircall, ringover, generique) et jeton secret de son webhook.
   phoneProvider        String?
   phoneWebhookToken    String?   @unique
+  // CRM connecté (hubspot, pipedrive) et son jeton d'accès chiffré.
+  crmProvider          String?
+  crmTokenEnc          String?
+  // Revendeur qui a apporté ce client (commission), et espace propre d'un revendeur (accès offert).
+  resellerId           String?
+  reseller             Reseller? @relation(fields: [resellerId], references: [id], onDelete: SetNull)
+  isPartner            Boolean   @default(false)
   createdAt   DateTime     @default(now())
   memberships Membership[]
   invitations Invitation[]
@@ -178,6 +185,9 @@ model Prospect {
   lastCallAt     String?
   qualif         Json?
   sequence       Json?
+  // Fiche correspondante dans le CRM connecté.
+  crmId          String?
+  crmSyncedAt    DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -327,4 +337,48 @@ model DemoVisit {
   createdAt      DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ---------- Revendeurs ----------
+
+// Partenaire revendeur : utilise l'appli dans son propre espace et touche une commission sur les clients qu'il apporte.
+// Rattaché à un compte utilisateur par son email.
+model Reseller {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  // Code du lien d'inscription parrainé (/inscription?partenaire=CODE).
+  code          String         @unique
+  // Formule (src/lib/resellers.ts) : zero_risque ou onboarding.
+  offer         String
+  active        Boolean        @default(true)
+  companyName   String         @default("")
+  siret         String         @default("")
+  address       String         @default("")
+  managerName   String         @default("")
+  managerEmail  String         @default("")
+  managerPhone  String         @default("")
+  // IBAN chiffré (AES-256-GCM) ; seuls les 4 derniers caractères restent lisibles.
+  ibanEnc       String         @default("")
+  ibanLast4     String         @default("")
+  bic           String         @default("")
+  createdAt     DateTime       @default(now())
+  organizations Organization[]
+}
+
+// Communication du fondateur à tous les revendeurs, affichée dans leur Espace affilié.
+model ResellerMessage {
+  id        String   @id @default(cuid())
+  subject   String
+  body      String
+  emailed   Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Vidéos du centre d'aide affilié (liens YouTube) : demo, vente ou onboarding.
+model ResellerVideo {
+  id        String   @id @default(cuid())
+  category  String
+  title     String
+  url       String
+  createdAt DateTime @default(now())
 }

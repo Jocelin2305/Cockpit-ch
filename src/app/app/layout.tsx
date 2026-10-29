@@ -5,7 +5,7 @@ import { CallDock } from "@/components/call-dock";
 import { Guide } from "@/components/guide";
 import { Tour } from "@/components/tour";
 import { db } from "@/lib/db";
-import { requireMember, ROLE_LABEL } from "@/lib/auth";
+import { requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
 import { accessState } from "@/lib/billing";
 import { aiEnabled } from "@/lib/ai";
@@ -17,7 +17,7 @@ import { leaveOrganization } from "../super-admin/actions";
 const demoHoursLeft = (end: Date | null) => Math.max(1, Math.ceil(((end?.getTime() ?? 0) - Date.now()) / 3600_000));
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, membership, onboarding } = await requireMember();
+  const { user, membership, onboarding, reseller } = await requireMember();
   const orgId = membership.organizationId;
   await ensureStandardTemplate(orgId);
   const today = todayISO();
@@ -35,20 +35,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const tools: NavItem[] = [
     { href: "/app", label: "Espace de travail", count: todo || undefined, alert: todo > 0, tip: "Votre agent IA : il ouvre chaque journée avec votre point du jour, puis répond à toutes vos demandes." },
     { href: "/app/prospects", label: "Prospects", tip: "Vos bibliothèques de recherches et le tableau de suivi : cliquez sur T, E ou L pour voir les coordonnées, notez vos infos sur chaque ligne." },
-    { href: "/app/sequences", label: "Séquences messages", tip: "Vos modèles d'emails (J0 + 5 relances) et de messages LinkedIn." },
+    { href: "/app/sequences", label: "Séquences messages", tip: "Préparez vos modèles d'emails et de messages LinkedIn ; lancez-les depuis Prospects." },
     { href: "/app/tableau-de-bord", label: "Tableau de bord", tip: "Votre pipeline, vos stats d'appels et, pour le manager, celles de l'équipe." },
   ];
   const account: NavItem[] = [
     { href: "/app/equipe", label: "Équipe" },
     { href: "/app/parametres", label: "Paramètres", tip: "Signature des emails, entreprise et abonnement." },
     { href: "/app/aide", label: "Centre d'aide", tip: "Activez ou désactivez ce guide, retrouvez les réponses rapides et le support." },
-    ...(user.isSuperAdmin ? [{ href: "/super-admin", label: "Super admin" }] : []),
+    ...(reseller ? [{ href: "/super-admin/affilie", label: "Espace affilié" }] : []),
+    ...(user.isSuperAdmin ? [{ href: "/super-admin", label: "Super admin" }] : reseller ? [{ href: "/super-admin", label: "Super admin revendeur" }] : []),
   ];
 
   return (
     <div className="shell">
       <aside className="rail">
         <Brand sub={membership.organization.name} />
+        <Link className="btn primary rail-cta" href={membership.role === ROLES.ADMIN ? "/app/recherches/nouvelle" : "/app/prospects"} data-tip="Lancez une nouvelle recherche : questionnaire de ciblage, prospects, séquence.">
+          Rechercher des prospects
+        </Link>
         <div className="navsec hl">
           <span className="label">Outils</span>
           <NavLinks items={tools} />

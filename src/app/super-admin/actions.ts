@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { appUrl, hashToken, isSuperAdminEmail, newToken, requireSuperAdmin, requireUser, ROLES } from "@/lib/auth";
+import { appUrl, hashToken, isSuperAdminEmail, newToken, requireAdminSpace, requireSuperAdmin, requireUser, ROLES } from "@/lib/auth";
 import { TRIAL_DAYS } from "@/lib/plans";
 import { inviteEmail, sendPlatformEmail } from "@/lib/email";
 import { firstError, nameField, type FormState } from "@/lib/validation";
@@ -13,9 +13,9 @@ const INVITE_DAYS = 14;
 
 // Ouvre l'espace d'un client pour le paramétrer (recherches, séquences, prospects, équipe).
 export async function enterOrganization(form: FormData) {
-  const { sessionId } = await requireSuperAdmin();
-  const org = await db.organization.findUnique({ where: { id: String(form.get("id")) }, select: { id: true } });
-  if (!org) redirect("/super-admin");
+  const { sessionId, resellerId } = await requireAdminSpace();
+  const org = await db.organization.findUnique({ where: { id: String(form.get("id")) }, select: { id: true, resellerId: true } });
+  if (!org || (resellerId && org.resellerId !== resellerId)) redirect("/super-admin");
   await db.session.update({ where: { id: sessionId }, data: { organizationId: org.id } });
   redirect("/app/tableau-de-bord");
 }
@@ -30,8 +30,9 @@ export async function leaveOrganization() {
 const clientSchema = z.object({ company: nameField, email: z.string().trim().toLowerCase().email("Email de l'administrateur invalide.") });
 
 // Crée le compte d'un client (essai gratuit) et l'invitation de son administrateur.
+// Créé par un revendeur, le client lui est rattaché.
 export async function createClient(_: FormState, form: FormData): Promise<FormState> {
-  const { user } = await requireSuperAdmin();
+  const { user, resellerId } = await requireAdminSpace();
   const values = { company: String(form.get("company") ?? ""), email: String(form.get("email") ?? "") };
   const parsed = clientSchema.safeParse(values);
   if (!parsed.success) return { error: firstError(parsed.error), values };
@@ -40,6 +41,7 @@ export async function createClient(_: FormState, form: FormData): Promise<FormSt
     data: {
       name: parsed.data.company,
       trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000),
+      resellerId,
       invitations: {
         create: { email: parsed.data.email, role: ROLES.ADMIN, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + INVITE_DAYS * 86_400_000), invitedById: user.id },
       },

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { sendDueEmails, sendNextEmail } from "@/app/app/mail-actions";
+import { launchSequence, sendDueEmails, sendNextEmail } from "@/app/app/mail-actions";
+import { updateCrm } from "@/app/app/crm-actions";
 
 type Res = { ok?: string; error?: string };
 
@@ -30,6 +31,37 @@ export function SendDueButton({ includeFirst, label, primary }: { includeFirst: 
     <span className="ai-action">
       <button type="button" className={primary ? "btn sm primary" : "btn sm"} disabled={s.pending} onClick={s.go} data-tip="Envoie tous ces emails en un clic depuis votre boîte connectée.">
         {s.pending ? "Envoi en cours…" : label}
+      </button>
+      {s.res.error && <span className="ai-msg error">{s.res.error}</span>}
+      {s.res.ok && <span className="ai-msg">{s.res.ok}</span>}
+    </span>
+  );
+}
+
+// Un clic : email J0 à tous les prospects « À contacter » de la bibliothèque, après confirmation.
+export function LaunchSequenceButton({ searchId, count, ready }: { searchId: string | null; count: number; ready: boolean }) {
+  const s = useSend(() => launchSequence(searchId));
+  const go = () => {
+    if (!ready) return s.go();
+    if (window.confirm(`Envoyer l'email J0 à ${count} prospect${count > 1 ? "s" : ""} depuis votre boîte connectée ?`)) s.go();
+  };
+  return (
+    <span className="ai-action">
+      <button type="button" className="btn primary" disabled={s.pending || !count} onClick={go} data-tip="Envoie l'email J0 de la séquence à tous les prospects à contacter de cette bibliothèque ; les relances se programment seules.">
+        {s.pending ? "Lancement…" : `Lancer la séquence${count ? ` (${count})` : ""}`}
+      </button>
+      {s.res.error && <span className="ai-msg error">{s.res.error}</span>}
+      {s.res.ok && <span className="ai-msg">{s.res.ok}</span>}
+    </span>
+  );
+}
+
+export function UpdateCrmButton({ searchId, crm }: { searchId: string | null; crm: string }) {
+  const s = useSend(() => updateCrm(searchId));
+  return (
+    <span className="ai-action">
+      <button type="button" className="btn" disabled={s.pending} onClick={s.go} data-tip={`Crée ou met à jour ces prospects dans ${crm}.`}>
+        {s.pending ? "Mise à jour…" : "Mettre à jour mon CRM"}
       </button>
       {s.res.error && <span className="ai-msg error">{s.res.error}</span>}
       {s.res.ok && <span className="ai-msg">{s.res.ok}</span>}

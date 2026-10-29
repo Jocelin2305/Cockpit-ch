@@ -5,11 +5,12 @@ import { signup } from "../actions";
 import { FormMessage, SubmitButton } from "@/components/forms";
 import { TermsCheck } from "@/components/terms-check";
 
-export function SignupForm() {
+export function SignupForm({ partner }: { partner?: string }) {
   const [state, action] = useActionState(signup, undefined);
   const v = state?.values ?? {};
   return (
     <form action={action} className="stack">
+      {partner && <input type="hidden" name="partner" value={partner} />}
       <FormMessage error={state?.error} />
       <label className="field">
         <span className="label-text">Votre nom</span>

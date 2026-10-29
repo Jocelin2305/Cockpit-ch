@@ -63,18 +63,20 @@ export const getSession = cache(async () => {
         include: { organization: true },
       })
     : null;
-  // Le super admin peut ouvrir l'espace d'un client pour le paramétrer : il y agit comme administrateur.
+  // Revendeur actif rattaché à ce compte : super admin de ses propres clients.
+  const reseller = await db.reseller.findFirst({ where: { email: session.user.email, active: true } });
+  // Le super admin (ou le revendeur, pour ses clients) peut ouvrir l'espace d'un client pour le paramétrer : il y agit comme administrateur.
   let onboarding = false;
-  if (!membership && session.organizationId && session.user.isSuperAdmin) {
+  if (!membership && session.organizationId && (session.user.isSuperAdmin || reseller)) {
     const organization = await db.organization.findUnique({ where: { id: session.organizationId } });
-    if (organization) {
+    if (organization && (session.user.isSuperAdmin || organization.resellerId === reseller?.id)) {
       membership = { id: "super-admin", role: ROLES.ADMIN, createdAt: session.createdAt, userId: session.userId, organizationId: organization.id, organization };
       onboarding = true;
     }
   }
   // Fondateur (SUPER_ADMIN_EMAILS) : toujours super admin, seul à pouvoir accorder ce droit.
   const user = { ...session.user, isFounder: isSuperAdminEmail(session.user.email) };
-  return { sessionId: session.id, user, membership, onboarding };
+  return { sessionId: session.id, user, membership, onboarding, reseller };
 });
 
 export async function requireUser() {
@@ -87,8 +89,8 @@ export async function requireUser() {
 // sauf pour les pages qui servent justement à payer (allowInactive) et pour le super admin.
 export async function requireMember(opts: { allowInactive?: boolean } = {}) {
   const session = await requireUser();
-  if (!session.membership) redirect(session.user.isSuperAdmin ? "/super-admin" : "/connexion?erreur=sans-entreprise");
-  if (!opts.allowInactive && !session.user.isSuperAdmin && !hasAccess(session.membership.organization)) redirect("/abonnement");
+  if (!session.membership) redirect(session.user.isSuperAdmin || session.reseller ? "/super-admin" : "/connexion?erreur=sans-entreprise");
+  if (!opts.allowInactive && !session.user.isSuperAdmin && !session.onboarding && !hasAccess(session.membership.organization)) redirect("/abonnement");
   return { ...session, membership: session.membership };
 }
 
@@ -102,4 +104,18 @@ export async function requireSuperAdmin() {
   const session = await requireUser();
   if (!session.user.isSuperAdmin) redirect("/app");
   return session;
+}
+
+// Espace super admin : tout le parc pour le super admin, ses seuls clients pour un revendeur (resellerId).
+export async function requireAdminSpace() {
+  const session = await requireUser();
+  if (session.user.isSuperAdmin) return { ...session, resellerId: null as string | null };
+  if (session.reseller) return { ...session, resellerId: session.reseller.id as string | null };
+  redirect("/app");
+}
+
+export async function requireReseller() {
+  const session = await requireUser();
+  if (!session.reseller) redirect("/app");
+  return { ...session, reseller: session.reseller };
 }

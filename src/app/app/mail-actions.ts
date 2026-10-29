@@ -58,3 +58,23 @@ export async function sendDueEmails(includeFirst: boolean) {
   if (!todo.length) return { ok: "Rien à envoyer pour l'instant." };
   return { ok: `${sent} email${sent > 1 ? "s" : ""} envoyé${sent > 1 ? "s" : ""}.`, error: errors.length ? `${errors.length} non envoyé(s) : ${errors.slice(0, 3).join(" ")}` : undefined };
 }
+
+// Lance la séquence d'une bibliothèque en un clic : email J0 à chaque prospect « À contacter » qui a un email.
+// Les relances suivent ensuite les délais du modèle et s'envoient depuis le point du jour.
+export async function launchSequence(searchId: string | null) {
+  const { user, orgId, account, signature } = await context();
+  if (!account) return { error: "Connectez d'abord votre boîte mail dans Paramètres." };
+  const todo = await db.prospect.findMany({
+    where: { organizationId: orgId, status: "À contacter", email: { contains: "@" }, ...(searchId ? { searchId } : { searchId: { not: null } }) },
+    include: { search: { include: { template: true } } },
+    take: BATCH_MAX,
+  });
+  if (!todo.length) return { ok: "Aucun prospect à contacter avec un email dans cette bibliothèque." };
+  let sent = 0;
+  const errors: string[] = [];
+  for (const p of todo) {
+    try { await sendStep(account, p, user.id, signature); sent++; } catch (e) { errors.push(message(e)); if (!(e instanceof MailError)) break; }
+  }
+  revalidatePath("/app", "layout");
+  return { ok: `Séquence lancée : ${sent} email${sent > 1 ? "s" : ""} J0 envoyé${sent > 1 ? "s" : ""}.${todo.length === BATCH_MAX ? " Recliquez pour les suivants." : ""}`, error: errors.length ? `${errors.length} non envoyé(s) : ${errors.slice(0, 3).join(" ")}` : undefined };
+}
