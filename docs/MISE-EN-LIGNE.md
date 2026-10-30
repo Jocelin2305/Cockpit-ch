@@ -65,3 +65,13 @@ Chaque variable s'ajoute dans Vercel (Settings → Environment Variables), puis 
 - [x] Validation Google (Gmail) : pas nécessaire pour le lancement (clients onboardés, Outlook sans audit, Gmail en mode test ou via l'administrateur Workspace). À réaborder seulement si besoin.
 - [ ] Programme revendeurs : rédiger le contrat partenaire (formules, engagement 1 an « Zéro risque », commission sur le CA HT encaissé, modalités et date de versement, auto-facturation ou facture du revendeur). Créer dans Stripe l'abonnement partenaire 20 € / mois et le paiement unique de 497 € (onboarding complet) : aujourd'hui l'appli suit les revendeurs et calcule les commissions, mais ne les facture pas encore. Les commissions se versent par virement, à partir de l'IBAN visible dans la fiche du revendeur.
 - [ ] Stripe pour les distributeurs : abonnements des offres A, B, C (mensuel et annuel), option support prioritaire (+15 €/mois), marque blanche 997 € (en 1 ou 3 fois). Aujourd'hui le choix est enregistré et le fondateur active l'offre à réception du paiement.
+
+## Nom de domaine : cockpitch.fr (Squarespace) vers Railway
+
+Adresse principale : **www.cockpitch.fr** (page d'accueil + webapp). La racine **cockpitch.fr** redirige vers www.
+
+1. Railway, service de l'appli : Settings → Networking → Custom Domain → `www.cockpitch.fr`. Railway affiche un enregistrement CNAME (et éventuellement un TXT de vérification).
+2. Squarespace : Domaines → cockpitch.fr → DNS → Enregistrements personnalisés : ajouter le CNAME `www` vers la cible donnée par Railway (et le TXT s'il y en a un). Supprimer un éventuel enregistrement `www` existant.
+3. Squarespace : Domaines → cockpitch.fr → Redirection (« Domain forwarding ») : rediriger `cockpitch.fr` vers `https://www.cockpitch.fr` (redirection permanente 301).
+4. Railway, variables : `APP_URL=https://www.cockpitch.fr`.
+5. Plus tard, emails de la plateforme (Resend) : ajouter dans Squarespace les enregistrements TXT/MX donnés par Resend pour `cockpitch.fr`.
