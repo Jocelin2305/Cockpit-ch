@@ -30,13 +30,14 @@ const resellerSchema = z.object({
 // Crée un revendeur. Sans compte existant, on lui ouvre aussi son propre espace (accès offert) et on l'invite.
 export async function createReseller(_: FormState, form: FormData): Promise<FormState> {
   const { user } = await requireFounder();
-  const values = { company: String(form.get("company") ?? ""), email: String(form.get("email") ?? ""), offer: String(form.get("offer") ?? "") };
+  const whiteLabel = form.get("whiteLabel") === "1";
+  const values = { company: String(form.get("company") ?? ""), email: String(form.get("email") ?? ""), offer: String(form.get("offer") ?? ""), whiteLabel: whiteLabel ? "1" : "" };
   const parsed = resellerSchema.safeParse(values);
   if (!parsed.success) return { error: firstError(parsed.error), values };
   const { company, email, offer } = parsed.data;
   if (await db.reseller.findUnique({ where: { email } })) return { error: "Ce revendeur existe déjà.", values };
 
-  await db.reseller.create({ data: { email, offer, companyName: company, managerEmail: email, code: newResellerCode() } });
+  await db.reseller.create({ data: { email, offer, whiteLabel, companyName: company, managerEmail: email, code: newResellerCode() } });
   revalidatePath(PATH, "layout");
   if (await db.user.findUnique({ where: { email } })) return { ok: `${company} est revendeur : son accès apparaît à sa prochaine connexion.` };
 

@@ -59,9 +59,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ...(membership.role === ROLES.ADMIN ? [{ href: "/app/abonnement", label: "Abonnement", tip: "Votre abonnement en cours et votre consommation de crédits." }] : []),
     { href: "/app/parametres", label: "Paramètres", tip: "Entreprise, signature, envoi automatique des relances et connecteurs (mailing, CRM, téléphonie)." },
     { href: "/app/aide", label: "Centre d'aide", tip: "Activez ou désactivez ce guide, retrouvez les réponses rapides et le support." },
-    ...(reseller ? [{ href: "/super-admin/affilie", label: "Espace affilié" }] : []),
     ...(user.isSuperAdmin ? [{ href: "/super-admin", label: "Super admin" }] : reseller ? [{ href: "/super-admin", label: "Super admin revendeur" }] : []),
   ];
+
+  // Espace du revendeur : point fixe du menu, avec la personnalisation si la marque blanche est débloquée.
+  const affiliate: NavItem[] = reseller
+    ? [{ href: "/super-admin/affilie", label: "Espace affilié" }, ...(reseller.whiteLabel ? [{ href: "/super-admin/affilie/marque", label: "Personnalisation de l'APP" }] : [])]
+    : [];
 
   return (
     <div className="shell">
@@ -75,6 +79,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="label">Outils</span>
           <NavLinks items={tools} />
         </div>
+        {affiliate.length > 0 && (
+          <div className="navsec hl">
+            <span className="label">Espace affilié</span>
+            <NavLinks items={affiliate} />
+          </div>
+        )}
         <NavMenu label="Compte" items={account} />
         {!org.resellerId && membership.role === ROLES.ADMIN && <Link className="rail-credits" href="/app/abonnement">{credits.toLocaleString("fr-FR")} crédits</Link>}
         <div className="rail-foot">

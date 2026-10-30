@@ -300,7 +300,7 @@ h2.big { font-size: 1.5rem; }
 .inline.wrap { flex-wrap: wrap; }
 
 /* Menu : sections surlignées, Compte en menu déroulant */
-.navsec.hl > .label { display: block; padding: 0 10px; }
+.navsec.hl > .label { display: block; padding: 5px 10px; background: var(--accent-soft); color: var(--ink); border-radius: 6px; font-weight: 700; }
 .navsec.dd > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
 .navsec.dd > summary::-webkit-details-marker { display: none; }
 .navsec.dd > summary::after { content: "▾"; font-size: 0.9rem; transition: transform 0.15s; }

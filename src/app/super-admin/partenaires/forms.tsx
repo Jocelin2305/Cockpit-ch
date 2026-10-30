@@ -18,6 +18,7 @@ export function ResellerForm() {
             {OFFERS.map((o) => <option key={o.id} value={o.id}>{o.name} · {o.monthly} € / mois · commission {Math.round(o.rate * 100)} %</option>)}
           </select>
         </label>
+        <label className="check"><input type="checkbox" name="whiteLabel" value="1" defaultChecked={v?.whiteLabel === "1"} /> Débloquer la marque blanche</label>
         <label className="check"><input type="checkbox" name="send" value="1" /> Envoyer l&apos;invitation</label>
         <SubmitButton pending="Création…">Ajouter le revendeur</SubmitButton>
       </form>

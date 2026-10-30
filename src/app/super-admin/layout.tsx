@@ -30,7 +30,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
           ],
         }]
       : []),
-    ...(reseller ? [{ label: "Partenaire", items: [{ href: "/super-admin/affilie", label: "Espace affilié" }, ...(reseller.whiteLabel ? [{ href: "/super-admin/affilie/marque", label: "Personnalisation de l'APP" }] : [])] }] : []),
+    ...(reseller ? [{ label: "Espace affilié", items: [{ href: "/super-admin/affilie", label: "Espace affilié" }, ...(reseller.whiteLabel ? [{ href: "/super-admin/affilie/marque", label: "Personnalisation de l'APP" }] : [])] }] : []),
     ...(membership ? [{ label: "Mon entreprise", items: [{ href: "/app", label: "Copilote IA (mon espace)" }] }] : []),
   ];
   return (
