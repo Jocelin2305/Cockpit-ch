@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "npm run build"
+  },
+  "deploy": {
+    "startCommand": "npx prisma migrate deploy && npm start",
+    "healthcheckPath": "/connexion",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
