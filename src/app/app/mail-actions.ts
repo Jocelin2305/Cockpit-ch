@@ -1,5 +1,6 @@
 "use server";
 
+import { effectiveSignature } from "@/lib/prospecting";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireMember } from "@/lib/auth";
@@ -12,7 +13,7 @@ const message = (e: unknown) => (e instanceof MailError ? e.message : "L'envoi a
 async function context() {
   const { user, membership } = await requireMember();
   const account = await db.mailAccount.findUnique({ where: { userId: user.id } });
-  return { user, orgId: membership.organizationId, account, signature: user.signature || user.name };
+  return { user, orgId: membership.organizationId, account, signature: effectiveSignature(user, membership.organization) };
 }
 
 export async function disconnectMail() {

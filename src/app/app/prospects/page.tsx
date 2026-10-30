@@ -58,7 +58,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         </div>
         <div className="row">
           {current && sourcingQuery(current) && <LaunchSearchButton searchId={current.id} first={!current.sourcedAt} />}
-          {open && apolloReady(membership.organization) && <EnrichButton searchId={searchId} />}
+          {open && apolloReady() && <EnrichButton searchId={searchId} />}
           {open && <GenerateAnglesButton label="Angles manquants" />}
           {open && crm && CRM_PROVIDERS[crm] && <UpdateCrmButton searchId={searchId} crm={CRM_PROVIDERS[crm]} />}
           <Link className="btn" href={`/app/prospects/importer${searchId ? `?recherche=${searchId}` : ""}`}>Importer</Link>

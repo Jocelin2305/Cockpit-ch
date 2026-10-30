@@ -53,6 +53,7 @@ Chaque variable s'ajoute dans Vercel (Settings → Environment Variables), puis 
 | IA (assistant, angles, comptes rendus), payée en crédits par les clients | `ANTHROPIC_API_KEY` (fixer un plafond de dépenses dans la console Anthropic) | avant la bêta |
 | Enrichissement, payé en crédits par les clients | `APOLLO_API_KEY` | seulement après l'accord revendeur signé avec Apollo |
 | Paiement | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_SOLO`, `STRIPE_PRICE_EQUIPE` | avant les premiers clients payants |
+| Connexion par compte HubSpot (droits `oauth`, `crm.objects.contacts.read`, `crm.objects.contacts.write`) et Pipedrive (`contacts:full`) | `HUBSPOT_CLIENT_ID`, `HUBSPOT_CLIENT_SECRET`, `PIPEDRIVE_CLIENT_ID`, `PIPEDRIVE_CLIENT_SECRET` | une fois les applications créées ; sinon le client colle un jeton |
 | Gmail / Outlook | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | quand on branche la messagerie |
 | Emails de la plateforme (invitations, mot de passe oublié) | `RESEND_API_KEY`, `EMAIL_FROM` (compte resend.com + domaine vérifié) | avant la bêta |
 | Relances automatiques et rapport du lundi | `CRON_SECRET` (une longue valeur aléatoire ; les tâches sont déclarées dans `vercel.json`) | à la mise en ligne |

@@ -1,9 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { z } from "zod";
-import { createHash } from "node:crypto";
 import { db } from "./db";
-import { decrypt } from "./mail";
 import { CREDIT_COSTS, CREDIT_LABELS } from "./credit-grid";
 import { CreditError, refundCredits, spendCredits, type CreditOrg } from "./credits";
 
@@ -25,10 +23,8 @@ export const FALLBACK = {
 // Les modèles Haiku n'ont pas de relance côté serveur.
 export const fallbackFor = (model: string) => (model.includes("haiku") ? {} : FALLBACK);
 
-// Clé de la plateforme (variable d'environnement), utilisée quand l'entreprise n'a pas connecté la sienne.
+// Clé de la plateforme (variable d'environnement) ; les clients paient l'IA en crédits.
 export const aiEnabled = () => !!process.env.ANTHROPIC_API_KEY;
-// IA disponible pour une entreprise : sa propre clé (Paramètres → API IA) ou celle de la plateforme.
-export const aiReady = (org: { aiKeyEnc?: string | null }) => aiEnabled() || !!org.aiKeyEnc;
 
 let client: Anthropic | null = null;
 export function anthropic() {
@@ -36,18 +32,9 @@ export function anthropic() {
   return client;
 }
 
-const orgClients = new Map<string, Anthropic>();
-// Client de l'entreprise : sa clé Claude si elle en a une, sinon celle de la plateforme.
-export async function aiClient(organizationId: string | null) {
-  const org = organizationId ? await db.organization.findUnique({ where: { id: organizationId }, select: { aiKeyEnc: true } }) : null;
-  if (org?.aiKeyEnc) {
-    let key: string;
-    try { key = decrypt(org.aiKeyEnc); } catch { throw new AiError("La clé IA enregistrée est illisible : reconnectez-la dans Paramètres → API IA."); }
-    const id = createHash("sha256").update(key).digest("hex");
-    if (!orgClients.has(id)) orgClients.set(id, new Anthropic({ apiKey: key }));
-    return orgClients.get(id)!;
-  }
-  if (!aiEnabled()) throw new AiError("L'IA n'est pas connectée : ajoutez votre clé Claude dans Paramètres → API IA.");
+// Client de la plateforme, ou erreur lisible tant que la clé n'est pas posée.
+export function aiClient() {
+  if (!aiEnabled()) throw new AiError("L'IA n'est pas encore disponible : contactez le support.");
   return anthropic();
 }
 
@@ -59,8 +46,8 @@ export class AiError extends Error {}
 
 export function aiErrorMessage(e: unknown) {
   if (e instanceof AiError || e instanceof CreditError) return e.message;
-  if (e instanceof Anthropic.AuthenticationError) return "La clé Claude est refusée : vérifiez-la dans Paramètres → API IA.";
-  if (e instanceof Anthropic.PermissionDeniedError) return "La clé API Anthropic n'a pas accès à ce modèle.";
+  if (e instanceof Anthropic.AuthenticationError) return "Le service d'IA est momentanément indisponible : contactez le support.";
+  if (e instanceof Anthropic.PermissionDeniedError) return "Le service d'IA est momentanément indisponible : contactez le support.";
   if (e instanceof Anthropic.RateLimitError) return "L'IA reçoit trop de demandes : réessayez dans une minute.";
   if (e instanceof Anthropic.APIConnectionError) return "Impossible de joindre l'IA : vérifiez la connexion internet.";
   if (e instanceof Anthropic.APIError) return `Le service IA a renvoyé une erreur (${e.status ?? "inconnue"}). Réessayez.`;
@@ -88,10 +75,10 @@ export async function logUsage(ctx: AiContext, feature: string, usage: { input_t
     .catch(() => undefined);
 }
 
-// Débite une action d'IA au lancement, à prix fixe. Rien n'est débité si l'entreprise utilise sa propre clé.
+// Débite une action d'IA au lancement, à prix fixe.
 export async function chargeFeature(ctx: AiContext, feature: string, units = 1) {
-  const org = await db.organization.findUnique({ where: { id: ctx.organizationId }, select: { id: true, resellerId: true, aiKeyEnc: true } });
-  if (!org || org.aiKeyEnc) return null;
+  const org = await db.organization.findUnique({ where: { id: ctx.organizationId }, select: { id: true, resellerId: true } });
+  if (!org) return null;
   const amount = (CREDIT_COSTS[feature] ?? 1) * units;
   const label = CREDIT_LABELS[feature] ?? feature;
   await spendCredits(org, amount, label, { userId: ctx.userId });
@@ -103,7 +90,7 @@ export const refundCharge = async (ctx: AiContext, charge: Awaited<ReturnType<ty
 
 // Exécute une action d'IA facturée : les crédits sont rendus si elle échoue.
 async function billed<T>(ctx: AiContext, feature: string, units: number, run: (client: Anthropic) => Promise<T>) {
-  const client = await aiClient(ctx.organizationId);
+  const client = aiClient();
   const charge = await chargeFeature(ctx, feature, units);
   try {
     return await run(client);

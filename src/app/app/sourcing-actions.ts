@@ -2,12 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { requireAdmin, requireMember } from "@/lib/auth";
-import { encrypt } from "@/lib/mail";
-import { ApolloError, apolloReady, enrichSearch, testApollo } from "@/lib/apollo";
+import { requireMember } from "@/lib/auth";
+import { ApolloError, apolloReady, enrichSearch } from "@/lib/apollo";
 import { CreditError } from "@/lib/credits";
 import { runSourcing, SourcingError } from "@/lib/sourcing";
-import type { FormState } from "@/lib/validation";
 
 type Res = { ok?: string; error?: string };
 
@@ -26,7 +24,7 @@ export async function launchProspectSearch(searchId: string): Promise<Res> {
     revalidatePath("/app", "layout");
     if (!r.added) return { ok: r.total ? "Aucune nouvelle entreprise : toutes celles trouvées sont déjà dans vos prospects." : "Aucune entreprise ne correspond à ces critères : élargissez la zone, le secteur ou l'effectif." };
     let msg = `${r.added} entreprise${r.added > 1 ? "s" : ""} ajoutée${r.added > 1 ? "s" : ""} (${r.total.toLocaleString("fr-FR")} correspondent à vos critères).`;
-    if (apolloReady(org)) {
+    if (apolloReady()) {
       try {
         const e = await enrichSearch(org, { searchId: search.id }, search.fonctions, user.id);
         msg += ` ${e.found} contact${e.found > 1 ? "s" : ""} enrichi${e.found > 1 ? "s" : ""} sur ${e.done}${e.left ? ` · ${e.left} restent à enrichir` : ""}.`;
@@ -58,27 +56,6 @@ export async function enrichWithApollo(searchId: string | null): Promise<Res> {
     return { error: shown(e) ? (e as Error).message : "L'enrichissement a échoué. Réessayez dans un instant." };
   }
 }
-
-export async function connectApollo(_: FormState, form: FormData): Promise<FormState> {
-  const { membership } = await requireAdmin();
-  const key = String(form.get("key") ?? "").trim();
-  if (key.length < 10) return { error: "Collez la clé API de votre compte Apollo." };
-  try {
-    await testApollo(key);
-    await db.organization.update({ where: { id: membership.organizationId }, data: { apolloKeyEnc: encrypt(key) } });
-  } catch (e) {
-    return { error: e instanceof ApolloError ? e.message : "Connexion impossible : vérifiez la clé." };
-  }
-  revalidatePath("/app", "layout");
-  return { ok: "Apollo connecté." };
-}
-
-export async function disconnectApollo() {
-  const { membership } = await requireAdmin();
-  await db.organization.update({ where: { id: membership.organizationId }, data: { apolloKeyEnc: null } });
-  revalidatePath("/app", "layout");
-}
-
 
 // Bouton « Enrichir » d'une ligne : email, LinkedIn et poste tout de suite ; téléphone direct envoyé quelques minutes plus tard.
 export async function enrichProspect(prospectId: string): Promise<Res> {

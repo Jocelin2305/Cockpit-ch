@@ -30,8 +30,7 @@ model User {
   tourStep     Int?
   // Dernier jour (AAAA-MM-JJ) où le point du jour a été affiché.
   briefingDay  String?
-  // Rapport hebdomadaire par email (administrateurs), envoi automatique des relances dues, checklist de démarrage masquée.
-  weeklyReport Boolean      @default(true)
+  // Envoi automatique des relances dues (opt-in), checklist de démarrage masquée.
   autoSend     Boolean      @default(false)
   onboardingHidden Boolean  @default(false)
   createdAt    DateTime     @default(now())
@@ -56,17 +55,18 @@ model Organization {
   subscriptionStatus   String?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
+  // Signature proposée à toute l'équipe par le gestionnaire ({nom} = nom de l'utilisateur).
+  defaultSignature     String    @default("")
   // Téléphonie connectée (aircall, ringover, generique) et jeton secret de son webhook.
   phoneProvider        String?
   phoneWebhookToken    String?   @unique
-  // Clé d'IA de l'entreprise (chiffrée) ; sans elle, la clé de la plateforme sert.
-  aiProvider           String?
-  aiKeyEnc             String?
   // CRM connecté (hubspot, pipedrive) et son jeton d'accès chiffré.
   crmProvider          String?
   crmTokenEnc          String?
-  // Clé API Apollo du client (chiffrée), pour enrichir les contacts.
-  apolloKeyEnc         String?
+  // Compte autorisé (OAuth) : jeton de renouvellement chiffré, expiration de l'accès et adresse d'API propre au client (Pipedrive).
+  crmRefreshEnc        String?
+  crmExpiresAt         DateTime?
+  crmApiDomain         String?
   // Revendeur qui a apporté ce client (commission), et espace propre d'un revendeur (accès offert).
   resellerId           String?
   reseller             Reseller? @relation(fields: [resellerId], references: [id], onDelete: SetNull)

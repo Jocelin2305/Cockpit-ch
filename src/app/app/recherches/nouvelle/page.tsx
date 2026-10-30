@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
-import { aiReady } from "@/lib/ai";
+import { aiEnabled } from "@/lib/ai";
 import { SearchWizard } from "../search-wizard";
 import { wizardOptions } from "../load";
 
@@ -19,7 +19,7 @@ export default async function NewSearchPage() {
           <p className="muted">Une recherche regroupe vos prospects autour de critères communs et d&apos;une séquence emails + LinkedIn.</p>
         </div>
       </header>
-      <SearchWizard presets={presets} templates={templateOptions} aiEnabled={aiReady(membership.organization)} />
+      <SearchWizard presets={presets} templates={templateOptions} aiEnabled={aiEnabled()} />
     </div>
   );
 }

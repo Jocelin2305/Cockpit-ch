@@ -14,8 +14,7 @@ import type { Metadata } from "next";
 import { getSession, requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
 import { accessState } from "@/lib/billing";
-import { aiEnabled, aiReady } from "@/lib/ai";
-import { apolloPlatform } from "@/lib/apollo";
+import { aiEnabled } from "@/lib/ai";
 import { creditBalance } from "@/lib/credits";
 import { isDue, todayISO } from "@/lib/prospecting";
 import { logout } from "../(auth)/actions";
@@ -47,8 +46,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const org = membership.organization;
   // Le client d'un revendeur ne voit pas le stock de son revendeur ; il est prévenu quand celui-ci est vide.
   const credits = await creditBalance(org);
-  // Une entreprise qui utilise ses propres clés ne consomme pas de crédits.
-  const usesCredits = (aiEnabled() && !org.aiKeyEnc) || (apolloPlatform() && !org.apolloKeyEnc);
   const support = org.resellerId ? await supportEmail(org) : "";
 
   const tools: NavItem[] = [
@@ -59,7 +56,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ];
   const account: NavItem[] = [
     { href: "/app/equipe", label: "Équipe" },
-    { href: "/app/parametres", label: "Paramètres", tip: "Signature, automatisations, entreprise, abonnement et connecteurs (mailing, CRM, téléphonie, IA, enrichissement)." },
+    ...(membership.role === ROLES.ADMIN ? [{ href: "/app/abonnement", label: "Abonnement", tip: "Votre abonnement en cours et votre consommation de crédits." }] : []),
+    { href: "/app/parametres", label: "Paramètres", tip: "Entreprise, signature, envoi automatique des relances et connecteurs (mailing, CRM, téléphonie)." },
     { href: "/app/aide", label: "Centre d'aide", tip: "Activez ou désactivez ce guide, retrouvez les réponses rapides et le support." },
     ...(reseller ? [{ href: "/super-admin/affilie", label: "Espace affilié" }] : []),
     ...(user.isSuperAdmin ? [{ href: "/super-admin", label: "Super admin" }] : reseller ? [{ href: "/super-admin", label: "Super admin revendeur" }] : []),
@@ -78,7 +76,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLinks items={tools} />
         </div>
         <NavMenu label="Compte" items={account} />
-        {usesCredits && !org.resellerId && <Link className="rail-credits" href="/app/parametres#credits">{credits.toLocaleString("fr-FR")} crédits</Link>}
+        {!org.resellerId && membership.role === ROLES.ADMIN && <Link className="rail-credits" href="/app/abonnement">{credits.toLocaleString("fr-FR")} crédits</Link>}
         <div className="rail-foot">
           <GuideButton />
           <div>
@@ -102,7 +100,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {billing.kind === "trial" && billing.daysLeft <= 5 && (
           <p className="alert banner">Essai gratuit : plus que {billing.daysLeft} jour{billing.daysLeft > 1 ? "s" : ""}. {org.resellerId ? <>Votre conseiller : <a href={`mailto:${support}`}>{support}</a></> : <Link href="/abonnement">Choisir une offre</Link>}</p>
         )}
-        {usesCredits && credits <= 0 && (
+        {credits <= 0 && (
           <p className="alert error banner">Crédits épuisés : l&apos;IA et l&apos;enrichissement sont en pause. {org.resellerId ? <>Contactez votre conseiller : <a href={`mailto:${support}`}>{support}</a></> : <Link href="/abonnement">Voir mes options</Link>}</p>
         )}
         {billing.kind === "past_due" && !org.resellerId && (
@@ -110,7 +108,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         )}
         {children}
       </main>
-      <CallDock aiReady={aiReady(membership.organization)} />
+      <CallDock aiReady={aiEnabled()} />
       <Tour initialStep={user.tourStep} />
       <ContextMenus isAdmin={membership.role === ROLES.ADMIN} />
     </div>

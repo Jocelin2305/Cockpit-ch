@@ -6,7 +6,7 @@ import { requireAdmin, requireMember } from "@/lib/auth";
 import { CrmError, encryptCrmToken, isCrmProvider, syncToCrm, testCrm } from "@/lib/crm";
 import type { FormState } from "@/lib/validation";
 
-// Connexion du CRM : le jeton est vérifié auprès du CRM, puis enregistré chiffré.
+// Connexion du CRM par jeton collé (secours de la connexion par compte) : vérifié auprès du CRM, puis enregistré chiffré.
 export async function connectCrm(_: FormState, form: FormData): Promise<FormState> {
   const { membership } = await requireAdmin();
   const provider = String(form.get("provider") ?? "");
@@ -15,7 +15,7 @@ export async function connectCrm(_: FormState, form: FormData): Promise<FormStat
   if (token.length < 10) return { error: "Collez le jeton d'accès de votre CRM." };
   try {
     await testCrm(provider, token);
-    await db.organization.update({ where: { id: membership.organizationId }, data: { crmProvider: provider, crmTokenEnc: encryptCrmToken(token) } });
+    await db.organization.update({ where: { id: membership.organizationId }, data: { crmProvider: provider, crmTokenEnc: encryptCrmToken(token), crmRefreshEnc: null, crmExpiresAt: null, crmApiDomain: null } });
   } catch (e) {
     return { error: e instanceof CrmError ? e.message : "Connexion impossible : vérifiez le jeton." };
   }
@@ -25,7 +25,7 @@ export async function connectCrm(_: FormState, form: FormData): Promise<FormStat
 
 export async function disconnectCrm() {
   const { membership } = await requireAdmin();
-  await db.organization.update({ where: { id: membership.organizationId }, data: { crmProvider: null, crmTokenEnc: null } });
+  await db.organization.update({ where: { id: membership.organizationId }, data: { crmProvider: null, crmTokenEnc: null, crmRefreshEnc: null, crmExpiresAt: null, crmApiDomain: null } });
   revalidatePath("/app", "layout");
 }
 

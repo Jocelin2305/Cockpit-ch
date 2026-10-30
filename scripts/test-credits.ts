@@ -71,17 +71,14 @@ async function main() {
     check("consommation du client comptée", await usedLastMonth(client.id), 10);
     check("solde vu pour le client = stock", await creditBalance(client), 90);
 
-    // IA : débit au lancement, remboursé en cas d'échec, rien avec la clé du client.
+    // IA : débit au lancement, remboursé en cas d'échec.
     const ctx = { organizationId: client.id, userId: null };
     const charge = await chargeFeature(ctx, "sequence");
     check("séquence : 5 crédits", await creditBalance(client), 85);
     await refundCharge(ctx, charge);
     check("échec remboursé", await creditBalance(client), 90);
-    await db.organization.update({ where: { id: client.id }, data: { aiKeyEnc: "x" } });
-    check("clé du client : aucun débit", await chargeFeature(ctx, "sequence"), null);
-    await db.organization.update({ where: { id: client.id }, data: { aiKeyEnc: null } });
 
-    // Enrichissement avec la clé de la plateforme (réponses d'Apollo simulées) : débit seulement si un email est trouvé.
+    // Enrichissement (réponses d'Apollo simulées) : débit seulement si un email est trouvé.
     process.env.APOLLO_API_KEY = "cle-de-test";
     const realFetch = globalThis.fetch;
     let calls = 0;
@@ -91,7 +88,7 @@ async function main() {
     }) as typeof fetch;
     const p1 = await db.prospect.create({ data: { organizationId: client.id, company: "A", contactName: "Ana Test", priority: "A" } });
     const p2 = await db.prospect.create({ data: { organizationId: client.id, company: "B", contactName: "Sans Email", priority: "B" } });
-    const org = { id: client.id, apolloKeyEnc: null, resellerId: reseller.id };
+    const org = { id: client.id, resellerId: reseller.id };
     const e = await enrichSearch(org, {}, "");
     check("2 contacts traités", [e.done, e.found], [2, 2]);
     check("1 seul email trouvé : 1 crédit", await creditBalance(client), 89);

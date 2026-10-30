@@ -1,3 +1,4 @@
+import { effectiveSignature } from "@/lib/prospecting";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -38,7 +39,7 @@ export default async function ProspectPage({ params }: { params: Promise<{ id: s
   const delays = tplDelays(template?.delays);
   const liDelays = tplLiDelays(template?.liDelays);
   const steps = seqSteps(delays, liDelays);
-  const signature = user.signature || user.name;
+  const signature = effectiveSignature(user, membership.organization);
   const status = p.status ?? "À contacter";
   const due = dueState(p);
 

@@ -163,6 +163,11 @@ export const STANDARD_TEMPLATE = {
   } as Record<string, string>,
 };
 
+// Signature d'un utilisateur : la sienne, sinon celle de l'équipe ({nom} = son nom), sinon son nom (sauf pour préremplir le formulaire).
+export function effectiveSignature(user: { name: string; signature: string }, org: { defaultSignature: string }, fallbackName = true) {
+  return user.signature || org.defaultSignature.replaceAll("{nom}", user.name) || (fallbackName ? user.name : "");
+}
+
 export function fillVars(txt: string | undefined, p: ProspectLike, signature: string) {
   const name = has(p.contactName) ? p.contactName!.trim() : "";
   const map: Record<string, string> = {

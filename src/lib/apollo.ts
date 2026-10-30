@@ -1,5 +1,5 @@
 // Enrichissement Apollo : email, LinkedIn, poste et site du bon contact.
-// Clé de la plateforme (APOLLO_API_KEY, à poser une fois l'accord revendeur signé), débitée en crédits ; sinon clé du client, sans crédit.
+// Clé de la plateforme (APOLLO_API_KEY, à poser une fois l'accord revendeur signé), débitée en crédits.
 // Recherche de personnes : gratuite ; enrichissement (bulk_match) : 1 crédit Apollo par contact trouvé, 8 de plus pour un mobile.
 import type { Prisma, Prospect } from "@prisma/client";
 import { createHmac } from "node:crypto";
@@ -7,7 +7,6 @@ import { appUrl } from "./auth";
 import { CREDIT_COSTS, CREDIT_LABELS } from "./credit-grid";
 import { CreditError, creditsLeft, emptyMessage, spendCredits } from "./credits";
 import { db } from "./db";
-import { decrypt } from "./mail";
 import { has } from "./prospecting";
 import { functionList, priorityFor, roleMatch } from "./scoring";
 
@@ -35,12 +34,7 @@ async function call(key: string, path: string, query: [string, string][], body?:
   return res.json();
 }
 
-// Clé de la plateforme, utilisée quand l'entreprise n'a pas connecté la sienne.
-export const apolloPlatform = () => !!process.env.APOLLO_API_KEY;
-export const apolloReady = (org: { apolloKeyEnc?: string | null }) => apolloPlatform() || !!org.apolloKeyEnc;
-
-// Vérifie la clé par une recherche gratuite d'une personne.
-export const testApollo = (key: string) => call(key, "/mixed_people/api_search", [["per_page", "1"], ["person_titles[]", "ceo"]]);
+export const apolloReady = () => !!process.env.APOLLO_API_KEY;
 
 // Téléphones directs : Apollo les livre plus tard sur un webhook public (HTTPS), signé par entreprise.
 export const apolloWebhookToken = (orgId: string) => `${orgId}.${createHmac("sha256", process.env.TOKEN_ENCRYPTION_KEY ?? "cockpitch").update(`apollo:${orgId}`).digest("base64url").slice(0, 22)}`;
@@ -73,16 +67,12 @@ const fullName = (m: NonNullable<Match>) => m.name || [m.first_name, m.last_name
 // 1) le dirigeant trouvé au registre (nom + entreprise) ; 2) si des fonctions sont visées et que le site est connu,
 // la personne qui occupe ce poste devient le contact principal (le dirigeant reste dans les notes).
 // `prospectId` : enrichissement manuel d'une ligne (même déjà traitée), téléphone direct compris quand c'est possible.
-export async function enrichSearch(org: { id: string; apolloKeyEnc: string | null; resellerId: string | null }, scope: { searchId?: string | null; prospectId?: string }, fonctions: string, userId: string | null = null) {
+export async function enrichSearch(org: { id: string; resellerId: string | null }, scope: { searchId?: string | null; prospectId?: string }, fonctions: string, userId: string | null = null) {
   const { searchId = null, prospectId } = scope;
-  let key = process.env.APOLLO_API_KEY ?? "";
-  if (org.apolloKeyEnc) {
-    try { key = decrypt(org.apolloKeyEnc); } catch { throw new ApolloError("Clé d'enrichissement illisible : reconnectez-la dans Paramètres."); }
-  }
+  const key = process.env.APOLLO_API_KEY ?? "";
   if (!key) throw new ApolloError("L'enrichissement des contacts n'est pas encore disponible : contactez le support.");
-  // Avec la clé de la plateforme, on ne traite que ce que les crédits peuvent payer.
-  const billed = !org.apolloKeyEnc;
-  const available = billed ? await creditsLeft(org) : Infinity;
+  // On ne traite que ce que les crédits peuvent payer.
+  const available = await creditsLeft(org);
   if (available < CREDIT_COSTS.email) throw new CreditError(emptyMessage(org));
   const todo = await db.prospect.findMany({
     where: prospectId ? { id: prospectId, organizationId: org.id } : { organizationId: org.id, enrichedAt: null, status: { notIn: ["Gagné", "Perdu"] }, ...(searchId ? { searchId } : {}) },
@@ -144,7 +134,7 @@ export async function enrichSearch(org: { id: string; apolloKeyEnc: string | nul
     await db.prospect.update({ where: { id: p.id }, data });
   }
   // Seuls les emails nouvellement trouvés sont débités.
-  if (billed) await spendCredits(org, newEmails * CREDIT_COSTS.email, CREDIT_LABELS.email, { userId, force: true });
+  await spendCredits(org, newEmails * CREDIT_COSTS.email, CREDIT_LABELS.email, { userId, force: true });
   const left = await db.prospect.count({ where: { organizationId: org.id, enrichedAt: null, status: { notIn: ["Gagné", "Perdu"] }, ...(searchId ? { searchId } : {}) } });
   return { done: todo.length, found, left };
 }

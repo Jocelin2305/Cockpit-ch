@@ -76,11 +76,11 @@ export function reportText(orgName: string, r: Report) {
   return lines.join("\n");
 }
 
-// Envoie le rapport aux administrateurs qui l'ont activé. Une fois par semaine au plus par entreprise, sauf `force`.
+// Envoie le rapport à tous les gestionnaires. Une fois par semaine au plus par entreprise, sauf `force`.
 export async function sendWeeklyReport(organizationId: string, opts: { force?: boolean; onlyUserId?: string } = {}) {
   const org = await db.organization.findUnique({
     where: { id: organizationId },
-    include: { memberships: { where: { role: ROLES.ADMIN }, include: { user: { select: { id: true, email: true, weeklyReport: true } } } } },
+    include: { memberships: { where: { role: ROLES.ADMIN }, include: { user: { select: { id: true, email: true } } } } },
   });
   if (!org) return 0;
   if (!opts.force && org.lastReportAt && Date.now() - org.lastReportAt.getTime() < 6 * 86_400_000) return 0;
@@ -89,7 +89,7 @@ export async function sendWeeklyReport(organizationId: string, opts: { force?: b
   const subject = `${await platformName(org)} · votre semaine :${r.week.rdv} RDV, ${r.week.replies} réponses, ${r.week.calls} appels`;
   let sent = 0;
   for (const m of org.memberships) {
-    if (opts.onlyUserId ? m.user.id !== opts.onlyUserId : !m.user.weeklyReport) continue;
+    if (opts.onlyUserId && m.user.id !== opts.onlyUserId) continue;
     if (await sendPlatformEmail(m.user.email, subject, text)) sent++;
   }
   if (!opts.onlyUserId) await db.organization.update({ where: { id: organizationId }, data: { lastReportAt: new Date() } });

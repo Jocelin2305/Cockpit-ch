@@ -52,7 +52,7 @@ export default async function SearchPage({ params, searchParams }: { params: Pro
         {sourcingQuery(search) ? (
           <div className="sourcing">
             <LaunchSearchButton searchId={search.id} first={!search.sourcedAt} />
-            {apolloReady(membership.organization) ? <EnrichButton searchId={search.id} /> : <span className="muted small">Pour les emails et LinkedIn des contacts, <Link href="/app/parametres/connecteurs/enrichissement">connectez l&apos;enrichissement</Link>.</span>}
+            {apolloReady() ? <EnrichButton searchId={search.id} /> : <span className="muted small">L&apos;enrichissement des contacts sera bientôt disponible.</span>}
           </div>
         ) : (
           <p className="muted small">{membership.role === ROLES.ADMIN ? <>Ajoutez une zone ou un secteur dans <Link href={`/app/recherches/${search.id}/modifier`}>les critères de la recherche</Link> pour lancer la recherche automatique.</> : "Demandez à un administrateur de compléter les critères de la recherche automatique."}</p>

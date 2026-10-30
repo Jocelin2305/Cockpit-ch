@@ -97,7 +97,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         <h1>Abonnement</h1>
         {thanks && <p className="alert ok">Merci ! Votre abonnement est actif.</p>}
         {recharged && <p className="alert ok">Merci ! Vos crédits sont ajoutés.</p>}
-        <p>Solde : <b>{balance.toLocaleString("fr-FR")} crédits</b>. <Link href="/app/parametres#credits">Voir le détail</Link></p>
+        <p>Solde : <b>{balance.toLocaleString("fr-FR")} crédits</b>. <Link href="/app/abonnement">Voir le détail</Link></p>
         {erreur && ERRORS[erreur] && <p className="alert error">{ERRORS[erreur]}</p>}
         {st.kind === "trial" && <p className="alert">Essai gratuit : encore {st.daysLeft} jour{st.daysLeft > 1 ? "s" : ""}, jusqu&apos;au {fmt(st.ends)}. Toutes les fonctions sont ouvertes.</p>}
         {st.kind === "active" && (

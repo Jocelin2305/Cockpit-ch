@@ -1,7 +1,8 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getSession, ROLE_LABEL } from "@/lib/auth";
-import { SYSTEM_PROMPT, aiClient, aiErrorMessage, aiReady, chargeFeature, fallbackFor, logUsage, modelFor, refundCharge } from "@/lib/ai";
+import { effectiveSignature } from "@/lib/prospecting";
+import { SYSTEM_PROMPT, aiClient, aiEnabled, aiErrorMessage, chargeFeature, fallbackFor, logUsage, modelFor, refundCharge } from "@/lib/ai";
 
 const MODEL = modelFor("assistant");
 import { ASSISTANT_RULES, assistantContext, assistantTools } from "@/lib/assistant";
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
   if (!parsed.success || parsed.data.messages.at(-1)?.role !== "user") return new Response("Requête invalide", { status: 400 });
 
   const { user, membership } = session;
-  const ctx = { organizationId: membership.organizationId, userId: user.id, signature: user.signature || user.name };
+  const ctx = { organizationId: membership.organizationId, userId: user.id, signature: effectiveSignature(user, membership.organization) };
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -32,11 +33,11 @@ export async function POST(request: Request) {
       const usage = { input_tokens: 0, output_tokens: 0 };
       let charge: Awaited<ReturnType<typeof chargeFeature>> = null;
       try {
-        if (!aiReady(membership.organization)) {
-          send({ type: "error", message: "L'IA n'est pas connectée : ajoutez votre clé Claude dans Paramètres → API IA." });
+        if (!aiEnabled()) {
+          send({ type: "error", message: "L'IA n'est pas encore disponible : contactez le support." });
           return;
         }
-        const client = await aiClient(membership.organizationId);
+        const client = aiClient();
         charge = await chargeFeature(ctx, "assistant");
         const context = await assistantContext(ctx, membership.organization.name, user.name, ROLE_LABEL[membership.role]);
         // Seuls les 12 derniers échanges repartent à l'IA (les plus anciens coûtaient sans servir).

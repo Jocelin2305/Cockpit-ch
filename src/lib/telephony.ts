@@ -1,7 +1,7 @@
 // Téléphonie : événements reçus par webhook (Aircall, Ringover ou format générique Cockpit'ch),
 // rattachés aux prospects par leur numéro, et compte rendu IA automatique à partir de la transcription.
 import { db } from "./db";
-import { aiReady } from "./ai";
+import { aiEnabled } from "./ai";
 import { CreditError } from "./credits";
 import { analyzeCallNotes } from "./ai-features";
 import { callFields, clampMs, reportPatch, reportSchema } from "./calls";
@@ -153,8 +153,7 @@ export async function handlePhoneEvent(organizationId: string, ev: PhoneEventIn)
   // Transcription : compte rendu IA appliqué directement à la fiche (une seule fois par appel).
   if (ev.transcript.trim().length > 50 && !call.resume) {
     await db.call.update({ where: { id: call.id }, data: { transcript: ev.transcript.slice(0, 15000), issue: "Appel" } });
-    const org = await db.organization.findUnique({ where: { id: organizationId }, select: { aiKeyEnc: true } });
-    if (org && aiReady(org)) {
+    if (aiEnabled()) {
       const fw = (p.qualif as Qualif | null)?.fw && FRAMEWORKS[(p.qualif as Qualif).fw] ? (p.qualif as Qualif).fw : "BANT";
       // Sans crédit, l'appel reste enregistré avec sa transcription, sans compte rendu.
       const r = await analyzeCallNotes({ organizationId, userId }, p, ev.transcript, FRAMEWORKS[fw]).catch((e) => {

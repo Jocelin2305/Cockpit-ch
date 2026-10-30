@@ -1,3 +1,4 @@
+import { ReportNowButton } from "../parametres/report-now";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
@@ -20,7 +21,7 @@ export default async function ReportPage() {
           <h1>Votre semaine de prospection</h1>
           <p className="muted">Du {fr(r.from)} au {fr(r.to)}, comparée à la semaine précédente. Ce rapport part chaque lundi matin par email aux administrateurs.</p>
         </div>
-        <Link className="btn" href="/app/parametres">Réglages du rapport</Link>
+        <ReportNowButton />
       </header>
       <div className="kpis">
         {REPORT_ROWS.slice(0, 4).map(([k, l]) => <div key={k} className="kpi"><span className="v">{r.week[k]}</span><span className="k">{l} {trend(r.week[k], r.prev[k])}</span></div>)}

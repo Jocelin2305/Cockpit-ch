@@ -1,31 +1,21 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { requireMember, ROLES } from "@/lib/auth";
-import { accessState } from "@/lib/billing";
-import { supportEmail } from "@/lib/branding";
 import { db } from "@/lib/db";
+import { effectiveSignature } from "@/lib/prospecting";
 import { OrgForm } from "./org-form";
 import { SignatureForm } from "./signature-form";
+import { AutoSendToggle } from "./auto-send-toggle";
 import { DataPanel } from "./data-panel";
-import { AutomationPanel } from "./automation-panel";
 import { ConnectorTiles } from "./connector-tiles";
-import { CreditsPanel } from "./credits-panel";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
-const fmt = (d: Date | null) => (d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "");
-
-// Paramètres : signature, entreprise, abonnement, puis les connecteurs en vignettes.
+// Paramètres : entreprise (gestionnaire), signature et envoi automatique des relances, puis les connecteurs en vignettes.
 export default async function SettingsPage() {
   const { user, membership } = await requireMember();
   const org = membership.organization;
   const isAdmin = membership.role === ROLES.ADMIN;
   const hasMailbox = !!(await db.mailAccount.findUnique({ where: { userId: user.id }, select: { id: true } }));
-  const st = accessState(org);
-  const support = org.resellerId ? await supportEmail(org) : "";
-  const plan = st.kind === "trial" ? `Essai gratuit · ${st.daysLeft} jour${st.daysLeft > 1 ? "s" : ""} restant${st.daysLeft > 1 ? "s" : ""} (jusqu'au ${fmt(st.ends)})`
-    : st.kind === "active" ? `${st.planName}${st.renews ? ` · ${st.cancelAtPeriodEnd ? "se termine" : "renouvelé"} le ${fmt(st.renews)}` : ""}`
-    : st.kind === "past_due" ? `${st.planName} · paiement en échec` : "Aucun abonnement actif";
   return (
     <div className="view narrow">
       <header className="view-head">
@@ -34,27 +24,19 @@ export default async function SettingsPage() {
           <p className="muted">{user.name} · {user.email}</p>
         </div>
       </header>
-      <section className="panel">
-        <h2>Signature des emails</h2>
-        <p className="muted small">Elle remplace {"{signature}"} dans toutes vos séquences.</p>
-        <SignatureForm signature={user.signature} />
-      </section>
       {isAdmin && (
-        <>
-          <section className="panel">
-            <h2>Entreprise</h2>
-            <OrgForm name={org.name} />
-          </section>
-          <section className="panel">
-            <div className="panel-head"><h2>Abonnement en cours</h2>{!org.resellerId && <Link className="btn sm" href="/abonnement">Gérer l&apos;abonnement</Link>}</div>
-            <p>{plan}</p>
-            {org.resellerId && <p className="muted small">Géré par votre conseiller : <a href={`mailto:${support}`}>{support}</a></p>}
-          </section>
-        </>
+        <section className="panel">
+          <h2>Entreprise</h2>
+          <OrgForm name={org.name} defaultSignature={org.defaultSignature} />
+        </section>
       )}
-      <CreditsPanel org={org} isAdmin={isAdmin} support={support} />
+      <section className="panel stack">
+        <h2>Signature des emails</h2>
+        <p className="muted small">Elle remplace {"{signature}"} dans toutes vos séquences. Préremplie par votre gestionnaire, vous pouvez l&apos;adapter ; videz-la pour revenir à celle de l&apos;entreprise.</p>
+        <SignatureForm signature={effectiveSignature(user, org, false)} />
+        <AutoSendToggle on={user.autoSend} hasMailbox={hasMailbox} />
+      </section>
       <ConnectorTiles userId={user.id} org={org} isAdmin={isAdmin} />
-      <AutomationPanel autoSend={user.autoSend} weeklyReport={user.weeklyReport} isAdmin={isAdmin} hasMailbox={hasMailbox} />
       {isAdmin && <DataPanel orgName={org.name} />}
     </div>
   );

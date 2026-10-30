@@ -21,5 +21,6 @@ export const SUBPROCESSORS = [
   { name: "Resend", role: "Emails de la plateforme (invitations, mot de passe)", where: "États-Unis (clauses contractuelles types)" },
   { name: "Google / Microsoft", role: "Boîte mail connectée par l'utilisateur (si activée)", where: "Selon le fournisseur choisi" },
   { name: "Apollo.io", role: "Enrichissement des contacts professionnels (email, téléphone, poste)", where: "États-Unis (clauses contractuelles types)" },
+  { name: "CRM du client (HubSpot, Pipedrive)", role: "Envoi des fiches de prospects à la demande du client (si connecté)", where: "Selon le CRM choisi" },
   { name: "Opérateur de téléphonie du client", role: "Appels, enregistrements, transcriptions (si connecté)", where: "Selon l'opérateur choisi" },
 ];

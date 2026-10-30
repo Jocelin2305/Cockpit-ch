@@ -7,7 +7,7 @@ const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: 
 const n = (v: number) => v.toLocaleString("fr-FR");
 
 // Crédits de l'entreprise : solde, grille et derniers mouvements. Le client d'un revendeur ne voit que sa consommation.
-export async function CreditsPanel({ org, isAdmin, support }: { org: { id: string; resellerId: string | null }; isAdmin: boolean; support: string }) {
+export async function CreditsPanel({ org, support }: { org: { id: string; resellerId: string | null }; support: string }) {
   const [balance, used, entries] = await Promise.all([
     org.resellerId ? null : creditBalance(org),
     usedLastMonth(org.id),
@@ -17,7 +17,7 @@ export async function CreditsPanel({ org, isAdmin, support }: { org: { id: strin
     <section className="panel" id="credits">
       <div className="panel-head">
         <h2>Crédits</h2>
-        {isAdmin && !org.resellerId && <Link className="btn sm" href="/abonnement">Recharger</Link>}
+        {!org.resellerId && <Link className="btn sm" href="/abonnement">Recharger</Link>}
       </div>
       <p>
         {balance !== null && <><b>{n(balance)} crédits disponibles</b> · </>}

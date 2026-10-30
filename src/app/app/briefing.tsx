@@ -9,7 +9,7 @@ import { markPhoneEventHandled } from "./parametres/phone-actions";
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 
-type Viewer = { user: { id: string; name: string; signature: string }; membership: { organizationId: string; organization: { phoneProvider: string | null } } };
+type Viewer = { user: { id: string; name: string; signature: string }; membership: { organizationId: string; organization: { phoneProvider: string | null; defaultSignature: string } } };
 
 // Point du jour : la première réponse de l'agent dans le Copilote IA, à chaque ouverture.
 export async function Briefing({ user, membership }: Viewer) {
@@ -119,7 +119,7 @@ export async function Briefing({ user, membership }: Viewer) {
             })}
           </div>
         )}
-        {missed.length === 0 && <p className="hint">Aucun appel manqué ni message vocal en attente{membership.organization.phoneProvider ? "" : " : connectez votre téléphonie dans Paramètres pour les voir ici"}.{has(user.signature) ? "" : " Pensez aussi à renseigner votre signature dans Paramètres."}</p>}
+        {missed.length === 0 && <p className="hint">Aucun appel manqué ni message vocal en attente{membership.organization.phoneProvider ? "" : " : connectez votre téléphonie dans Paramètres pour les voir ici"}.{has(user.signature) || has(membership.organization.defaultSignature) ? "" : " Pensez aussi à renseigner votre signature dans Paramètres."}</p>}
       </section>
     </div>
   );

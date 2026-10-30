@@ -1,13 +1,14 @@
-// CRM connecté par l'entreprise (jeton d'accès chiffré) : les prospects y sont créés ou mis à jour à la demande.
+// CRM connecté par l'entreprise (compte autorisé, ou jeton collé à la main) : les prospects y sont créés ou mis à jour à la demande.
 import type { Prospect } from "@prisma/client";
 import { db } from "./db";
-import { decrypt, encrypt } from "./mail";
+import { encrypt } from "./mail";
+import { crmAccess, CrmError, type CrmAuth } from "./crm-oauth";
 import { has, isEmail } from "./prospecting";
 import { isCrmProvider, type CrmProvider } from "./crm-providers";
 
 export * from "./crm-providers";
 
-export class CrmError extends Error {}
+export { CrmError };
 
 const SYNC_MAX = 200;
 
@@ -25,6 +26,9 @@ async function call(url: string, init: RequestInit & { token?: string } = {}) {
 }
 
 const pd = (path: string, token: string) => `https://api.pipedrive.com/v1${path}${path.includes("?") ? "&" : "?"}api_token=${encodeURIComponent(token)}`;
+// Compte autorisé : adresse propre à l'entreprise et jeton en en-tête. Jeton collé : adresse générale.
+const pdCall = (auth: CrmAuth, path: string, init: RequestInit = {}) =>
+  auth.domain ? call(`${auth.domain}/api/v1${path}`, { ...init, token: auth.token }) : call(pd(path, auth.token), init);
 
 // Vérifie le jeton avant de l'enregistrer.
 export async function testCrm(provider: CrmProvider, token: string) {
@@ -77,7 +81,7 @@ async function syncHubspot(token: string, prospects: Prospect[]) {
   return { ids: new Map(withEmail.map((p) => [p.id, ids.get(p.email.trim().toLowerCase()) ?? null])), skipped: prospects.length - withEmail.length };
 }
 
-async function syncPipedrive(token: string, prospects: Prospect[]) {
+async function syncPipedrive(auth: CrmAuth, prospects: Prospect[]) {
   const ids = new Map<string, string | null>();
   for (const p of prospects) {
     const person = {
@@ -87,28 +91,27 @@ async function syncPipedrive(token: string, prospects: Prospect[]) {
       job_title: v(p.contactRole) || undefined,
     };
     if (p.crmId) {
-      await call(pd(`/persons/${p.crmId}`, token), { method: "PUT", body: JSON.stringify(person) });
+      await pdCall(auth, `/persons/${p.crmId}`, { method: "PUT", body: JSON.stringify(person) });
       ids.set(p.id, p.crmId);
       continue;
     }
-    const org = await call(pd("/organizations", token), { method: "POST", body: JSON.stringify({ name: p.company }) });
-    const res = await call(pd("/persons", token), { method: "POST", body: JSON.stringify({ ...person, org_id: org.data?.id }) });
+    const org = await pdCall(auth, "/organizations", { method: "POST", body: JSON.stringify({ name: p.company }) });
+    const res = await pdCall(auth, "/persons", { method: "POST", body: JSON.stringify({ ...person, org_id: org.data?.id }) });
     ids.set(p.id, res.data?.id ? String(res.data.id) : null);
   }
   return { ids, skipped: 0 };
 }
 
 // Envoie au CRM les prospects (d'une recherche, ou tous) ; renvoie le nombre de fiches à jour.
-export async function syncToCrm(org: { id: string; crmProvider: string | null; crmTokenEnc: string | null }, searchId: string | null) {
+export async function syncToCrm(org: Parameters<typeof crmAccess>[0], searchId: string | null) {
   if (!org.crmProvider || !org.crmTokenEnc || !isCrmProvider(org.crmProvider)) throw new CrmError("Aucun CRM connecté.");
-  let token: string;
-  try { token = decrypt(org.crmTokenEnc); } catch { throw new CrmError("Jeton du CRM illisible : reconnectez-le dans Paramètres."); }
+  const auth = await crmAccess(org, org.crmProvider);
   const prospects = await db.prospect.findMany({
     where: { organizationId: org.id, ...(searchId ? { searchId } : {}) },
     orderBy: { crmSyncedAt: { sort: "asc", nulls: "first" } },
     take: SYNC_MAX,
   });
-  const { ids, skipped } = org.crmProvider === "hubspot" ? await syncHubspot(token, prospects) : await syncPipedrive(token, prospects);
+  const { ids, skipped } = org.crmProvider === "hubspot" ? await syncHubspot(auth.token, prospects) : await syncPipedrive(auth, prospects);
   const now = new Date();
   const done = [...ids].filter(([, crmId]) => crmId);
   await db.$transaction(done.map(([id, crmId]) => db.prospect.update({ where: { id }, data: { crmId, crmSyncedAt: now } })));

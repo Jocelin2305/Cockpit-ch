@@ -83,5 +83,12 @@ Le client n'a plus de clé à fournir : l'IA et l'enrichissement passent par les
 - IA : débit à prix fixe au lancement, remboursé si l'action échoue. Enrichissement : débit seulement si un email ou un numéro est trouvé.
 - Stripe : quota mensuel à `invoice.paid`, recharges en paiement unique sans produit à créer ; report limité à un mois de quota.
 - Revendeurs : stock acheté en packs et consommé par leurs clients ; le client ne voit ni prix ni paiement Cockpit'ch ; revendeur suspendu = clients suspendus ; nombre d'utilisateurs réglé par le revendeur.
-- Une clé déjà connectée par un client reste utilisée, sans débit. Les tuiles API IA et Enrichissement disparaissent dès que la clé de la plateforme existe.
+- Plus de clé par entreprise : les connecteurs API IA et Enrichissement sont retirés. Sans `APOLLO_API_KEY`, l'enrichissement reste indisponible.
 - Apollo : la clé de la plateforme (`APOLLO_API_KEY`) ne doit être posée qu'après l'accord revendeur signé.
+
+## Connexion des CRM par compte (30 octobre 2026)
+
+HubSpot et Pipedrive se connectent en un clic (OAuth) dès que les identifiants de l'application sont posés ; le jeton collé reste en secours.
+
+- HubSpot : application à créer avec son CLI. Limites indiquées par HubSpot : 10 comptes en distribution privée, 25 en Marketplace avant publication, illimité après publication (3 installations actives requises).
+- Pipedrive : application privée, partagée par lien direct une fois passée en ligne (adresse de retour fonctionnelle exigée).
