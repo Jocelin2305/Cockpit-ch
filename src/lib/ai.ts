@@ -12,7 +12,7 @@ export const AI_MODEL_LIGHT = process.env.ANTHROPIC_MODEL_LIGHT || "claude-haiku
 
 // Modèle par fonction : Haiku 5.5 pour tout ce qu'il fait bien ; Opus 5.5 garde la rédaction des séquences.
 // Pour revenir à Opus sur une fonction, retirez-la de cette liste.
-const LIGHT_FEATURES = new Set(["angles", "appel", "ciblage", "analyse", "assistant", "essai"]);
+const LIGHT_FEATURES = new Set(["angles", "appel", "ciblage", "analyse", "assistant"]);
 export const modelFor = (feature: string) => (LIGHT_FEATURES.has(feature) ? AI_MODEL_LIGHT : AI_MODEL);
 
 // En cas de refus par les filtres de sécurité, Anthropic relance automatiquement la demande sur un modèle adapté.
