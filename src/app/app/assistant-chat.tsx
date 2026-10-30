@@ -87,7 +87,7 @@ export function AssistantChat({ suggestions, aiReady, intro }: { suggestions: st
           <>
             <div className="msg ai">
               <p>{intro ? "Et maintenant ? Dites-moi" : <><b>Bonjour !</b> Dites-moi</>} ce que vous voulez faire : relancer, préparer un email, ajouter des prospects, rédiger les angles, analyser une recherche… Je m&apos;en occupe directement dans l&apos;outil.</p>
-              {!aiReady && <p className="alert">L&apos;IA n&apos;est pas encore configurée : ajoutez votre clé ANTHROPIC_API_KEY dans le fichier .env, puis relancez l&apos;application.</p>}
+              {!aiReady && <p className="alert">L&apos;IA n&apos;est pas encore disponible : contactez le support.</p>}
             </div>
             <div className="sugg">
               {suggestions.map((s) => <button key={s} type="button" onClick={() => send(s)} disabled={!aiReady}>{s}</button>)}

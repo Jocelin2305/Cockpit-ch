@@ -19,7 +19,7 @@ function Action({ run, label, pending, primary, tip }: { run: () => Promise<Res>
   );
 }
 
-// Trouve de nouvelles entreprises dans le registre (et enrichit avec Apollo si connecté).
+// Trouve de nouvelles entreprises dans le registre (et enrichit les contacts si le service est disponible).
 export function LaunchSearchButton({ searchId, first }: { searchId: string; first: boolean }) {
   return (
     <Action
@@ -36,9 +36,9 @@ export function EnrichButton({ searchId }: { searchId: string | null }) {
   return (
     <Action
       run={() => enrichWithApollo(searchId)}
-      label="Enrichir avec Apollo"
+      label="Enrichir les contacts"
       pending="Enrichissement…"
-      tip="Complète email, LinkedIn et poste des contacts avec votre compte Apollo (1 crédit par contact trouvé)."
+      tip="Complète l'email, le LinkedIn et le poste des contacts (1 crédit par email trouvé)."
     />
   );
 }

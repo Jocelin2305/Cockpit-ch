@@ -6,6 +6,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { appUrl, hashToken, isSuperAdminEmail, newToken, requireAdminSpace, requireSuperAdmin, requireUser, ROLES } from "@/lib/auth";
 import { PARTNER_TRIAL_DAYS, TRIAL_DAYS } from "@/lib/plans";
+import { platformName } from "@/lib/branding";
+import { grantTrialCredits } from "@/lib/credits";
 import { inviteEmail, sendPlatformEmail } from "@/lib/email";
 import { firstError, nameField, type FormState } from "@/lib/validation";
 
@@ -47,10 +49,11 @@ export async function createClient(_: FormState, form: FormData): Promise<FormSt
       },
     },
   });
+  if (!resellerId) await grantTrialCredits(org.id);
   revalidatePath("/super-admin", "layout");
   const link = `${appUrl()}/invitation/${token}`;
   // L'email part tout de suite : préparez l'espace avant, ou transmettez le lien vous-même plus tard.
-  const mail = inviteEmail(org.name, "administrateur", link, INVITE_DAYS);
+  const mail = inviteEmail(org.name, "administrateur", link, INVITE_DAYS, await platformName(org));
   const sent = form.get("send") === "1" && (await sendPlatformEmail(parsed.data.email, mail.subject, mail.text));
   return {
     ok: sent

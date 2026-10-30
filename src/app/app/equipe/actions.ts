@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { appUrl, hashToken, newToken, requireAdmin, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { firstError, inviteSchema, type FormState } from "@/lib/validation";
 import { seatLimit } from "@/lib/billing";
+import { platformName } from "@/lib/branding";
 import { inviteEmail, sendPlatformEmail } from "@/lib/email";
 
 const INVITE_DAYS = 7;
@@ -44,7 +45,7 @@ export async function inviteMember(_: FormState, form: FormData): Promise<FormSt
     },
   });
   const link = `${appUrl()}/invitation/${token}`;
-  const mail = inviteEmail(membership.organization.name, ROLE_LABEL[role], link, INVITE_DAYS);
+  const mail = inviteEmail(membership.organization.name, ROLE_LABEL[role], link, INVITE_DAYS, await platformName(membership.organization));
   const sent = await sendPlatformEmail(email, mail.subject, mail.text);
   revalidatePath("/app/equipe");
   return {

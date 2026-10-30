@@ -73,3 +73,15 @@ Liste des évolutions demandées par le fondateur, avec ce qui est fait dans ce 
 | 8 | Marque blanche : onglet Personnalisation débloqué par le fondateur, roue chromatique, logo, nom, typographie ; lien affilié brandé ; support = email du distributeur | Fait |
 
 Décisions ouvertes (spécification distributeurs) : essai de 14 jours ou garantie 30 jours ; commission maintenue avec l'option marque blanche (oui par défaut) ; plafond de tickets de l'offre A ; minimum de commission par client actif (désactivé).
+
+## Crédits (30 octobre 2026)
+
+Le client n'a plus de clé à fournir : l'IA et l'enrichissement passent par les clés de la plateforme et se paient en crédits.
+
+- Registre : modèle `CreditEntry`, le solde est la somme des mouvements ; une facture ou un paiement ne crédite jamais deux fois.
+- Grille provisoire : `src/lib/credit-grid.ts` (prix par action, packs, essai, plafond quotidien). À ajuster avec Super admin → Crédits et coûts.
+- IA : débit à prix fixe au lancement, remboursé si l'action échoue. Enrichissement : débit seulement si un email ou un numéro est trouvé.
+- Stripe : quota mensuel à `invoice.paid`, recharges en paiement unique sans produit à créer ; report limité à un mois de quota.
+- Revendeurs : stock acheté en packs et consommé par leurs clients ; le client ne voit ni prix ni paiement Cockpit'ch ; revendeur suspendu = clients suspendus ; nombre d'utilisateurs réglé par le revendeur.
+- Une clé déjà connectée par un client reste utilisée, sans débit. Les tuiles API IA et Enrichissement disparaissent dès que la clé de la plateforme existe.
+- Apollo : la clé de la plateforme (`APOLLO_API_KEY`) ne doit être posée qu'après l'accord revendeur signé.

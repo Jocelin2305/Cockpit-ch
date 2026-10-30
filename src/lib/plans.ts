@@ -2,7 +2,7 @@
 // Le prix facturé est celui du « Price » Stripe dont l'identifiant est dans la variable d'environnement indiquée ;
 // `price` ne sert qu'à l'affichage et au calcul du revenu mensuel dans le super admin.
 
-export type Plan = { id: string; name: string; price: number; seats: number; priceEnv: string; pitch: string; features: string[] };
+export type Plan = { id: string; name: string; price: number; seats: number; credits: number; priceEnv: string; pitch: string; features: string[] };
 
 export const PLANS: Plan[] = [
   {
@@ -10,18 +10,20 @@ export const PLANS: Plan[] = [
     name: "Solo",
     price: 49,
     seats: 1,
+    credits: 500,
     priceEnv: "STRIPE_PRICE_SOLO",
     pitch: "Pour un commercial ou un dirigeant qui prospecte seul.",
-    features: ["1 utilisateur", "Recherches et prospects illimités", "Séquences emails + LinkedIn", "Assistant IA"],
+    features: ["1 utilisateur", "500 crédits par mois (IA et contacts)", "Recherches et prospects illimités", "Séquences emails + LinkedIn", "Assistant IA"],
   },
   {
     id: "equipe",
     name: "Équipe",
     price: 149,
     seats: 5,
+    credits: 2000,
     priceEnv: "STRIPE_PRICE_EQUIPE",
     pitch: "Pour une équipe commerciale, avec administrateurs et commerciaux.",
-    features: ["Jusqu'à 5 utilisateurs", "Tout le plan Solo", "Rôles administrateur / commercial", "File d'appels partagée"],
+    features: ["Jusqu'à 5 utilisateurs", "2 000 crédits par mois (IA et contacts)", "Tout le plan Solo", "Rôles administrateur / commercial", "File d'appels partagée"],
   },
 ];
 

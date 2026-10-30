@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "./db";
-import { generateJSON, generateText, type AiContext } from "./ai";
+import { generateJSON, generateText, modelFor, type AiContext } from "./ai";
 import { prospectBrief, searchBrief } from "./ai-prompts";
 import { has, isDue, seqSteps, stats, tplDelays, todayISO } from "./prospecting";
 
@@ -44,6 +44,8 @@ ${batch.map((p) => `- id ${p.id} | recherche ${p.searchId ?? "aucune"} | ${prosp
 
 Renvoie un angle et un argumentaire par prospect, avec son id exact. Si une information manque, appuie-toi sur le secteur en préfixant la phrase concernée par « (déduction) » plutôt que d'inventer.`,
       "medium",
+      modelFor("angles"),
+      batch.length,
     );
     const ids = new Set(batch.map((p) => p.id));
     for (const a of result.angles) {

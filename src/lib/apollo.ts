@@ -1,9 +1,11 @@
-// Enrichissement Apollo avec la clé API du client : email, LinkedIn, poste et site du bon contact.
-// Recherche de personnes : gratuite ; enrichissement (bulk_match) : 1 crédit par contact trouvé.
-// Les téléphones directs d'Apollo (8 crédits, livrés en différé) ne sont pas demandés ; le standard de l'entreprise l'est.
+// Enrichissement Apollo : email, LinkedIn, poste et site du bon contact.
+// Clé de la plateforme (APOLLO_API_KEY, à poser une fois l'accord revendeur signé), débitée en crédits ; sinon clé du client, sans crédit.
+// Recherche de personnes : gratuite ; enrichissement (bulk_match) : 1 crédit Apollo par contact trouvé, 8 de plus pour un mobile.
 import type { Prisma, Prospect } from "@prisma/client";
 import { createHmac } from "node:crypto";
 import { appUrl } from "./auth";
+import { CREDIT_COSTS, CREDIT_LABELS } from "./credit-grid";
+import { CreditError, creditsLeft, emptyMessage, spendCredits } from "./credits";
 import { db } from "./db";
 import { decrypt } from "./mail";
 import { has } from "./prospecting";
@@ -26,12 +28,16 @@ async function call(key: string, path: string, query: [string, string][], body?:
     body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(30_000),
   });
-  if (res.status === 401) throw new ApolloError("Apollo refuse la clé API : vérifiez-la dans Paramètres.");
-  if (res.status === 403) throw new ApolloError("Votre offre Apollo ne donne pas accès à l'API : vérifiez votre abonnement Apollo.");
-  if (res.status === 429) throw new ApolloError("Limite d'appels Apollo atteinte : réessayez dans quelques minutes.");
-  if (!res.ok) throw new ApolloError(`Apollo a répondu une erreur (${res.status}).`);
+  if (res.status === 401) throw new ApolloError("Le service d'enrichissement refuse la clé API.");
+  if (res.status === 403) throw new ApolloError("L'offre du service d'enrichissement ne donne pas accès à l'API.");
+  if (res.status === 429) throw new ApolloError("Limite d'appels du service d'enrichissement atteinte : réessayez dans quelques minutes.");
+  if (!res.ok) throw new ApolloError(`Le service d'enrichissement a répondu une erreur (${res.status}).`);
   return res.json();
 }
+
+// Clé de la plateforme, utilisée quand l'entreprise n'a pas connecté la sienne.
+export const apolloPlatform = () => !!process.env.APOLLO_API_KEY;
+export const apolloReady = (org: { apolloKeyEnc?: string | null }) => apolloPlatform() || !!org.apolloKeyEnc;
 
 // Vérifie la clé par une recherche gratuite d'une personne.
 export const testApollo = (key: string) => call(key, "/mixed_people/api_search", [["per_page", "1"], ["person_titles[]", "ceo"]]);
@@ -67,21 +73,29 @@ const fullName = (m: NonNullable<Match>) => m.name || [m.first_name, m.last_name
 // 1) le dirigeant trouvé au registre (nom + entreprise) ; 2) si des fonctions sont visées et que le site est connu,
 // la personne qui occupe ce poste devient le contact principal (le dirigeant reste dans les notes).
 // `prospectId` : enrichissement manuel d'une ligne (même déjà traitée), téléphone direct compris quand c'est possible.
-export async function enrichSearch(org: { id: string; apolloKeyEnc: string | null }, scope: { searchId?: string | null; prospectId?: string }, fonctions: string) {
+export async function enrichSearch(org: { id: string; apolloKeyEnc: string | null; resellerId: string | null }, scope: { searchId?: string | null; prospectId?: string }, fonctions: string, userId: string | null = null) {
   const { searchId = null, prospectId } = scope;
-  if (!org.apolloKeyEnc) throw new ApolloError("Connectez Apollo dans Paramètres pour enrichir les contacts.");
-  let key: string;
-  try { key = decrypt(org.apolloKeyEnc); } catch { throw new ApolloError("Clé Apollo illisible : reconnectez-la dans Paramètres."); }
+  let key = process.env.APOLLO_API_KEY ?? "";
+  if (org.apolloKeyEnc) {
+    try { key = decrypt(org.apolloKeyEnc); } catch { throw new ApolloError("Clé d'enrichissement illisible : reconnectez-la dans Paramètres."); }
+  }
+  if (!key) throw new ApolloError("L'enrichissement des contacts n'est pas encore disponible : contactez le support.");
+  // Avec la clé de la plateforme, on ne traite que ce que les crédits peuvent payer.
+  const billed = !org.apolloKeyEnc;
+  const available = billed ? await creditsLeft(org) : Infinity;
+  if (available < CREDIT_COSTS.email) throw new CreditError(emptyMessage(org));
   const todo = await db.prospect.findMany({
     where: prospectId ? { id: prospectId, organizationId: org.id } : { organizationId: org.id, enrichedAt: null, status: { notIn: ["Gagné", "Perdu"] }, ...(searchId ? { searchId } : {}) },
     orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
-    take: ENRICH_MAX,
+    take: Math.min(ENRICH_MAX, Math.floor(available / CREDIT_COSTS.email)),
   });
   if (!todo.length) return { done: 0, found: 0, left: 0 };
+  // Le téléphone direct n'est demandé que si les crédits peuvent le payer.
+  const phoneFor = prospectId && available >= CREDIT_COSTS.email + CREDIT_COSTS.phone ? org.id : null;
 
   // 1. Le contact connu (dirigeant ou contact saisi), par son nom et son entreprise.
   const named = todo.filter((p) => has(p.contactName));
-  const first = await bulkMatch(key, named.map((p) => ({ ...splitName(p.contactName), organization_name: p.company, ...(has(p.website) ? { domain: domainOf(null, p.website) } : {}) })), prospectId ? org.id : null);
+  const first = await bulkMatch(key, named.map((p) => ({ ...splitName(p.contactName), organization_name: p.company, ...(has(p.website) ? { domain: domainOf(null, p.website) } : {}) })), phoneFor);
   const byId = new Map(named.map((p, i) => [p.id, first[i] ?? null]));
 
   // 2. La fonction visée, dans l'entreprise dont on connaît le domaine (recherche gratuite, puis 1 crédit si trouvée).
@@ -97,11 +111,12 @@ export async function enrichSearch(org: { id: string; apolloKeyEnc: string | nul
       const hit = ((res.people ?? []) as { id?: string; title?: string }[]).find((x) => x.id && x.id !== m?.id);
       if (hit?.id) wanted.push({ p, id: hit.id });
     }
-    const matches = await bulkMatch(key, wanted.map((w) => ({ id: w.id })), prospectId ? org.id : null);
+    const matches = await bulkMatch(key, wanted.map((w) => ({ id: w.id })), phoneFor);
     wanted.forEach((w, i) => matches[i] && target.set(w.p.id, matches[i]));
   }
 
   let found = 0;
+  let newEmails = 0;
   const now = new Date();
   for (const p of todo) {
     const leader = byId.get(p.id) ?? null;
@@ -111,6 +126,7 @@ export async function enrichSearch(org: { id: string; apolloKeyEnc: string | nul
     if (main) {
       found++;
       const email = main.email && main.email_status !== "unavailable" ? main.email : "";
+      if (email && email !== p.email) newEmails++;
       Object.assign(data, {
         apolloId: main.id ?? null,
         ...(fullName(main) ? { contactName: fullName(main) } : {}),
@@ -127,6 +143,8 @@ export async function enrichSearch(org: { id: string; apolloKeyEnc: string | nul
     if (p.source === "registre") data.priority = priorityFor(merged, fonctions);
     await db.prospect.update({ where: { id: p.id }, data });
   }
+  // Seuls les emails nouvellement trouvés sont débités.
+  if (billed) await spendCredits(org, newEmails * CREDIT_COSTS.email, CREDIT_LABELS.email, { userId, force: true });
   const left = await db.prospect.count({ where: { organizationId: org.id, enrichedAt: null, status: { notIn: ["Gagné", "Perdu"] }, ...(searchId ? { searchId } : {}) } });
   return { done: todo.length, found, left };
 }

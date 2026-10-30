@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireReseller } from "@/lib/auth";
+import { appUrl, requireReseller } from "@/lib/auth";
+import { stripe, stripeEnabled } from "@/lib/billing";
+import { RESELLER_PACKS } from "@/lib/credit-grid";
 import { encrypt, MailError } from "@/lib/mail";
 import { hasUpsells, offerById, OFFERS, PRIORITY_SUPPORT_HOURS, prioritySupport, validIban, validSiret } from "@/lib/resellers";
 import { saveBrand } from "@/lib/brand-save";
@@ -114,9 +117,31 @@ export async function setClientSubscription(form: FormData) {
   const on = form.get("on") === "1";
   const price = Math.max(0, Math.round(Number(String(form.get("price") ?? "").replace(",", ".")) * 100) / 100 || 0);
   const billing = form.get("billing") === "annuel" ? "annuel" : "mensuel";
+  const seats = Math.min(100, Math.max(1, parseInt(String(form.get("seats") ?? ""), 10) || 5));
   await db.organization.update({
     where: { id: org.id },
-    data: on ? { subscriptionStatus: "active", plan: "distributeur", resellerPrice: price, resellerBilling: billing } : { subscriptionStatus: "canceled" },
+    data: on ? { subscriptionStatus: "active", plan: "distributeur", resellerPrice: price, resellerBilling: billing, resellerSeats: seats } : { subscriptionStatus: "canceled" },
   });
   revalidatePath("/super-admin", "layout");
+}
+
+// Achat d'un pack de crédits, consommé ensuite par tous les clients du distributeur.
+export async function buyResellerCredits(form: FormData) {
+  const { reseller } = await requireReseller();
+  const pack = RESELLER_PACKS.find((p) => p.id === form.get("pack"));
+  if (!pack || !stripeEnabled()) redirect("/super-admin/affilie?erreur=stripe");
+  const session = await stripe().checkout.sessions.create({
+    mode: "payment",
+    customer_email: reseller.email,
+    customer_creation: "always",
+    line_items: [{ quantity: 1, price_data: { currency: "eur", unit_amount: pack.price * 100, product_data: { name: `Pack de ${pack.credits} crédits (distributeur)` } } }],
+    metadata: { kind: "credits", credits: String(pack.credits), resellerId: reseller.id },
+    invoice_creation: { enabled: true },
+    billing_address_collection: "required",
+    tax_id_collection: { enabled: true },
+    locale: "fr",
+    success_url: `${appUrl()}/super-admin/affilie?recharge={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${appUrl()}/super-admin/affilie`,
+  });
+  redirect(session.url ?? "/super-admin/affilie?erreur=stripe");
 }

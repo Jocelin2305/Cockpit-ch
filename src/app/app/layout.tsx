@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { BackButton } from "@/components/back-button";
 import { Brand } from "@/components/brand";
 import { BrandStyle } from "@/components/brand-style";
-import { brandForOrg } from "@/lib/branding";
+import { brandForOrg, supportEmail } from "@/lib/branding";
 import { NavLinks, NavMenu, type NavItem } from "@/components/shell";
 import { CallDock } from "@/components/call-dock";
 import { GuideButton, Tour } from "@/components/tour";
@@ -14,7 +14,9 @@ import type { Metadata } from "next";
 import { getSession, requireMember, ROLE_LABEL, ROLES } from "@/lib/auth";
 import { ensureStandardTemplate } from "@/lib/cockpit";
 import { accessState } from "@/lib/billing";
-import { aiReady } from "@/lib/ai";
+import { aiEnabled, aiReady } from "@/lib/ai";
+import { apolloPlatform } from "@/lib/apollo";
+import { creditBalance } from "@/lib/credits";
 import { isDue, todayISO } from "@/lib/prospecting";
 import { logout } from "../(auth)/actions";
 import { leaveOrganization } from "../super-admin/actions";
@@ -42,6 +44,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const billing = accessState(membership.organization);
   const brand = await brandForOrg(membership.organization);
   const todo = due + callBacks;
+  const org = membership.organization;
+  // Le client d'un revendeur ne voit pas le stock de son revendeur ; il est prévenu quand celui-ci est vide.
+  const credits = await creditBalance(org);
+  // Une entreprise qui utilise ses propres clés ne consomme pas de crédits.
+  const usesCredits = (aiEnabled() && !org.aiKeyEnc) || (apolloPlatform() && !org.apolloKeyEnc);
+  const support = org.resellerId ? await supportEmail(org) : "";
 
   const tools: NavItem[] = [
     { href: "/app", label: "Copilote IA", count: todo || undefined, alert: todo > 0, tip: "Votre agent IA : il ouvre chaque journée avec votre point du jour, puis répond à toutes vos demandes." },
@@ -70,6 +78,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLinks items={tools} />
         </div>
         <NavMenu label="Compte" items={account} />
+        {usesCredits && !org.resellerId && <Link className="rail-credits" href="/app/parametres#credits">{credits.toLocaleString("fr-FR")} crédits</Link>}
         <div className="rail-foot">
           <GuideButton />
           <div>
@@ -91,9 +100,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         )}
         {billing.kind === "trial" && billing.daysLeft <= 5 && (
-          <p className="alert banner">Essai gratuit : plus que {billing.daysLeft} jour{billing.daysLeft > 1 ? "s" : ""}. <Link href="/abonnement">Choisir une offre</Link></p>
+          <p className="alert banner">Essai gratuit : plus que {billing.daysLeft} jour{billing.daysLeft > 1 ? "s" : ""}. {org.resellerId ? <>Votre conseiller : <a href={`mailto:${support}`}>{support}</a></> : <Link href="/abonnement">Choisir une offre</Link>}</p>
         )}
-        {billing.kind === "past_due" && (
+        {usesCredits && credits <= 0 && (
+          <p className="alert error banner">Crédits épuisés : l&apos;IA et l&apos;enrichissement sont en pause. {org.resellerId ? <>Contactez votre conseiller : <a href={`mailto:${support}`}>{support}</a></> : <Link href="/abonnement">Voir mes options</Link>}</p>
+        )}
+        {billing.kind === "past_due" && !org.resellerId && (
           <p className="alert error banner">Le dernier paiement a échoué. <Link href="/abonnement">Mettre à jour le moyen de paiement</Link></p>
         )}
         {children}

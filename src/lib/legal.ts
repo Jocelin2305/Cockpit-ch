@@ -9,18 +9,17 @@ export const EDITOR = {
   email: "jocelin.querteux.lms@gmail.com",
   vat: "",
 };
-export const UPDATED = "28 octobre 2026";
+export const UPDATED = "30 octobre 2026";
 // Prise de rendez-vous avec le fondateur (page d'accueil, programme partenaire).
 export const BOOKING_URL = "https://calendar.app.google/QWaG1gXHXnJtrVgE9";
 
 // Sous-traitants techniques (article 28 RGPD).
 export const SUBPROCESSORS = [
-  { name: "Supabase", role: "Hébergement de la base de données", where: "Union européenne (Paris)" },
-  { name: "Vercel", role: "Hébergement de l'application", where: "Union européenne et États-Unis (clauses contractuelles types)" },
+  { name: "Railway", role: "Hébergement de l'application et de la base de données", where: "Union européenne (Pays-Bas)" },
   { name: "Anthropic", role: "Fonctions d'intelligence artificielle (Claude)", where: "États-Unis (clauses contractuelles types)" },
   { name: "Stripe", role: "Paiement et facturation", where: "Union européenne et États-Unis (clauses contractuelles types)" },
   { name: "Resend", role: "Emails de la plateforme (invitations, mot de passe)", where: "États-Unis (clauses contractuelles types)" },
   { name: "Google / Microsoft", role: "Boîte mail connectée par l'utilisateur (si activée)", where: "Selon le fournisseur choisi" },
-  { name: "Apollo.io", role: "Enrichissement des contacts, avec le compte du client (si connecté)", where: "États-Unis (clauses contractuelles types)" },
+  { name: "Apollo.io", role: "Enrichissement des contacts professionnels (email, téléphone, poste)", where: "États-Unis (clauses contractuelles types)" },
   { name: "Opérateur de téléphonie du client", role: "Appels, enregistrements, transcriptions (si connecté)", where: "Selon l'opérateur choisi" },
 ];

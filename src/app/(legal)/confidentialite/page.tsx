@@ -16,7 +16,7 @@ export default function Privacy() {
       <ul>
         <li>Comptes : nom, email, mot de passe (stocké sous forme chiffrée irréversible), rôle, dates de connexion.</li>
         <li>Facturation : entreprise, adresse, n° TVA ; les cartes bancaires sont gérées par Stripe, jamais par Cockpit&apos;ch.</li>
-        <li>Prospection : entreprises et contacts professionnels (nom, fonction, email et téléphone professionnels, LinkedIn), notes, emails échangés, appels et transcriptions si la téléphonie est connectée. Ces données proviennent du client (saisie, import), du registre national des entreprises (Sirene / RNE, données publiques) et, si le client connecte son propre compte, d&apos;Apollo.io. Pour ces données de prospection, le client est responsable du traitement : il prospecte sur la base de l&apos;intérêt légitime, avec des messages liés à la fonction de la personne et une possibilité simple de s&apos;opposer.</li>
+        <li>Prospection : entreprises et contacts professionnels (nom, fonction, email et téléphone professionnels, LinkedIn), notes, emails échangés, appels et transcriptions si la téléphonie est connectée. Ces données proviennent du client (saisie, import), du registre national des entreprises (Sirene / RNE, données publiques) et du service d&apos;enrichissement Apollo.io, utilisé à la demande du client. Pour ces données de prospection, le client est responsable du traitement : il prospecte sur la base de l&apos;intérêt légitime, avec des messages liés à la fonction de la personne et une possibilité simple de s&apos;opposer.</li>
         <li>Usage : journaux techniques et consommation de l&apos;IA, pour la sécurité et le bon fonctionnement.</li>
       </ul>
 

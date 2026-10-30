@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { aiEnabled } from "@/lib/ai";
+import { apolloPlatform } from "@/lib/apollo";
 import { CRM_PROVIDERS, type CrmProvider } from "@/lib/crm-providers";
 import { PHONE_PROVIDERS, type PhoneProvider } from "@/lib/telephony";
 import { PROVIDER_LABEL, type Provider } from "@/lib/mail";
@@ -19,13 +20,16 @@ export async function ConnectorTiles({ userId, org, isAdmin }: { userId: string;
     voip: org.phoneProvider ? PHONE_PROVIDERS[org.phoneProvider as PhoneProvider] ?? org.phoneProvider : null,
     automatisation: null,
   };
-  const missing = CONNECTOR_CATEGORIES.filter((c) => c.required && !status[c.id]);
+  // IA et enrichissement fournis par la plateforme (payés en crédits) : plus rien à connecter pour le client.
+  const provided: Record<string, boolean> = { ia: aiEnabled() && !org.aiKeyEnc, enrichissement: apolloPlatform() && !org.apolloKeyEnc };
+  const categories = CONNECTOR_CATEGORIES.filter((c) => !provided[c.id]);
+  const missing = categories.filter((c) => c.required && !status[c.id]);
   return (
     <section className="stack">
       <h2>Connecteurs</h2>
       {isAdmin && missing.length > 0 && <p className="alert">À connecter pour utiliser Cockpit&apos;ch pleinement : {missing.map((c) => c.label).join(" et ")}.</p>}
       <div className="tiles">
-        {CONNECTOR_CATEGORIES.map((c) => {
+        {categories.map((c) => {
           const locked = c.admin && !isAdmin;
           const body = (
             <>

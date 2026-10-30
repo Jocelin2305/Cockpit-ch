@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { appUrl, requireReseller } from "@/lib/auth";
+import { creditCheckout, stripe, stripeEnabled } from "@/lib/billing";
+import { RESELLER_PACKS } from "@/lib/credit-grid";
+import { walletBalance } from "@/lib/credits";
 import { BOOKING_URL } from "@/lib/legal";
 import {
   dossierComplete, euros, offerById, PRIORITY_SUPPORT_HOURS, prioritySupport, resellerMonthlyFee, resellerStats, VIDEO_CATEGORIES, whiteLabelEligible, youtubeId,
 } from "@/lib/resellers";
+import { buyResellerCredits } from "./actions";
 import { DossierForm } from "./dossier-form";
 import { OfferPicker } from "./offer-picker";
 import { FeatureForm, TicketForm } from "./support-forms";
@@ -14,15 +18,29 @@ export const metadata: Metadata = { title: "Espace affilié" };
 
 const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
-export default async function AffiliatePage() {
+export default async function AffiliatePage({ searchParams }: { searchParams: Promise<{ recharge?: string; erreur?: string }> }) {
   const { reseller: r } = await requireReseller();
-  const [orgs, messages, videos, tickets, features] = await Promise.all([
+  const { recharge, erreur } = await searchParams;
+  // Retour du paiement : les crédits sont ajoutés sans attendre le webhook.
+  let recharged = false;
+  if (recharge && stripeEnabled()) {
+    try {
+      const s = await stripe().checkout.sessions.retrieve(recharge);
+      if (s.metadata?.resellerId === r.id) recharged = await creditCheckout(s);
+    } catch {
+      // Le webhook créditera le pack quelques secondes plus tard.
+    }
+  }
+  const [orgs, messages, videos, tickets, features, balance, used] = await Promise.all([
     db.organization.findMany({ where: { resellerId: r.id } }),
     db.resellerMessage.findMany({ where: { createdAt: { gte: r.createdAt } }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.resellerVideo.findMany({ orderBy: { createdAt: "asc" } }),
     db.supportTicket.findMany({ where: { resellerId: r.id }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.featureRequest.findMany({ where: { resellerId: r.id }, orderBy: { createdAt: "desc" }, take: 8 }),
+    walletBalance({ resellerId: r.id }),
+    db.creditEntry.groupBy({ by: ["organizationId"], where: { resellerId: r.id, kind: "use", createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } }, _sum: { delta: true } }),
   ]);
+  const usedBy = new Map(used.map((u) => [u.organizationId, 0 - (u._sum.delta ?? 0)]));
   const offer = offerById(r.offer);
   const s = resellerStats(orgs, r.offer);
   const active = r.offerStatus === "actif";
@@ -48,6 +66,28 @@ export default async function AffiliatePage() {
         <div className="kpi"><span className="v">{euros(Math.round(s.commission * 100) / 100)}</span><span className="k">commission Cockpit&apos;ch ({Math.round(s.rate * 100)} %)</span></div>
       </div>
       <p className="muted small">Votre offre : {euros(Math.round(resellerMonthlyFee(r) * 100) / 100)} HT / mois. Déclarez le prix de chaque client dans <Link href="/super-admin/clients">Mes clients</Link> · <a href="/super-admin/affilie/export">Exporter le relevé du mois (CSV)</a></p>
+
+      <section className="panel" id="credits">
+        <div className="panel-head"><h2>Crédits de vos clients</h2><span className={`chip${balance > 100 ? " ok" : " late"}`}>{balance.toLocaleString("fr-FR")} crédits</span></div>
+        {recharged && <p className="alert ok">Merci ! Vos crédits sont ajoutés.</p>}
+        {erreur === "stripe" && <p className="alert error">Le paiement en ligne n&apos;est pas encore configuré. Contactez Cockpit&apos;ch.</p>}
+        {balance <= 100 && <p className="alert">Stock presque épuisé : à zéro, vos clients ne peuvent plus utiliser l&apos;IA ni enrichir leurs contacts.</p>}
+        <p className="muted small">Vos clients consomment ce stock : l&apos;IA à chaque action, l&apos;enrichissement seulement quand un email ou un numéro est trouvé.</p>
+        <div className="plans">
+          {RESELLER_PACKS.map((p) => (
+            <div key={p.id} className="plan-card">
+              <h3>{p.credits.toLocaleString("fr-FR")} crédits</h3>
+              <p className="price"><span className="mono">{euros(p.price)}</span> HT</p>
+              <form action={buyResellerCredits}><input type="hidden" name="pack" value={p.id} /><button className="btn primary" type="submit">Acheter</button></form>
+            </div>
+          ))}
+        </div>
+        {orgs.length > 0 && (
+          <ul className="list">
+            {orgs.map((o) => <li key={o.id} className="row between"><span>{o.name}</span><span className="muted small">{(usedBy.get(o.id) ?? 0).toLocaleString("fr-FR")} crédits sur 30 jours</span></li>)}
+          </ul>
+        )}
+      </section>
 
       <section className="panel">
         <h2>{active ? "Changer d'offre" : "Choisir mon offre"}</h2>

@@ -60,7 +60,7 @@ export const getSession = cache(async () => {
   let membership = session.organizationId
     ? await db.membership.findUnique({
         where: { userId_organizationId: { userId: session.userId, organizationId: session.organizationId } },
-        include: { organization: true },
+        include: { organization: { include: { reseller: { select: { active: true } } } } },
       })
     : null;
   // Revendeur actif rattaché à ce compte : super admin de ses propres clients.
@@ -68,7 +68,7 @@ export const getSession = cache(async () => {
   // Le super admin (ou le revendeur, pour ses clients) peut ouvrir l'espace d'un client pour le paramétrer : il y agit comme administrateur.
   let onboarding = false;
   if (!membership && session.organizationId && (session.user.isSuperAdmin || reseller)) {
-    const organization = await db.organization.findUnique({ where: { id: session.organizationId } });
+    const organization = await db.organization.findUnique({ where: { id: session.organizationId }, include: { reseller: { select: { active: true } } } });
     if (organization && (session.user.isSuperAdmin || organization.resellerId === reseller?.id)) {
       membership = { id: "super-admin", role: ROLES.ADMIN, createdAt: session.createdAt, userId: session.userId, organizationId: organization.id, organization };
       onboarding = true;

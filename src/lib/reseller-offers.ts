@@ -46,7 +46,7 @@ export const whiteLabelInstallments = (n: number) => {
 export const hasUpsells = (offerId: string) => offerId === "A" || offerId === "B";
 
 // Coûts tiers à la charge du distributeur, affichés sur la page d'offre.
-export const THIRD_PARTY_COSTS = ["Logiciel d'enrichissement : 49 € HT par utilisateur et par mois", "Abonnement Claude (IA)"];
+export const THIRD_PARTY_COSTS = ["crédits d'IA et d'enrichissement consommés par vos clients, achetés en packs dans votre Espace affilié"];
 
 // Minimum versé par client actif, indépendant du prix de revente : désactivé (0).
 export const MIN_COMMISSION_PER_ACTIVE_CLIENT = 0;

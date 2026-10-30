@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { stripe, syncSubscription } from "@/lib/billing";
+import { creditCheckout, creditInvoice, stripe, syncSubscription } from "@/lib/billing";
 
 // Stripe prévient l'application à chaque changement d'abonnement (paiement, renouvellement, impayé, résiliation).
 export async function POST(request: Request) {
@@ -27,12 +27,17 @@ export async function POST(request: Request) {
         const id = typeof s.subscription === "string" ? s.subscription : s.subscription.id;
         await syncSubscription(await stripe().subscriptions.retrieve(id));
       }
+      await creditCheckout(s);
       break;
     }
     case "invoice.payment_failed":
     case "invoice.paid": {
-      const sub = event.data.object.parent?.subscription_details?.subscription;
-      if (sub) await syncSubscription(await stripe().subscriptions.retrieve(typeof sub === "string" ? sub : sub.id));
+      const invoice = event.data.object;
+      const ref = invoice.parent?.subscription_details?.subscription;
+      if (!ref) break;
+      const sub = await stripe().subscriptions.retrieve(typeof ref === "string" ? ref : ref.id);
+      await syncSubscription(sub);
+      if (event.type === "invoice.paid" && invoice.id) await creditInvoice(sub, invoice.id);
       break;
     }
   }

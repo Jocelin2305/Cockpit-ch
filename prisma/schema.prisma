@@ -74,6 +74,8 @@ model Organization {
   // Client d'un distributeur : prix HT qu'il lui facture (base de la commission), et sa périodicité.
   resellerPrice        Float?
   resellerBilling      String?
+  // Nombre d'utilisateurs accordé par le distributeur à son client.
+  resellerSeats        Int?
   // Dernier rapport hebdomadaire envoyé (évite un double envoi).
   lastReportAt         DateTime?
   optOuts              OptOut[]
@@ -275,6 +277,25 @@ model AiUsage {
   createdAt      DateTime @default(now())
 
   @@index([organizationId, createdAt])
+}
+
+// Registre des crédits : le solde est la somme des mouvements. Portefeuille d'un revendeur si resellerId est renseigné
+// (organizationId indique alors le client qui a consommé), sinon celui de l'entreprise.
+model CreditEntry {
+  id             String   @id @default(cuid())
+  organizationId String?
+  resellerId     String?
+  delta          Int
+  // use (consommation et remboursement), essai, abonnement, recharge, manuel, expiration.
+  kind           String
+  label          String   @default("")
+  // Facture ou paiement à l'origine du mouvement : un même paiement ne crédite jamais deux fois.
+  reference      String?  @unique
+  userId         String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([resellerId, createdAt])
 }
 
 model Invitation {

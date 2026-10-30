@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireMember, ROLES } from "@/lib/auth";
 import { aiEnabled } from "@/lib/ai";
+import { apolloPlatform } from "@/lib/apollo";
 import { connectorCategory } from "@/lib/connectors";
 import { supportEmail } from "@/lib/branding";
 import { MailPanel } from "../../mail-panel";
@@ -21,6 +22,8 @@ export default async function ConnectorCategoryPage({ params, searchParams }: { 
   if (!cat) notFound();
   const { user, membership } = await requireMember();
   const org = membership.organization;
+  // Fournis par la plateforme : rien à connecter (une clé déjà enregistrée reste gérable).
+  if ((cat.id === "ia" && aiEnabled() && !org.aiKeyEnc) || (cat.id === "enrichissement" && apolloPlatform() && !org.apolloKeyEnc)) redirect("/app/parametres");
   const locked = cat.admin && membership.role !== ROLES.ADMIN;
   const support = await supportEmail(org);
   const soon = cat.tools.filter((t) => t.soon);

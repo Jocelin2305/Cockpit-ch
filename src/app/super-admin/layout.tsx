@@ -11,7 +11,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
   const role = user.isFounder ? "Fondateur" : resellerId ? "Super admin revendeur" : "Super admin";
   // Menu par rubrique ; un revendeur ne voit que ses clients et son Espace affilié.
   const groups: { label: string; items: NavItem[] }[] = [
-    { label: "Pilotage", items: [{ href: "/super-admin", label: "Vue d'ensemble" }] },
+    { label: "Pilotage", items: [{ href: "/super-admin", label: "Vue d'ensemble" }, ...(user.isFounder ? [{ href: "/super-admin/credits", label: "Crédits et coûts" }] : [])] },
     {
       label: resellerId ? "Mes clients" : "Clients",
       items: [

@@ -80,6 +80,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .count { font-family: var(--f-mono); font-size: 0.72rem; background: var(--sunk); padding: 1px 7px; border-radius: 20px; }
 .rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 0 6px; }
 .rail-foot b { display: block; }
+.rail-credits { display: block; margin: 8px 6px 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: .85rem; font-weight: 600; text-decoration: none; color: inherit; }
 .main { min-width: 0; padding: 28px max(28px, env(safe-area-inset-right, 0px)) 60px max(28px, env(safe-area-inset-left, 0px)); }
 .view { display: flex; flex-direction: column; gap: 22px; max-width: 1180px; }
 .view-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }

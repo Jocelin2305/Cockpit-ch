@@ -31,7 +31,7 @@ async function loadOverview(resellerId: string | null) {
       include: {
         _count: { select: { memberships: true } },
         memberships: { where: { role: ROLES.ADMIN }, include: { user: true }, orderBy: { createdAt: "asc" }, take: 1 },
-        reseller: { select: { companyName: true, email: true } },
+        reseller: { select: { companyName: true, email: true, active: true } },
       },
     }),
     db.user.count({ where: real }),
@@ -44,7 +44,7 @@ async function loadOverview(resellerId: string | null) {
 
 // Tarifs publics par million de jetons (entrée / sortie), hors réductions du cache.
 const PRICES: [RegExp, number, number][] = [[/haiku/, 0.1, 0.5], [/sonnet/, 2, 10], [/opus/, 4, 20]];
-const estimate = (model: string, input: number, output: number) => {
+export const estimate = (model: string, input: number, output: number) => {
   const [, i, o] = PRICES.find(([re]) => re.test(model)) ?? [null, 4, 20];
   return (input * i + output * o) / 1_000_000;
 };
@@ -72,7 +72,7 @@ export async function Overview({ section }: { section: Section }) {
   const converted = opened.filter((o) => paying.includes(o)).length;
   const statusLabel = (id: string) => {
     const st = states.get(id)!;
-    return st.kind === "trial" ? `Essai · ${st.daysLeft} j` : st.kind === "active" ? `${st.planName}${st.cancelAtPeriodEnd ? " (résilié)" : ""}` : st.kind === "past_due" ? `${st.planName} · impayé` : st.reason === "trial_over" ? "Essai terminé" : st.reason === "unpaid" ? "Suspendu" : "Résilié";
+    return st.kind === "trial" ? `Essai · ${st.daysLeft} j` : st.kind === "active" ? `${st.planName}${st.cancelAtPeriodEnd ? " (résilié)" : ""}` : st.kind === "past_due" ? `${st.planName} · impayé` : st.reason === "trial_over" ? "Essai terminé" : st.reason === "unpaid" ? "Suspendu" : st.reason === "reseller" ? "Revendeur suspendu" : "Résilié";
   };
 
   return (
@@ -119,7 +119,7 @@ export async function Overview({ section }: { section: Section }) {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Abonnement</th>{resellerId && <th>Prix que vous facturez (HT)</th>}{!resellerId && <th>Revendeur</th>}{!resellerId && <th>IA (30 jours)</th>}<th>Créée le</th><th aria-label="Actions" /></tr>
+              <tr><th>Entreprise</th><th>Administrateur</th><th>Membres</th><th>Abonnement</th>{resellerId && <th>Prix que vous facturez (HT) et utilisateurs</th>}{!resellerId && <th>Revendeur</th>}{!resellerId && <th>IA (30 jours)</th>}<th>Créée le</th><th aria-label="Actions" /></tr>
             </thead>
             <tbody>
               {organizations.length === 0 && (
@@ -139,6 +139,7 @@ export async function Overview({ section }: { section: Section }) {
                         <input type="hidden" name="orgId" value={o.id} />
                         <input className="input sm" name="price" inputMode="decimal" defaultValue={o.resellerPrice ?? ""} placeholder="Prix" aria-label="Prix facturé HT" style={{ width: 80 }} />
                         <select className="input sm" name="billing" defaultValue={o.resellerBilling ?? "mensuel"} aria-label="Périodicité"><option value="mensuel">/ mois</option><option value="annuel">/ an</option></select>
+                        <input className="input sm" name="seats" type="number" min={1} max={100} defaultValue={o.resellerSeats ?? 5} aria-label="Nombre d'utilisateurs" style={{ width: 64 }} />
                         <button className="btn sm primary" type="submit" name="on" value="1">{states.get(o.id)!.kind === "active" ? "Mettre à jour" : "Activer"}</button>
                         {states.get(o.id)!.kind === "active" && <button className="btn sm ghost" type="submit" name="on" value="0">Suspendre</button>}
                       </form>

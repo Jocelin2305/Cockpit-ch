@@ -1,3 +1,4 @@
+import { apolloReady } from "@/lib/apollo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -57,7 +58,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         </div>
         <div className="row">
           {current && sourcingQuery(current) && <LaunchSearchButton searchId={current.id} first={!current.sourcedAt} />}
-          {open && membership.organization.apolloKeyEnc && <EnrichButton searchId={searchId} />}
+          {open && apolloReady(membership.organization) && <EnrichButton searchId={searchId} />}
           {open && <GenerateAnglesButton label="Angles manquants" />}
           {open && crm && CRM_PROVIDERS[crm] && <UpdateCrmButton searchId={searchId} crm={CRM_PROVIDERS[crm]} />}
           <Link className="btn" href={`/app/prospects/importer${searchId ? `?recherche=${searchId}` : ""}`}>Importer</Link>
@@ -111,7 +112,7 @@ export default async function ProspectsPage({ searchParams }: { searchParams: Pr
         showSearch
         empty={prospects.length ? "Aucun prospect ne correspond à ces filtres." : "Aucun prospect pour l'instant. Ajoutez-en un ou importez une liste."}
       />
-      <p className="hint">Cliquez sur un email pour lancer la séquence de ce contact, sur un numéro pour l&apos;appeler ; « Enrichir » débloque l&apos;email et le téléphone avec Apollo. Clic droit sur une ligne ou une bibliothèque : stopper ou reprendre la séquence, supprimer.{!mailbox && <> Pour lancer une séquence, <Link href="/app/parametres/connecteurs/mailing">connectez votre boîte mail</Link>.</>}</p>
+      <p className="hint">Cliquez sur un email pour lancer la séquence de ce contact, sur un numéro pour l&apos;appeler ; « Enrichir » débloque l&apos;email et le téléphone (débité seulement si trouvé). Clic droit sur une ligne ou une bibliothèque : stopper ou reprendre la séquence, supprimer.{!mailbox && <> Pour lancer une séquence, <Link href="/app/parametres/connecteurs/mailing">connectez votre boîte mail</Link>.</>}</p>
       </>)}
     </div>
   );

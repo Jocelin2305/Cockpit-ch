@@ -2,6 +2,7 @@
 import { db } from "./db";
 import { addDays, todayISO } from "./prospecting";
 import { appUrl, ROLES } from "./auth";
+import { platformName } from "./branding";
 import { sendPlatformEmail } from "./email";
 
 type Counts = { calls: number; talks: number; emails: number; replies: number; rdv: number; won: number; added: number };
@@ -85,7 +86,7 @@ export async function sendWeeklyReport(organizationId: string, opts: { force?: b
   if (!opts.force && org.lastReportAt && Date.now() - org.lastReportAt.getTime() < 6 * 86_400_000) return 0;
   const r = await weeklyReport(organizationId);
   const text = reportText(org.name, r);
-  const subject = `Cockpit'ch · votre semaine : ${r.week.rdv} RDV, ${r.week.replies} réponses, ${r.week.calls} appels`;
+  const subject = `${await platformName(org)} · votre semaine :${r.week.rdv} RDV, ${r.week.replies} réponses, ${r.week.calls} appels`;
   let sent = 0;
   for (const m of org.memberships) {
     if (opts.onlyUserId ? m.user.id !== opts.onlyUserId : !m.user.weeklyReport) continue;

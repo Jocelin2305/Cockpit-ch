@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { appUrl, hashToken, newToken, requireSuperAdmin, ROLES } from "@/lib/auth";
+import { grantTrialCredits } from "@/lib/credits";
 import { inviteEmail, sendPlatformEmail } from "@/lib/email";
 import { newResellerCode, OFFERS, VIDEO_CATEGORIES } from "@/lib/resellers";
 import { emailField, firstError, nameField, type FormState } from "@/lib/validation";
@@ -49,6 +50,7 @@ export async function createReseller(_: FormState, form: FormData): Promise<Form
       invitations: { create: { email, role: ROLES.ADMIN, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + INVITE_DAYS * 86_400_000), invitedById: user.id } },
     },
   });
+  await grantTrialCredits(org.id);
   const link = `${appUrl()}/invitation/${token}`;
   const mail = inviteEmail(org.name, "administrateur", link, INVITE_DAYS);
   const sent = form.get("send") === "1" && (await sendPlatformEmail(email, mail.subject, mail.text));

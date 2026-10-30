@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getSession, ROLE_LABEL } from "@/lib/auth";
-import { SYSTEM_PROMPT, aiClient, aiErrorMessage, aiReady, fallbackFor, logUsage, modelFor } from "@/lib/ai";
+import { SYSTEM_PROMPT, aiClient, aiErrorMessage, aiReady, chargeFeature, fallbackFor, logUsage, modelFor, refundCharge } from "@/lib/ai";
 
 const MODEL = modelFor("assistant");
 import { ASSISTANT_RULES, assistantContext, assistantTools } from "@/lib/assistant";
@@ -30,12 +30,14 @@ export async function POST(request: Request) {
     async start(controller) {
       const send = (o: Record<string, unknown>) => controller.enqueue(encoder.encode(`${JSON.stringify(o)}\n`));
       const usage = { input_tokens: 0, output_tokens: 0 };
+      let charge: Awaited<ReturnType<typeof chargeFeature>> = null;
       try {
         if (!aiReady(membership.organization)) {
           send({ type: "error", message: "L'IA n'est pas connectée : ajoutez votre clé Claude dans Paramètres → API IA." });
           return;
         }
         const client = await aiClient(membership.organizationId);
+        charge = await chargeFeature(ctx, "assistant");
         const context = await assistantContext(ctx, membership.organization.name, user.name, ROLE_LABEL[membership.role]);
         // Seuls les 12 derniers échanges repartent à l'IA (les plus anciens coûtaient sans servir).
         const recent = parsed.data.messages.slice(-12);
@@ -74,6 +76,8 @@ export async function POST(request: Request) {
         }
         send({ type: "done" });
       } catch (e) {
+        // Aucune réponse produite : le message n'est pas facturé.
+        if (!usage.input_tokens) await refundCharge(ctx, charge);
         if (!request.signal.aborted) send({ type: "error", message: aiErrorMessage(e) });
       } finally {
         if (usage.input_tokens || usage.output_tokens) await logUsage(ctx, "assistant", usage, MODEL);

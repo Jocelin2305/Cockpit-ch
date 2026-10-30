@@ -6,7 +6,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
     <main className="legal">
       <Link href="/" className="auth-brand" aria-label="Accueil"><Brand /></Link>
       <article className="legal-body">{children}</article>
-      <p className="auth-foot"><Link href="/mentions-legales">Mentions légales</Link> · <Link href="/cgu">Conditions d&apos;utilisation</Link> · <Link href="/confidentialite">Confidentialité</Link></p>
+      <p className="auth-foot"><Link href="/mentions-legales">Mentions légales</Link> · <Link href="/cgu">Conditions d&apos;utilisation</Link> · <Link href="/confidentialite">Confidentialité</Link> · <Link href="/traitement-des-donnees">Traitement des données</Link></p>
     </main>
   );
 }

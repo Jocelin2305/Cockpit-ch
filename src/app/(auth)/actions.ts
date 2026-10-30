@@ -16,6 +16,8 @@ import {
 } from "@/lib/auth";
 import { firstError, passwordField, signupSchema, type FormState } from "@/lib/validation";
 import { resetEmail, sendPlatformEmail } from "@/lib/email";
+import { platformName } from "@/lib/branding";
+import { grantTrialCredits } from "@/lib/credits";
 import { PARTNER_TRIAL_DAYS, TRIAL_DAYS } from "@/lib/plans";
 
 export async function signup(_: FormState, form: FormData): Promise<FormState> {
@@ -57,6 +59,8 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
     },
     include: { memberships: true },
   });
+  // Client direct : crédits de l'essai. Client d'un revendeur : il consomme le stock du revendeur.
+  if (!reseller) await grantTrialCredits(user.memberships[0].organizationId);
   await createSession(user.id, user.memberships[0].organizationId);
   redirect("/app");
 }
@@ -110,7 +114,8 @@ export async function requestPasswordReset(_: FormState, form: FormData): Promis
   if (recent >= RESET_PER_HOUR) return ok;
   const token = newToken();
   await db.passwordReset.create({ data: { tokenHash: hashToken(token), userId: user.id, expiresAt: new Date(Date.now() + RESET_MINUTES * 60_000) } });
-  const mail = resetEmail(`${appUrl()}/reinitialiser/${token}`, RESET_MINUTES);
+  const own = await db.membership.findFirst({ where: { userId: user.id }, orderBy: { createdAt: "asc" }, select: { organization: { select: { resellerId: true } } } });
+  const mail = resetEmail(`${appUrl()}/reinitialiser/${token}`, RESET_MINUTES, own ? await platformName(own.organization) : undefined);
   const sent = await sendPlatformEmail(email, mail.subject, mail.text);
   if (!sent && process.env.NODE_ENV === "production")
     return { error: "L'envoi d'emails n'est pas encore activé. Écrivez au support pour récupérer votre accès.", values: { email } };

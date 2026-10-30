@@ -23,6 +23,8 @@ export async function brandForOrg(org: { resellerId: string | null }) {
   if (!org.resellerId) return null;
   return brandOf(await db.reseller.findUnique({ where: { id: org.resellerId }, select: BRAND_SELECT }));
 }
+// Nom affiché dans les emails : celui de la marque du distributeur, sinon Cockpit'ch.
+export const platformName = async (org: { resellerId: string | null }) => (await brandForOrg(org))?.name || "Cockpit'ch";
 export async function brandForCode(code: string | undefined) {
   if (!code) return null;
   return brandOf(await db.reseller.findFirst({ where: { code: code.trim().toLowerCase() }, select: BRAND_SELECT }));

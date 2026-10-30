@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireMember, ROLES } from "@/lib/auth";
 import { accessState } from "@/lib/billing";
+import { supportEmail } from "@/lib/branding";
 import { db } from "@/lib/db";
 import { OrgForm } from "./org-form";
 import { SignatureForm } from "./signature-form";
 import { DataPanel } from "./data-panel";
 import { AutomationPanel } from "./automation-panel";
 import { ConnectorTiles } from "./connector-tiles";
+import { CreditsPanel } from "./credits-panel";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
@@ -20,6 +22,7 @@ export default async function SettingsPage() {
   const isAdmin = membership.role === ROLES.ADMIN;
   const hasMailbox = !!(await db.mailAccount.findUnique({ where: { userId: user.id }, select: { id: true } }));
   const st = accessState(org);
+  const support = org.resellerId ? await supportEmail(org) : "";
   const plan = st.kind === "trial" ? `Essai gratuit · ${st.daysLeft} jour${st.daysLeft > 1 ? "s" : ""} restant${st.daysLeft > 1 ? "s" : ""} (jusqu'au ${fmt(st.ends)})`
     : st.kind === "active" ? `${st.planName}${st.renews ? ` · ${st.cancelAtPeriodEnd ? "se termine" : "renouvelé"} le ${fmt(st.renews)}` : ""}`
     : st.kind === "past_due" ? `${st.planName} · paiement en échec` : "Aucun abonnement actif";
@@ -43,11 +46,13 @@ export default async function SettingsPage() {
             <OrgForm name={org.name} />
           </section>
           <section className="panel">
-            <div className="panel-head"><h2>Abonnement en cours</h2><Link className="btn sm" href="/abonnement">Gérer l&apos;abonnement</Link></div>
+            <div className="panel-head"><h2>Abonnement en cours</h2>{!org.resellerId && <Link className="btn sm" href="/abonnement">Gérer l&apos;abonnement</Link>}</div>
             <p>{plan}</p>
+            {org.resellerId && <p className="muted small">Géré par votre conseiller : <a href={`mailto:${support}`}>{support}</a></p>}
           </section>
         </>
       )}
+      <CreditsPanel org={org} isAdmin={isAdmin} support={support} />
       <ConnectorTiles userId={user.id} org={org} isAdmin={isAdmin} />
       <AutomationPanel autoSend={user.autoSend} weeklyReport={user.weeklyReport} isAdmin={isAdmin} hasMailbox={hasMailbox} />
       {isAdmin && <DataPanel orgName={org.name} />}

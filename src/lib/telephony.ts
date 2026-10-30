@@ -2,6 +2,7 @@
 // rattachés aux prospects par leur numéro, et compte rendu IA automatique à partir de la transcription.
 import { db } from "./db";
 import { aiReady } from "./ai";
+import { CreditError } from "./credits";
 import { analyzeCallNotes } from "./ai-features";
 import { callFields, clampMs, reportPatch, reportSchema } from "./calls";
 import { addDays, FRAMEWORKS, todayISO, type Qualif } from "./prospecting";
@@ -155,7 +156,12 @@ export async function handlePhoneEvent(organizationId: string, ev: PhoneEventIn)
     const org = await db.organization.findUnique({ where: { id: organizationId }, select: { aiKeyEnc: true } });
     if (org && aiReady(org)) {
       const fw = (p.qualif as Qualif | null)?.fw && FRAMEWORKS[(p.qualif as Qualif).fw] ? (p.qualif as Qualif).fw : "BANT";
-      const r = await analyzeCallNotes({ organizationId, userId }, p, ev.transcript, FRAMEWORKS[fw]);
+      // Sans crédit, l'appel reste enregistré avec sa transcription, sans compte rendu.
+      const r = await analyzeCallNotes({ organizationId, userId }, p, ev.transcript, FRAMEWORKS[fw]).catch((e) => {
+        if (e instanceof CreditError) return null;
+        throw e;
+      });
+      if (!r) return { status: "logged" as const };
       const report = reportSchema.parse({ ...r, notes: ev.transcript, durationMs: call.durationMs, next: r.prochaineEtape, framework: fw });
       await db.$transaction([
         db.call.update({ where: { id: call.id }, data: callFields(report) }),

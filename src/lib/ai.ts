@@ -4,6 +4,8 @@ import type { z } from "zod";
 import { createHash } from "node:crypto";
 import { db } from "./db";
 import { decrypt } from "./mail";
+import { CREDIT_COSTS, CREDIT_LABELS } from "./credit-grid";
+import { CreditError, refundCredits, spendCredits, type CreditOrg } from "./credits";
 
 // Modèle par défaut : Claude Opus 5.5. Modifiable sans toucher au code via ANTHROPIC_MODEL.
 export const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
@@ -56,7 +58,7 @@ export type Effort = "low" | "medium" | "high";
 export class AiError extends Error {}
 
 export function aiErrorMessage(e: unknown) {
-  if (e instanceof AiError) return e.message;
+  if (e instanceof AiError || e instanceof CreditError) return e.message;
   if (e instanceof Anthropic.AuthenticationError) return "La clé Claude est refusée : vérifiez-la dans Paramètres → API IA.";
   if (e instanceof Anthropic.PermissionDeniedError) return "La clé API Anthropic n'a pas accès à ce modèle.";
   if (e instanceof Anthropic.RateLimitError) return "L'IA reçoit trop de demandes : réessayez dans une minute.";
@@ -86,36 +88,65 @@ export async function logUsage(ctx: AiContext, feature: string, usage: { input_t
     .catch(() => undefined);
 }
 
-// Réponse JSON validée par un schéma Zod.
-export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature: string, schema: S, prompt: string, effort: Effort = "medium", model = modelFor(feature)): Promise<z.infer<S>> {
-  const res = await (await aiClient(ctx.organizationId)).beta.messages.parse({
-    model,
-    max_tokens: 16000,
-    ...fallbackFor(model),
-    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-    output_config: { format: betaZodOutputFormat(schema), effort },
-    messages: [{ role: "user", content: prompt }],
+// Débite une action d'IA au lancement, à prix fixe. Rien n'est débité si l'entreprise utilise sa propre clé.
+export async function chargeFeature(ctx: AiContext, feature: string, units = 1) {
+  const org = await db.organization.findUnique({ where: { id: ctx.organizationId }, select: { id: true, resellerId: true, aiKeyEnc: true } });
+  if (!org || org.aiKeyEnc) return null;
+  const amount = (CREDIT_COSTS[feature] ?? 1) * units;
+  const label = CREDIT_LABELS[feature] ?? feature;
+  await spendCredits(org, amount, label, { userId: ctx.userId });
+  return { org: org as CreditOrg, amount, label };
+}
+export const refundCharge = async (ctx: AiContext, charge: Awaited<ReturnType<typeof chargeFeature>>) => {
+  if (charge) await refundCredits(charge.org, charge.amount, charge.label, ctx.userId);
+};
+
+// Exécute une action d'IA facturée : les crédits sont rendus si elle échoue.
+async function billed<T>(ctx: AiContext, feature: string, units: number, run: (client: Anthropic) => Promise<T>) {
+  const client = await aiClient(ctx.organizationId);
+  const charge = await chargeFeature(ctx, feature, units);
+  try {
+    return await run(client);
+  } catch (e) {
+    await refundCharge(ctx, charge);
+    throw e;
+  }
+}
+
+// Réponse JSON validée par un schéma Zod. `units` : nombre d'éléments facturés (prospects d'un lot).
+export async function generateJSON<S extends z.ZodType>(ctx: AiContext, feature: string, schema: S, prompt: string, effort: Effort = "medium", model = modelFor(feature), units = 1): Promise<z.infer<S>> {
+  return billed(ctx, feature, units, async (client) => {
+    const res = await client.beta.messages.parse({
+      model,
+      max_tokens: 16000,
+      ...fallbackFor(model),
+      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+      output_config: { format: betaZodOutputFormat(schema), effort },
+      messages: [{ role: "user", content: prompt }],
+    });
+    await logUsage(ctx, feature, res.usage, model);
+    if (res.stop_reason === "refusal") throw new AiError("L'IA a refusé cette demande. Reformulez les informations et réessayez.");
+    if (res.stop_reason === "max_tokens") throw new AiError("La réponse était trop longue : réessayez sur moins d'éléments.");
+    if (!res.parsed_output) throw new AiError("La réponse de l'IA était illisible. Réessayez.");
+    return res.parsed_output as z.infer<S>;
   });
-  await logUsage(ctx, feature, res.usage, model);
-  if (res.stop_reason === "refusal") throw new AiError("L'IA a refusé cette demande. Reformulez les informations et réessayez.");
-  if (res.stop_reason === "max_tokens") throw new AiError("La réponse était trop longue : réessayez sur moins d'éléments.");
-  if (!res.parsed_output) throw new AiError("La réponse de l'IA était illisible. Réessayez.");
-  return res.parsed_output as z.infer<S>;
 }
 
 // Réponse en texte (Markdown), en streaming côté serveur pour éviter les délais d'attente.
 export async function generateText(ctx: AiContext, feature: string, prompt: string, effort: Effort = "medium", model = modelFor(feature)) {
-  const stream = (await aiClient(ctx.organizationId)).beta.messages.stream({
-    model,
-    max_tokens: 32000,
-    ...fallbackFor(model),
-    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-    output_config: { effort },
-    messages: [{ role: "user", content: prompt }],
+  return billed(ctx, feature, 1, async (client) => {
+    const stream = client.beta.messages.stream({
+      model,
+      max_tokens: 32000,
+      ...fallbackFor(model),
+      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+      output_config: { effort },
+      messages: [{ role: "user", content: prompt }],
+    });
+    const msg = await stream.finalMessage();
+    await logUsage(ctx, feature, msg.usage, model);
+    if (msg.stop_reason === "refusal") throw new AiError("L'IA a refusé cette demande. Reformulez et réessayez.");
+    return msg.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("\n").trim();
   });
-  const msg = await stream.finalMessage();
-  await logUsage(ctx, feature, msg.usage, model);
-  if (msg.stop_reason === "refusal") throw new AiError("L'IA a refusé cette demande. Reformulez et réessayez.");
-  return msg.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("\n").trim();
 }
 
